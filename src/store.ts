@@ -1,20 +1,20 @@
 import { NormalObject } from './types';
-interface Store {
+export interface Store {
   (name: string, value: any, alwaysVar: boolean): void;
   vars: NormalObject;
   fns: NormalObject;
   mockits: NormalObject;
 }
-const store: Store  = (() => {
+const store: Store = (() => {
   const fns: {[index: string]: () => any} = {};
   const vars: NormalObject = {};
-  const fn = (name: string, value: any, alwaysVar: boolean): void => {
+  const fn = ((name: string, value: any, alwaysVar: boolean): void => {
     if(typeof value !== 'function' || alwaysVar) {
       vars[name] = value;
     } else {
       fns[name] = value;
     }
-  };
+  }) as Store;
   fn.fns = fns;
   fn.vars = vars;
   fn.mockits = {};

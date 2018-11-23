@@ -1,9 +1,9 @@
 {
   "name": "suchjs",
   "version": "0.0.1",
-  "description": "An easy mock tool.",
-  "main": "./lib/such.js",
-  "typings": "./lib/such.d.ts",
+  "description": "An easy to use and extend mock tool.",
+  "main": "./lib/index.js",
+  "typings": "./lib/index.d.ts",
   "author": "ONEBOX FE",
   "license": "MIT",
   "devDependencies": {
@@ -20,9 +20,10 @@
   },
   "scripts": {
     "start": "tsc && node lib/such.js",
-    "test": "jest",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "local": "ts-node -r tsconfig-paths/register src/local/test.ts",
-    "build:browser": "webpack --progress"
+    "build:browser": "webpack --progress",
+    "prepublish": "tsc"
   },
   "jest": {
     "transform": {
@@ -38,5 +39,12 @@
       "node"
     ]
   },
-  "dependencies": {}
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/suchjs/such"
+  },
+  "bugs": {
+    "url": "https://github.com/suchjs/such/issues"
+  }
 }
