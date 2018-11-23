@@ -1,0 +1,10 @@
+# node modules
+node_modules
+# vscode
+.vscode/*
+# build 
+/lib
+/dist
+/src/local
+.DS_Store*
+package-lock.json

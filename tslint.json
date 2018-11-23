@@ -1,0 +1,20 @@
+{
+  "extends": "tslint:recommended",
+  "rules": {
+    "no-unused-variable":true,
+    "no-conditional-assignment": false,
+    "no-bitwise": false,
+    "prefer-const":true,
+    "object-literal-sort-keys":false,
+    "interface-name": [true, "never-prefix"],
+    "quotemark": [true, "single"],
+    "space-in-brackets": [true],
+    "only-arrow-functions": false,
+    "whitespace": [true, "check-decl", "check-operator", "check-module", "check-separator", "check-rest-spread", "check-type", "check-typecast", "check-type-operator", "check-preblock"]
+  },
+  "linterOptions": {
+    "exclude": [
+
+    ]
+  }
+}
