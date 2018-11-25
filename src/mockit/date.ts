@@ -1,5 +1,6 @@
 import { strRule } from '../config';
 import { dateformat, strtotime } from '../helpers/dateformat';
+import PathMap, { Path } from '../helpers/pathmap';
 import { decodeTrans, makeRandom } from '../helpers/utils';
 import { ParamsCount, ParamsFormat } from '../types';
 import Mockit, { ModifierFn } from './namespace';
@@ -54,7 +55,7 @@ export default class ToDate extends Mockit<string | Date> {
       return dateformat(format, result as Date);
     })  as ModifierFn<string>);
   }
-  public generate() {
+  public generate(datas: PathMap<any>, dpath: Path) {
     const { Count } = this.params;
     const { range } = Count;
     const time = makeRandom(range[0], range[1]);

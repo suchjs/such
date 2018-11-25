@@ -1,3 +1,4 @@
+import PathMap, { Path } from '../helpers/pathmap';
 import store from '../store';
 import { NormalObject, ParamsFunc, ParamsFuncItem } from '../types';
 const { fns: globalFns, vars: globalVars, mockits } = store;
@@ -10,7 +11,7 @@ export default abstract class Mockit<T> {
   protected userFnQueue: string[] = [];
   protected userFnParams: NormalObject = {};
   protected params: NormalObject = {};
-  protected generateFn: undefined | (() => Result<T>);
+  protected generateFn: undefined | ((datas: PathMap<any>, dpath: Path) => Result<T>);
   protected ignoreRules: string[] = [];
   /**
    * Creates an instance of Mockit.
@@ -119,7 +120,7 @@ export default abstract class Mockit<T> {
    * @param {() => Result<T>} [fn]
    * @memberof Mockit
    */
-  public reGenerate(fn?: () => Result<T>) {
+  public reGenerate(fn?: (data: PathMap<any>, dpath: Path) => Result<T>) {
     this.generateFn = fn;
   }
   /**
@@ -129,20 +130,18 @@ export default abstract class Mockit<T> {
    * @returns {Result<T>}
    * @memberof Mockit
    */
-  public make(Such?: NormalObject): Result<T> {
+  public make(datas: PathMap<any>, dpath: Path): Result<T> {
     const { modifiers, modifierFns } = mockits[this.constructorName || this.constructor.name];
     const { params, userFnQueue, userFns, userFnParams } = this;
-    let result = typeof this.generateFn === 'function' ? this.generateFn.call(this) : this.generate();
+    // tslint:disable-next-line:max-line-length
+    let result = typeof this.generateFn === 'function' ? this.generateFn.call(this, datas, dpath) : this.generate(datas, dpath);
     let i;
     let j = modifiers.length;
     for (i = 0; i < j; i++) {
       const name = modifiers[i];
       if (params.hasOwnProperty(name)) {
         const fn = modifierFns[name];
-        const args = [result, params[name]];
-        if (fn.length === 3) {
-          args.push(Such);
-        }
+        const args = [result, params[name], datas, dpath];
         result = fn.apply(this, args);
       }
     }
@@ -152,7 +151,6 @@ export default abstract class Mockit<T> {
       const fn = userFns[name];
       result = fn.apply(null, [ result, Config || {}, globalVars, globalFns[name], userFnParams[name]]);
     }
-
     return result;
   }
   /**
@@ -162,7 +160,7 @@ export default abstract class Mockit<T> {
    * @returns {Result<T>}
    * @memberof Mockit
    */
-  public abstract generate(): Result<T>;
+  public abstract generate(datas: PathMap<any>, dpath: Path): Result<T>;
   /**
    *
    *

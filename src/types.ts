@@ -56,6 +56,18 @@ export interface ParamsRegexp {
  *
  *
  * @export
+ * @interface ParamsPathItem
+ */
+export interface ParamsPathItem {
+  relative: boolean;
+  depth: number;
+  paths: Array<string | number>;
+}
+export type ParamsPath = ParamsPathItem[];
+/**
+ *
+ *
+ * @export
  * @interface ParamsConfig
  */
 export interface ParamsConfig {

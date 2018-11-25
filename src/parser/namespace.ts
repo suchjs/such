@@ -376,6 +376,7 @@ export class Dispatcher {
         let match = null;
         const parser = parsers[type];
         const { rule } = parser;
+        console.log(rule);
         tryTypes.push(type);
         if(match = context.match(rule)) {
           const instance = this.getInstance(type);

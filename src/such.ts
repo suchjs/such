@@ -1,4 +1,5 @@
 import { suchRule } from './config';
+import PathMap, { Path } from './helpers/pathmap';
 import { capitalize, isFn, isOptional, makeRandom, map, typeOf } from './helpers/utils';
 import * as mockitList from './mockit';
 import Mockit from './mockit/namespace';
@@ -41,7 +42,7 @@ export interface MockitInstances {
  */
 export interface MockerOptions {
   target: any;
-  xpath: Array<string | number>;
+  path: Path;
   parent?: Mocker;
   config?: KeyRuleInterface;
 }
@@ -58,8 +59,6 @@ export interface MockitOptions {
   generateFn?: () => void;
 }
 
-export type Xpath = Array<string | number>;
-
 // all mockits
 const AllMockits: NormalObject = {};
 map(mockitList, (item, key) => {
@@ -68,63 +67,7 @@ map(mockitList, (item, key) => {
   }
   AllMockits[key] = item;
 });
-/**
- *
- *
- * @class ArrKeyMap
- * @template T
- */
-export class ArrKeyMap<T> {
-  private hashs: {[index: string]: T} = {};
-  private keyHashs: {[index: string]: Xpath} = {};
-  private rootKey: string = '__ROOT__';
-  /**
-   *
-   *
-   * @param {Xpath} key
-   * @param {T} value
-   * @returns
-   * @memberof ArrKeyMap
-   */
-  public set(key: Xpath, value: T) {
-    const saveKey = this.buildKey(key);
-    this.hashs[saveKey] = value;
-    this.keyHashs[saveKey] = key;
-    return this;
-  }
-  /**
-   *
-   *
-   * @param {Xpath} key
-   * @returns {T}
-   * @memberof ArrKeyMap
-   */
-  public get(key: Xpath): T {
-    return this.hashs[this.buildKey(key)];
-  }
-  /**
-   *
-   *
-   * @memberof ArrKeyMap
-   */
-  public clear() {
-    this.hashs = {};
-    this.keyHashs = {};
-  }
-  /**
-   *
-   *
-   * @private
-   * @param {Xpath} key
-   * @returns
-   * @memberof ArrKeyMap
-   */
-  private buildKey(key: Xpath) {
-    return key.reduce((prev, next) => {
-      return prev + '["' + ('' + next).replace(/"/g, '\\"') + '"]';
-    }, this.rootKey);
-  }
-}
+
 /**
  *
  *
@@ -174,29 +117,29 @@ export class Mocker {
   }
   public readonly target: any;
   public readonly config: NormalObject = {};
-  public readonly xpath: Xpath;
+  public readonly path: Path;
   public readonly type: string;
-  public readonly instances?: ArrKeyMap<Mocker>;
-  public readonly datas?: ArrKeyMap<any>;
+  public readonly instances?: PathMap<Mocker>;
+  public readonly datas?: PathMap<any>;
   public readonly root: Mocker;
   public readonly parent: Mocker;
   public readonly dataType: string;
   public readonly isRoot: boolean;
-  public readonly mockFn: (dpath: Xpath) => any;
+  public readonly mockFn: (dpath: Path) => any;
   public readonly mockit: NormalObject;
   /**
    * Creates an instance of Mocker.
    * @param {MockerOptions} options
-   * @param {ArrKeyMap<Mocker>} [rootInstances]
-   * @param {ArrKeyMap<any>} [rootDatas]
+   * @param {PathMap<Mocker>} [rootInstances]
+   * @param {PathMap<any>} [rootDatas]
    * @memberof Mocker
    */
-  constructor(options: MockerOptions, rootInstances?: ArrKeyMap<Mocker>, rootDatas?: ArrKeyMap<any>) {
-    const {target, xpath, config, parent} = options;
+  constructor(options: MockerOptions, rootInstances?: PathMap<Mocker>, rootDatas?: PathMap<any>) {
+    const { target, path, config, parent } = options;
     this.target = target;
-    this.xpath = xpath;
+    this.path = path;
     this.config = config || {};
-    this.isRoot = xpath.length === 0;
+    this.isRoot = path.length === 0;
     if (this.isRoot) {
       this.instances = rootInstances;
       this.datas = rootDatas;
@@ -212,50 +155,53 @@ export class Mocker {
     const hasLength = !isNaN(min);
     this.dataType = dataType;
     if (dataType === 'array') {
-      const getInstance = (index?: number): Mocker => {
-        const mIndex = !isNaN(index) ? index : makeRandom(0, target.length - 1);
-        const nowXpath = xpath.concat(mIndex);
-        let instance = instances.get(nowXpath);
+      const totalIndex = target.length - 1;
+      const getInstance = (mIndex?: number): Mocker => {
+        mIndex = typeof mIndex === 'number' ? mIndex : makeRandom(0, totalIndex);
+        const nowPath = path.concat(mIndex);
+        let instance = instances.get(nowPath);
         if (!(instance instanceof Mocker)) {
           instance = new Mocker({
             target: target[mIndex],
-            xpath: nowXpath,
+            path: nowPath,
             parent: this,
           });
-          instances.set(nowXpath, instance);
+          instances.set(nowPath, instance);
         }
         return instance;
       };
       if (!hasLength) {
-        // e.g {"a":["b","c"]}
-        const mockers = target.map((item: any, index: number) => {
+        // e.g {"a":["b","c"]},orignal array type
+        const mockers = target.map((_: any, index: number) => {
           return getInstance(index);
         });
-        this.mockFn = (dpath) => {
+        this.mockFn = (dpath: Path) => {
           const result: any[] = [];
           mockers.map((instance: Mocker, index: number) => {
-            const nowDpath = xpath.concat(index);
-            const value = instance.mock(nowDpath);
+            const curDpath = dpath.concat(index);
+            const value = instance.mock(curDpath);
             result[index] = value;
-            datas.set(nowDpath, value);
+            datas.set(curDpath, value);
           });
           return result;
         };
       } else {
-        const makeArrFn = (dpath: Xpath, instance: Mocker | Mocker[], total?: number) => {
+        // mock array type
+        const makeArrFn = (dpath: Path, instance: Mocker | Mocker[], total?: number) => {
           const result: any[] = [];
           // tslint:disable-next-line:max-line-length
           const makeInstance = instance instanceof Mocker ? (i: number) => instance as Mocker : (i: number) => (instance as Mocker[])[i];
-          total = !isNaN(total) ? total : makeRandom(min, max);
+          total = typeof total === 'number' ? total : makeRandom(min, max);
           for (let i = 0; i < total; i++) {
-            const nowDpath = dpath.concat(i);
-            const value = makeInstance(i).mock(nowDpath);
+            const cur = makeInstance(i);
+            const curDpath = dpath.concat(i);
+            const value = cur.mock(curDpath);
             result[i] = value;
-            datas.set(nowDpath, value);
+            datas.set(curDpath, value);
           }
           return result;
         };
-        const makeOptional = (dpath: Xpath, instance: Mocker, total: number): never | any => {
+        const makeOptional = (dpath: Path, instance: Mocker, total: number): never | any => {
           let result;
           if (total > 1) {
             throw new Error(`optional func of the total param can not more than 1`);
@@ -265,27 +211,29 @@ export class Mocker {
           datas.set(dpath, result);
           return result;
         };
-        let resultFn: (dpath: Xpath, instance: Mocker) => any;
+        let resultFn: (dpath: Path, instance: Mocker) => any;
         if (oneOf) {
           if (alwaysArray) {
             // e.g {"a:[0,1]":[{b:1},{"c":1},{"d":1}]}
             resultFn = makeArrFn;
           } else {
             // e.g {"a:{0,5}":["amd","cmd","umd"]}
-            resultFn = (dpath, instance) => {
+            resultFn = (dpath: Path, instance: Mocker) => {
               const total = makeRandom(min, max);
-              if (total <= 1) {return makeOptional(dpath, instance, total); }
+              if (total <= 1) {
+                return makeOptional(dpath, instance, total);
+              }
               return makeArrFn(dpath, instance, total);
             };
           }
-          this.mockFn = (dpath) => {
+          this.mockFn = (dpath: Path) => {
             const instance = getInstance();
             return resultFn(dpath, instance);
           };
         } else {
           // e.g {"a[1,3]":["amd","cmd","umd"]}
           // e.g {"a{0,3}":["amd","cmd","umd"]}
-          const makeRandArrFn = (dpath: Xpath, total?: number) => {
+          const makeRandArrFn = (dpath: Path, total?: number) => {
             total = !isNaN(total) ? total : makeRandom(min, max);
             const targets = Array.apply(null, new Array(total)).map(() => {
               return getInstance();
@@ -293,11 +241,11 @@ export class Mocker {
             return makeArrFn(dpath, targets, total);
           };
           if (alwaysArray || min > 1) {
-            this.mockFn = (dpath) => {
+            this.mockFn = (dpath: Path) => {
               return makeRandArrFn(dpath);
             };
           } else {
-            this.mockFn = (dpath) => {
+            this.mockFn = (dpath: Path) => {
               const total = makeRandom(min, max);
               if (total <= 1) {return makeOptional(dpath, getInstance(), total); }
               return makeRandArrFn(dpath, total);
@@ -307,40 +255,37 @@ export class Mocker {
       }
     } else if (dataType === 'object') {
       // parse key
-      const keys: NormalObject[] = [];
-      for (const i in target) {
-        if (target.hasOwnProperty(i)) {
-          const val = target[i];
-          const {key, config: conf} = Mocker.parseKey(i);
-          keys.push({
-            key,
-            target: val,
-            config: conf,
-          });
-        }
-      }
-      this.mockFn = (dpath) => {
+      const keys: NormalObject[] = Object.keys(target).map((i: string) => {
+        const val = target[i];
+        const { key, config: conf } = Mocker.parseKey(i);
+        return {
+          key,
+          target: val,
+          config: conf,
+        };
+      });
+      this.mockFn = (dpath: Path) => {
         const result: NormalObject = {};
-        const prevXpath = this.xpath;
+        const prevPath = this.path;
         keys.map((item) => {
           const { key, config: conf, target: tar } = item;
           const { optional } = conf;
-          const nowXpath = prevXpath.concat(key);
+          const nowPath = prevPath.concat(key);
           const nowDpath = dpath.concat(key);
           if (optional && isOptional()) {
             // do nothing
           } else {
-            let instance = instances.get(nowXpath);
+            let instance = instances.get(nowPath);
             if (!(instance instanceof Mocker)) {
               instance = new Mocker({
                 target: tar,
                 config: conf,
-                xpath: nowXpath,
+                path: nowPath,
                 parent: this,
               });
-              instances.set(nowXpath, instance);
+              instances.set(nowPath, instance);
             }
-            const value = instance.mock(dpath.concat(key));
+            const value = instance.mock(nowDpath);
             result[key] = value;
             datas.set(nowDpath, value);
           }
@@ -359,9 +304,9 @@ export class Mocker {
           instance.setParams(params);
         }
         this.mockit = instance;
-        this.mockFn = () => instance.make(Such);
+        this.mockFn = (dpath: Path) => instance.make(datas, dpath);
       } else {
-        this.mockFn = () => target;
+        this.mockFn = (dpath: Path) => target;
       }
     }
   }
@@ -382,13 +327,12 @@ export class Mocker {
   /**
    *
    *
-   * @param {Xpath} [dpath]
+   * @param {Path} [dpath]
    * @returns
    * @memberof Mocker
    */
-  public mock(dpath?: Xpath) {
-    const {optional} = this.config;
-    dpath = this.isRoot ? [] : dpath;
+  public mock(dpath: Path) {
+    const { optional } = this.config;
     if (this.isRoot && optional && isOptional()) {
       return;
     }
@@ -485,8 +429,8 @@ export default class Such {
               init.call(this);
             }
           }
-          public generate() {
-            return generate.call(this, utils);
+          public generate(datas: PathMap<any>, dpath: Path) {
+            return generate.call(this, datas, dpath);
           }
           public test() {
             return true;
@@ -501,17 +445,17 @@ export default class Such {
   public readonly target: any;
   public readonly options: SuchConfig;
   public readonly mocker: Mocker;
-  public readonly instances: ArrKeyMap<Mocker>;
-  public readonly datas: ArrKeyMap<any>;
+  public readonly instances: PathMap<Mocker>;
+  public readonly datas: PathMap<any>;
   protected struct: NormalObject;
   private initail: boolean = false;
   constructor(target: any, options?: SuchConfig) {
     this.target = target;
-    this.instances = new ArrKeyMap();
-    this.datas = new ArrKeyMap();
+    this.instances = new PathMap(false);
+    this.datas = new PathMap(true);
     this.mocker = new Mocker({
       target,
-      xpath: [],
+      path: [],
       config: options && options.config,
     }, this.instances, this.datas);
   }
@@ -527,7 +471,7 @@ export default class Such {
     } else {
       this.datas.clear();
     }
-    return this.mocker.mock();
+    return this.mocker.mock([]);
   }
 
 }

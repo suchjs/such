@@ -1,7 +1,7 @@
+import PathMap, { Path } from '../helpers/pathmap';
 import { makeRandom } from '../helpers/utils';
 import { NormalObject } from '../types';
 import Mockit from './namespace';
-
 const uniRule = /^\\u((?:[0-9a-f]{2}){2,3})$/i;
 const numRule = /^\d+$/;
 const hex2num = (hex: string): number => {
@@ -104,7 +104,7 @@ export default class ToString extends Mockit<string> {
       }
     });
   }
-  public generate() {
+  public generate(datas: PathMap<any>, dpath: Path) {
     const { params } = this;
     const { Length } = params;
     const { least, most } = Length || { least: 1, most: 100 };
