@@ -5,8 +5,8 @@ import * as mockitList from './mockit';
 import Mockit from './mockit/namespace';
 import Parser from './parser';
 import store from './store';
-import { NormalObject } from './types';
-const { capitalize, isFn, isOptional, makeRandom, map, typeOf } = utils;
+import { MockitOptions, NormalObject, ParserConfig, SuchConfFile } from './types';
+const { capitalize, isFn, isOptional, makeRandom, map, typeOf, deepCopy } = utils;
 /**
  *
  *
@@ -39,6 +39,7 @@ export interface MockitInstances {
 /**
  *
  *
+ * @export
  * @interface MockerOptions
  */
 export interface MockerOptions {
@@ -47,19 +48,6 @@ export interface MockerOptions {
   parent?: Mocker;
   config?: KeyRuleInterface;
 }
-/**
- *
- *
- * @interface MockitOptions
- */
-export interface MockitOptions {
-  param: string;
-  ignoreRules?: string[];
-  init?: () => void;
-  generate?: () => any;
-  generateFn?: () => void;
-}
-
 // all mockits
 const AllMockits: NormalObject = {};
 map(mockitList, (item, key) => {
@@ -349,6 +337,55 @@ export class Mocker {
 // tslint:disable-next-line:max-classes-per-file
 export default class Such {
   public static readonly utils: {[index: string]: (...args: any[]) => any} = utils;
+  /**
+   *
+   *
+   * @static
+   * @param {SuchConfFile} config
+   * @memberof Such
+   */
+  public static config(config: SuchConfFile) {
+    const { parser, define, assign } = config;
+    const lastConf: SuchConfFile = {};
+    if(config.extends && typeof (Such as NormalObject).loadConf === 'function') {
+      const confFiles = typeof config.extends === 'string' ? [config.extends] : config.extends;
+      const confs = (Such as NormalObject).loadConf(confFiles);
+      confs.map((conf: SuchConfFile) => {
+        deepCopy(lastConf, conf);
+      });
+    }
+    deepCopy(lastConf, {
+      parser: parser || {},
+      define: define || {},
+      assign: assign || {},
+    });
+    Object.keys(lastConf).map((key: string) => {
+      const conf = (lastConf as NormalObject)[key] as NormalObject;
+      Object.keys(conf).map((name) => {
+        const args = typeOf(conf[name]) === 'Array' ? conf[name] : [conf[name]];
+        (Such as NormalObject)[key](name,  ...args);
+      });
+    });
+  }
+  /**
+   *
+   *
+   * @static
+   * @param {string} name
+   * @param {ParserConfig} config
+   * @param {() => void} parse
+   * @param {NormalObject} [setting]
+   * @returns {(never | void)}
+   * @memberof Such
+   */
+  public static parser(name: string, params: {
+    config: ParserConfig;
+    parse: () => void;
+    setting?: NormalObject;
+  }): never | void {
+    const { config, parse, setting } = params;
+    return Parser.addParser(name, config, parse, setting);
+  }
   /**
    *
    *

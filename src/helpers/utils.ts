@@ -37,7 +37,7 @@ export const map = (target: (any[] | NormalObject | string), fn: (item: any, ind
   }
 };
 // tslint:disable-next-line:max-line-length
-export const deepLoop = (obj: any, fn: (key: string | number, value: any, parent: Object, path: string) => any, curPath: string[] = []) => {
+export const deepLoop = (obj: any, fn: (key: string | number, value: any, parent: object, path: string) => any, curPath: string[] = []) => {
   const type = typeOf(obj);
   if(type === 'Object') {
     for(const key in obj) {
@@ -97,4 +97,18 @@ export const getExp = (exp: string): any | never => {
   } catch(e) {
     throw new Error(`wrong expression of "${exp}".reason:${e}`);
   }
+};
+const isArr = (target: any) => typeOf(target) === 'Array';
+const isObj = (target: any) => typeOf(target) === 'Object';
+export const deepCopy = (target: any, ...args: any[]) => {
+  const type = typeOf(target);
+  if(type === 'Object' || type === 'Array') {
+    for(let i = 0, j = args.length; i < j; i++) {
+      const copy = args[i];
+      if(typeOf(copy) ! === type) {
+        continue;
+      }
+    }
+  }
+  return target;
 };

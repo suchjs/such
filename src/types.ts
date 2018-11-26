@@ -96,3 +96,36 @@ export interface ParserInstance {
   setting?: object;
   parse(): object | never;
 }
+// such config
+/**
+ *
+ *
+ * @interface MockitOptions
+ */
+export interface MockitOptions {
+  param: string;
+  ignoreRules?: string[];
+  init?: () => void;
+  generate?: () => any;
+  generateFn?: () => void;
+}
+export type NormalFn = (...args: any[]) => any;
+export interface FnList {
+  [index: string]: NormalFn;
+}
+export interface SuchConfGlobal {
+  vars?: NormalObject;
+  fns?: FnList;
+}
+export interface SuchConfDefine {
+  [index: string]: NormalFn | MockitOptions | [string, string] | [string, MockitOptions];
+}
+export interface SuchConfParser {
+  [index: string]: ParserInstance;
+}
+export interface SuchConfFile {
+  extends?: string | string[];
+  assign?: SuchConfGlobal;
+  parser?: SuchConfParser;
+  define?: SuchConfDefine;
+}
