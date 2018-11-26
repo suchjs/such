@@ -106,14 +106,17 @@ export abstract class ParserInterface {
         let len: number = 0;
         const total = res.length;
         while(len < total && (match = curCode.match(pattern)) !== null) {
-          len += match[0].length;
+          const segLen = match[0].length;
+          len += segLen;
           const sep = res.charAt(len);
-          if(len < total && sep !== separator) {
+          if(segLen === 0) {
+            throw new Error(`the pattern rule "${pattern.toString()}" match nothing to the string:${curCode}`);
+          } else if(len < total && sep !== separator) {
             // tslint:disable-next-line:max-line-length
             throw new Error(`unexpected separator character "${sep}" in "${curCode.slice(len)}",expect to be "${separator}"`);
           } else {
             len += 1;
-            curCode = curCode.slice(len);
+            curCode = curCode.slice(segLen + 1);
             params.push(match[0]);
             pattern.lastIndex = 0;
             this.patterns.push(match);
@@ -376,7 +379,6 @@ export class Dispatcher {
         let match = null;
         const parser = parsers[type];
         const { rule } = parser;
-        console.log(rule);
         tryTypes.push(type);
         if(match = context.match(rule)) {
           const instance = this.getInstance(type);

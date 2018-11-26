@@ -1,11 +1,12 @@
 import { suchRule } from './config';
 import PathMap, { Path } from './helpers/pathmap';
-import { capitalize, isFn, isOptional, makeRandom, map, typeOf } from './helpers/utils';
+import * as utils from './helpers/utils';
 import * as mockitList from './mockit';
 import Mockit from './mockit/namespace';
 import Parser from './parser';
 import store from './store';
 import { NormalObject } from './types';
+const { capitalize, isFn, isOptional, makeRandom, map, typeOf } = utils;
 /**
  *
  *
@@ -347,6 +348,7 @@ export class Mocker {
  */
 // tslint:disable-next-line:max-classes-per-file
 export default class Such {
+  public static readonly utils: {[index: string]: (...args: any[]) => any} = utils;
   /**
    *
    *
@@ -392,7 +394,6 @@ export default class Such {
     if (!AllMockits.hasOwnProperty(type)) {
       // tslint:disable-next-line:max-line-length
       let klass;
-      const utils = { isOptional, makeRandom };
       if(argsNum === 2) {
         const baseType = args[0];
         const base = AllMockits[baseType as string];

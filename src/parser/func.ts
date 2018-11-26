@@ -6,16 +6,17 @@ const parser: ParserInstance =  {
     startTag: ['@'],
     endTag: [],
     separator: '|',
-    pattern: /^([a-z][\w$]*)(?:\(((?:(?:(['"])(?:(?!\3)[^\\]|\\.)*\3|[\w$]+)\s*(?:,(?!\s*\))|(?=\s*\)))\s*)*)\)|)/,
     // tslint:disable-next-line:max-line-length
-    rule: new RegExp(`^@(?:[a-z][\\w$]*(?:\\((?:(?:(['"])(?:(?!\\1)[^\\\\]|\\\\.)*\\1|[\\w$]+)\\s*(?:,(?!\\s*\\))|(?=\\s*\\)))\\s*)*\\)|)(?:\\|(?!$|${encodeSplitor})|(?=\\s*$|${encodeSplitor})))*`),
+    pattern: /^([a-z][\w$]*)(?:\(((?:(?:(['"])(?:(?!\3)[^\\]|\\.)*\3|[\w$]+(?:\.[\w$]+|\[(?:(['"])(?:(?!\4)[^\\]|\\.)*\4|\d+)\])*)\s*(?:,(?!\s*\))|(?=\s*\)))\s*)*)\)|)/,
+    // tslint:disable-next-line:max-line-length
+    rule: new RegExp(`^@(?:[a-z][\\w$]*(?:\\((?:(?:(['"])(?:(?!\\1)[^\\\\]|\\\\.)*\\1|[\\w$]+(?:\\.[\\w$]+|\\[(?:(['"])(?:(?!\\2)[^\\\\]|\\.)*\\2|\\d+)\\])*)\\s*(?:,(?!\\s*\\))|(?=\\s*\\)))\\s*)*\\)|)(?:\\|(?!$|${encodeSplitor})|(?=\\s*$|${encodeSplitor})))*`),
   },
   parse(): ParamsFunc | never {
     const { patterns, code } = this.info();
     if(!patterns.length) {
       this.halt(`no modify functions find in "${code}"`);
     } else {
-      const rule = /(['"])((?:(?!\1)[^\\]|\\.)*)\1|([\w$]+)/g;
+      const rule = /(['"])((?:(?!\1)[^\\]|\\.)*)\1|([\w$]+(?:\.[\w$]+|\[(?:(['"])(?:(?!\4)[^\\]|\\.)*\4|\d+)\])*)/g;
       const result: ParamsFunc = [];
       const nativeValues = ['true', 'false', 'undefined', 'null'];
       patterns.forEach((match: any[]) => {

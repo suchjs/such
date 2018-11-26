@@ -61,7 +61,7 @@ export interface ParamsRegexp {
 export interface ParamsPathItem {
   relative: boolean;
   depth: number;
-  paths: Array<string | number>;
+  path: Array<string | number>;
 }
 export type ParamsPath = ParamsPathItem[];
 /**

@@ -33,11 +33,16 @@ export default abstract class Mockit<T> {
     this.addRule('Func', function(Func: ParamsFunc) {
       for(let i = 0, j = Func.length; i < j; i++) {
         const item: ParamsFuncItem = Func[i];
-        const { name } = item;
-        const fn = globalFns[name];
-        if(!fn) {
-          throw new Error(`the "Func" params used undefined function "${item.name}"`);
-        }
+        const { name, params } = item;
+        params.map((param) => {
+          if(param.variable) {
+            try {
+              new Function('__CONFIG__', 'return __CONFIG__.' + param.value)(globalVars);
+            } catch(e) {
+              throw new Error(`the modifier function ${name}'s param ${param.value} is not correct:${e.message}`);
+            }
+          }
+        });
       }
     });
   }
@@ -149,7 +154,12 @@ export default abstract class Mockit<T> {
     for(i = 0, j = userFnQueue.length; i < j; i++) {
       const name = userFnQueue[i];
       const fn = userFns[name];
-      result = fn.apply(null, [ result, Config || {}, globalVars, globalFns[name], userFnParams[name]]);
+      // tslint:disable-next-line:max-line-length
+      const args = (globalFns[name] ? [globalFns[name]] : [] ).concat([userFnParams[name], globalVars, result, Config || {} ]);
+      result = fn.apply({
+        datas,
+        dpath,
+      }, args);
     }
     return result;
   }
@@ -181,12 +191,14 @@ export default abstract class Mockit<T> {
     this.userFnQueue = [];
     for(let i = 0, j = Func.length; i < j; i++) {
       const { name, params } = Func[i];
+      const isUserDefined = globalFns.hasOwnProperty(name);
       const confName = '__CONFIG__';
       const varName = '__VARS__';
       const argName = '__ARGS__';
-      const fnName = '__FN__';
       const resName = '__RESULT__';
-      const lastParams: string[] = [resName];
+      const fnName = isUserDefined ? '__FN__' : `${resName}.${name}`;
+      const useFnParam = isUserDefined ? [fnName] : [];
+      const lastParams: string[] = isUserDefined ? [resName] : [];
       const paramValues: any[] = [];
       let index: number = 0;
       params.forEach((param) => {
@@ -201,7 +213,7 @@ export default abstract class Mockit<T> {
       });
       this.userFnQueue.push(name);
       // tslint:disable-next-line:max-line-length
-      this.userFns[name] = new Function([resName, confName, varName, fnName, argName].join(','), `return ${fnName}(${lastParams.join(',')});`);
+      this.userFns[name] = new Function(useFnParam.concat(argName, varName, resName, confName).join(','), isUserDefined ? `return ${fnName}.apply(this,[${lastParams.join(',')}]);` : `return ${fnName}(${lastParams.join(',')})`);
       this.userFnParams[name] = paramValues;
     }
   }

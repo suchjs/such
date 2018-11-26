@@ -72,4 +72,26 @@ export default class PathMap<T> {
     this.result = null;
     this.initial = false;
   }
+  /**
+   *
+   *
+   * @memberof PathMap
+   */
+  public has(keys: Path): boolean {
+    let result = this.result;
+    let flag: boolean = true;
+    for(let i = 0, len = keys.length; i < len; i++) {
+      const key = keys[i];
+      if(typeof key === 'number') {
+        flag = typeOf(result) === 'Array' && result.length > key;
+      } else {
+        flag = typeOf(result) === 'Object' && result.hasOwnProperty(key);
+      }
+      if(!flag) {
+        break;
+      }
+      result = (result as NormalObject)[key];
+    }
+    return flag;
+  }
 }
