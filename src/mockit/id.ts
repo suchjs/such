@@ -8,7 +8,9 @@ export default class ToId extends Mockit<number> {
   public init() {
     // config
     this.addRule('Config', function(Config: ParamsConfig) {
-      //
+      if(!Config) {
+        return;
+      }
       const allowKeys = ['start', 'step'];
       const last: NormalObject = {};
       const hasDisallow = Object.keys(Config).some((key) => {
@@ -25,9 +27,9 @@ export default class ToId extends Mockit<number> {
     });
   }
   public generate(datas: PathMap<any>, dpath: Path) {
-    const { Config } = this.params;
-    const start = Config.hasOwnProperty('start') ? Config.start : 1;
-    const step = Config.hasOwnProperty('step') ? Config.step : 1;
+    const config = this.params.Config || {};
+    const start = config.hasOwnProperty('start') ? config.start : 1;
+    const step = config.hasOwnProperty('step') ? config.step : 1;
     let len = dpath.length;
     while(len--) {
       const cur = dpath[len];

@@ -8,7 +8,9 @@ export default class ToRef extends Mockit<any> {
   public init() {
     // path
     this.addRule('Path', function(Path: ParamsPath) {
-      // no validate because no dpath and datas.
+      if(!Path) {
+        throw new Error(`the ref type must has a path param.`);
+      }
     });
   }
   public generate(datas: PathMap<any>, dpath: DPath) {
@@ -29,7 +31,8 @@ export default class ToRef extends Mockit<any> {
       if(isExists && datas.has(lastPath)) {
         result.push(datas.get(lastPath));
       } else {
-        throw new Error(`the path of "/${lastPath.join('/')}" is not exists in the datas.`);
+        // tslint:disable-next-line:max-line-length
+        throw new Error(`the path of "${lastPath ? '/' + lastPath.join('/') : item.fullpath}" is not exists in the datas.`);
       }
     });
     return Path.length === 1 ? result[0] : result;

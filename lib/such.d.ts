@@ -1,3 +1,4 @@
+import PathMap, { Path } from './helpers/pathmap';
 import { NormalObject } from './types';
 export interface SuchConfig {
     instance?: boolean;
@@ -15,7 +16,7 @@ export interface MockitInstances {
 }
 export interface MockerOptions {
     target: any;
-    xpath: Array<string | number>;
+    path: Path;
     parent?: Mocker;
     config?: KeyRuleInterface;
 }
@@ -26,16 +27,6 @@ export interface MockitOptions {
     generate?: () => any;
     generateFn?: () => void;
 }
-export declare type Xpath = Array<string | number>;
-export declare class ArrKeyMap<T> {
-    private hashs;
-    private keyHashs;
-    private rootKey;
-    set(key: Xpath, value: T): this;
-    get(key: Xpath): T;
-    clear(): void;
-    private buildKey;
-}
 export declare class Mocker {
     static parseKey(key: string): {
         key: string;
@@ -43,29 +34,32 @@ export declare class Mocker {
     };
     readonly target: any;
     readonly config: NormalObject;
-    readonly xpath: Xpath;
+    readonly path: Path;
     readonly type: string;
-    readonly instances?: ArrKeyMap<Mocker>;
-    readonly datas?: ArrKeyMap<any>;
+    readonly instances?: PathMap<Mocker>;
+    readonly datas?: PathMap<any>;
     readonly root: Mocker;
     readonly parent: Mocker;
     readonly dataType: string;
     readonly isRoot: boolean;
-    readonly mockFn: (dpath: Xpath) => any;
+    readonly mockFn: (dpath: Path) => any;
     readonly mockit: NormalObject;
-    constructor(options: MockerOptions, rootInstances?: ArrKeyMap<Mocker>, rootDatas?: ArrKeyMap<any>);
+    constructor(options: MockerOptions, rootInstances?: PathMap<Mocker>, rootDatas?: PathMap<any>);
     setParams(value: string | NormalObject): any;
-    mock(dpath?: Xpath): any;
+    mock(dpath: Path): any;
 }
 export default class Such {
+    static readonly utils: {
+        [index: string]: (...args: any[]) => any;
+    };
     static as(target: any, options?: SuchConfig): any;
     static assign(name: string, value: any, alwaysVar?: boolean): void;
     static define(type: string, ...args: any[]): void | never;
     readonly target: any;
     readonly options: SuchConfig;
     readonly mocker: Mocker;
-    readonly instances: ArrKeyMap<Mocker>;
-    readonly datas: ArrKeyMap<any>;
+    readonly instances: PathMap<Mocker>;
+    readonly datas: PathMap<any>;
     protected struct: NormalObject;
     private initail;
     constructor(target: any, options?: SuchConfig);

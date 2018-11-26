@@ -62,6 +62,7 @@ export interface ParamsPathItem {
   relative: boolean;
   depth: number;
   path: Array<string | number>;
+  fullpath: string;
 }
 export type ParamsPath = ParamsPathItem[];
 /**

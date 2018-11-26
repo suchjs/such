@@ -10,6 +10,7 @@ export default class ToRegexp extends Mockit<string> {
   public init() {
     // regexp rule
     this.addRule('Regexp', function(Regexp: ParamsRegexp) {
+      if(!Regexp) {throw new Error(`the regexp type must has a regexp rule.`); }
       const { rule } = Regexp;
       if(!regexpRule.test(rule)) {
         throw new Error('wrong regexp expression');
@@ -17,6 +18,7 @@ export default class ToRegexp extends Mockit<string> {
     });
     // config rule
     this.addRule('Config', function(Config: NormalObject) {
+      if(!Config) {return; }
       const result: NormalObject = {};
       const rule = /(.?)\|/g;
       Object.keys(Config).forEach((key) => {
@@ -51,7 +53,7 @@ export default class ToRegexp extends Mockit<string> {
     const { Config, Regexp } = this.params;
     if(!instance) {
       instance = this.instance = new RegexpParser(Regexp.rule, {
-        namedGroupConf: Config,
+        namedGroupConf: Config || {},
       });
     }
     return instance.build();

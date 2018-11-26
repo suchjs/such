@@ -1,3 +1,4 @@
+import PathMap, { Path } from '../helpers/pathmap';
 import { NormalObject, ParamsFunc } from '../types';
 export declare type Result<T> = T | never;
 export declare type ModifierFn<T> = (res: T) => T | string | never;
@@ -8,18 +9,23 @@ export default abstract class Mockit<T> {
     protected userFnQueue: string[];
     protected userFnParams: NormalObject;
     protected params: NormalObject;
-    protected generateFn: undefined | (() => Result<T>);
+    protected generateFn: undefined | ((datas: PathMap<any>, dpath: Path) => Result<T>);
     protected ignoreRules: string[];
+    private isValidOk;
+    private hasValid;
+    private invalidKeys;
     constructor(constructorName: string);
     abstract init(): void;
     addModifier(name: string, fn: ModifierFn<T>, pos?: string): void;
     addRule(name: string, fn: RuleFn, pos?: string): void;
     setParams(params: NormalObject, value: undefined): NormalObject | never;
     setParams(key: string, value: NormalObject): NormalObject | never;
-    reGenerate(fn?: () => Result<T>): void;
-    make(Such?: NormalObject): Result<T>;
-    abstract generate(): Result<T>;
+    reGenerate(fn?: (data: PathMap<any>, dpath: Path) => Result<T>): void;
+    make(datas: PathMap<any>, dpath: Path): Result<T>;
+    abstract generate(datas: PathMap<any>, dpath: Path): Result<T>;
     abstract test(target: T): boolean;
     protected parseFuncParams(Func: ParamsFunc): void;
-    private add;
+    private add(type, name, fn, pos?);
+    private validParams();
+    private resetValidInfo();
 }

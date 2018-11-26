@@ -14,6 +14,7 @@ export default class ToString extends Mockit<string> {
   public init() {
     // Count Rule
     this.addRule('Count', function(Count: NormalObject) {
+      if(!Count) {return; }
       // https://www.regular-expressions.info/unicode.html#prop
       const { range } = Count;
       if(range.length < 2) {
@@ -92,6 +93,7 @@ export default class ToString extends Mockit<string> {
     });
     // Length Rule
     this.addRule('Length', function(Length: NormalObject) {
+      if(!Length) {return; }
       const { least, most } = Length;
       if(isNaN(least)) {
         throw new Error(`The length param of least expect a number,but got ${least}`);

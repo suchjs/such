@@ -27,6 +27,13 @@ export declare type ParamsFunc = ParamsFuncItem[];
 export interface ParamsRegexp {
     rule: string;
 }
+export interface ParamsPathItem {
+    relative: boolean;
+    depth: number;
+    path: Array<string | number>;
+    fullpath: string;
+}
+export declare type ParamsPath = ParamsPathItem[];
 export interface ParamsConfig {
     [index: string]: string;
 }

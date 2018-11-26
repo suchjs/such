@@ -83,9 +83,9 @@ export default class PathMap<T> {
     for(let i = 0, len = keys.length; i < len; i++) {
       const key = keys[i];
       if(typeof key === 'number') {
-        flag = typeOf(result) === 'Array' && result.length > key;
+        flag = typeOf(result) === 'Array' && (result as any[]).length > key;
       } else {
-        flag = typeOf(result) === 'Object' && result.hasOwnProperty(key);
+        flag = typeOf(result) === 'Object' && (result as NormalObject).hasOwnProperty(key);
       }
       if(!flag) {
         break;

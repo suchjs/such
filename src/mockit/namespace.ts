@@ -13,6 +13,9 @@ export default abstract class Mockit<T> {
   protected params: NormalObject = {};
   protected generateFn: undefined | ((datas: PathMap<any>, dpath: Path) => Result<T>);
   protected ignoreRules: string[] = [];
+  private isValidOk: boolean = false;
+  private hasValid: boolean = false;
+  private invalidKeys: string[] = [];
   /**
    * Creates an instance of Mockit.
    * @memberof Mockit
@@ -31,6 +34,9 @@ export default abstract class Mockit<T> {
     this.init();
     // all type support modifiers
     this.addRule('Func', function(Func: ParamsFunc) {
+      if(!Func) {
+        return;
+      }
       for(let i = 0, j = Func.length; i < j; i++) {
         const item: ParamsFuncItem = Func[i];
         const { name, params } = item;
@@ -94,29 +100,8 @@ export default abstract class Mockit<T> {
     } else if (typeof key === 'string') {
       params[key] = value;
     }
-    const { rules, ruleFns } = mockits[this.constructorName || this.constructor.name];
-    const keys = Object.keys(params);
-    (keys.length > 1 ? keys.sort((a: string, b: string) => {
-      return rules.indexOf(a) < rules.indexOf(b) ? 1 : -1;
-    }) : keys).map((name: string) => {
-      if (rules.indexOf(name) > -1) {
-        try {
-          const res = ruleFns[name].call(this, params[name]);
-          if(name === 'Func') {
-            this.parseFuncParams(params[name]);
-          }
-          if (typeof res === 'object') {
-            this.params[name] = res;
-          } else {
-            this.params[name] = params[name];
-          }
-        } catch (e) {
-          throw e;
-        }
-      } else {
-        throw new Error(`Unsupported param (${name})`);
-      }
-    });
+    this.resetValidInfo();
+    this.params = params;
     return params;
   }
   /**
@@ -136,8 +121,14 @@ export default abstract class Mockit<T> {
    * @memberof Mockit
    */
   public make(datas: PathMap<any>, dpath: Path): Result<T> {
+    const { params, userFnQueue, userFns, userFnParams, invalidKeys } = this;
+    if(!this.hasValid) {
+      this.isValidOk = this.validParams();
+    }
+    if(!this.isValidOk) {
+      throw new Error(`invalid params:${invalidKeys.join(',')}`);
+    }
     const { modifiers, modifierFns } = mockits[this.constructorName || this.constructor.name];
-    const { params, userFnQueue, userFns, userFnParams } = this;
     // tslint:disable-next-line:max-line-length
     let result = typeof this.generateFn === 'function' ? this.generateFn.call(this, datas, dpath) : this.generate(datas, dpath);
     let i;
@@ -268,5 +259,49 @@ export default abstract class Mockit<T> {
       }
       fns[name] = fn;
     }
+  }
+  /**
+   *
+   *
+   * @private
+   * @memberof Mockit
+   */
+  private validParams(): boolean {
+    const { params } = this;
+    const { rules, ruleFns } = mockits[this.constructorName || this.constructor.name];
+    const keys = Object.keys(params);
+    rules.map((name: string) => {
+      try {
+        const res = ruleFns[name].call(this, params[name]);
+        if(name === 'Func' && params[name]) {
+          this.parseFuncParams(params[name]);
+        }
+        if (typeof res === 'object') {
+          this.params[name] = res;
+        }
+        const index = keys.indexOf(name);
+        if(index > -1) {
+          keys.splice(index, 1);
+        }
+      } catch (e) {
+        this.invalidKeys.push(`[(${name})${e.message}]`);
+      }
+    });
+    if(keys.length) {
+      // tslint:disable-next-line:no-console
+      console.warn(`the params of keys:${keys.join(',')} has no valid rule.`);
+    }
+    return this.invalidKeys.length === 0;
+  }
+  /**
+   *
+   *
+   * @private
+   * @memberof Mockit
+   */
+  private resetValidInfo() {
+    this.isValidOk = false;
+    this.hasValid = false;
+    this.invalidKeys = [];
   }
 }

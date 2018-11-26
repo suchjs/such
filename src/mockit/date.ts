@@ -22,6 +22,9 @@ export default class ToDate extends Mockit<string | Date> {
   public init() {
     // range
     this.addRule('Count', function(Count: ParamsCount) {
+      if(!Count) {
+        return;
+      }
       const { range } = Count;
       if(range.length !== 2) {
         throw new Error(`the time range should supply 2 arguments,but got ${range.length}`);
@@ -42,6 +45,11 @@ export default class ToDate extends Mockit<string | Date> {
     });
     // Format rule
     this.addRule('Format', function(Format: ParamsFormat) {
+      if(!Format) {
+        return {
+          format: 'yyyy-mm-dd',
+        };
+      }
       // nothing
       let { format } = Format;
       format = decodeTrans(format.slice(1));

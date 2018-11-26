@@ -17,12 +17,13 @@ const parser: ParserInstance =  {
     }
     const result: ParamsPath = [];
     patterns.forEach((match: any[]) => {
-      const [_, lookParent, lookLevels, curPath] = match;
-      const relative = !!(lookLevels || lookParent);
+      const [fullpath, lookParent, lookDepth, curPath] = match;
+      const relative = !!(lookDepth || lookParent);
       const cur: ParamsPathItem = {
         relative,
         path: curPath.split('/').slice(1),
-        depth: relative && lookLevels ? lookLevels.split('/').length : 0,
+        depth: relative && lookDepth ? lookDepth.split('/').length : 0,
+        fullpath,
       };
       result.push(cur) ;
     });

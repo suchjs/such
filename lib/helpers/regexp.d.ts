@@ -32,7 +32,7 @@ export default class Parser {
     constructor(rule: string, config?: ParserConf);
     setConfig(conf: ParserConf): void;
     build(): string | never;
-    private parse;
-    private checkFlags;
-    private hasFlag;
+    private parse();
+    private checkFlags();
+    private hasFlag(flag);
 }
