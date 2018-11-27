@@ -4,6 +4,8 @@ export interface Store {
     vars: NormalObject;
     fns: NormalObject;
     mockits: NormalObject;
+    alias: NormalObject;
+    aliasTypes: string[];
 }
 declare const store: Store;
 export default store;

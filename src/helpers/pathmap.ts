@@ -1,4 +1,4 @@
-import { NormalObject } from '@/types';
+import { NormalObject } from '../types';
 import { typeOf } from './utils';
 export type PathKey = string | number;
 export type Path = PathKey[];

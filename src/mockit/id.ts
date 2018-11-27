@@ -1,5 +1,4 @@
-import PathMap, { Path  } from '../helpers/pathmap';
-import { NormalObject, ParamsConfig } from '../types';
+import { NormalObject, ParamsConfig, SuchOptions } from '../types';
 import Mockit from './namespace';
 export default class ToId extends Mockit<number> {
   constructor(constructName: string) {
@@ -26,7 +25,8 @@ export default class ToId extends Mockit<number> {
       }
     });
   }
-  public generate(datas: PathMap<any>, dpath: Path) {
+  public generate(options: SuchOptions) {
+    const { dpath } = options;
     const config = this.params.Config || {};
     const start = config.hasOwnProperty('start') ? config.start : 1;
     const step = config.hasOwnProperty('step') ? config.step : 1;

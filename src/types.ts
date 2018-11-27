@@ -1,3 +1,4 @@
+import PathMap, { Path } from './helpers/pathmap';
 export interface NormalObject {
   [index: string]: any;
 }
@@ -38,11 +39,20 @@ export interface ParamsFormat {
  * @export
  * @interface ParamsFunc
  */
-export interface ParamsFuncItem {
-    name: string;
-    params?: any[];
+export interface ParamsFuncOptions {
+  name: string;
+  params?: any[];
 }
-export type ParamsFunc = ParamsFuncItem[];
+export interface ParamsFunc {
+  queue: string[];
+  params: {
+    [index: string]: any[];
+  };
+  fns: {
+    [index: string]: NormalFn;
+  };
+  options: ParamsFuncOptions[];
+}
 /**
  *
  *
@@ -117,7 +127,7 @@ export interface SuchConfGlobal {
   vars?: NormalObject;
   fns?: FnList;
 }
-export interface SuchConfDefine {
+export interface SuchConfTypes {
   [index: string]: NormalFn | MockitOptions | [string, string] | [string, MockitOptions];
 }
 export interface SuchConfParser {
@@ -125,7 +135,18 @@ export interface SuchConfParser {
 }
 export interface SuchConfFile {
   extends?: string | string[];
-  assign?: SuchConfGlobal;
-  parser?: SuchConfParser;
-  define?: SuchConfDefine;
+  globals?: SuchConfGlobal;
+  parsers?: SuchConfParser;
+  types?: SuchConfTypes;
+  alias?: {[index: string]: string};
+}
+//
+export interface SuchInstance {
+  [index: string]: any;
+}
+//
+export interface SuchOptions {
+  datas: PathMap<any>;
+  dpath: Path;
+  such: SuchInstance;
 }

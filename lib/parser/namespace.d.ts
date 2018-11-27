@@ -13,7 +13,7 @@ export declare abstract class ParserInterface {
     protected tags: Tags;
     protected code: string;
     protected setting: NormalObject;
-    protected frozenData: NormalObject;
+    protected defaults: NormalObject;
     constructor();
     init(): this;
     info(): {

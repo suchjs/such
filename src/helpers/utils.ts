@@ -98,16 +98,33 @@ export const getExp = (exp: string): any | never => {
     throw new Error(`wrong expression of "${exp}".reason:${e}`);
   }
 };
-const isArr = (target: any) => typeOf(target) === 'Array';
-const isObj = (target: any) => typeOf(target) === 'Object';
+
+export const range = (start: number, end: number, step: number = 1) => {
+  return Array.apply(null, new Array(end - start + 1)).map((_: undefined, index: number) => {
+    return start + index * step;
+  });
+};
 export const deepCopy = (target: any, ...args: any[]) => {
   const type = typeOf(target);
   if(type === 'Object' || type === 'Array') {
     for(let i = 0, j = args.length; i < j; i++) {
       const copy = args[i];
-      if(typeOf(copy) ! === type) {
+      if(typeOf(copy) !== type) {
         continue;
       }
+      const keys = type === 'Object' ? Object.keys(copy) : range(0, copy.length - 1);
+      keys.map((key: number | string) => {
+        const from = copy[key];
+        const to = target[key];
+        const fromType = typeOf(from);
+        const toType = typeOf(to);
+        if(fromType === 'Object' || fromType === 'Array') {
+          target[key] = toType === fromType ? target[key] : (fromType === 'Object' ? {} : []);
+          deepCopy(target[key], from);
+        } else {
+          target[key] = from;
+        }
+      });
     }
   }
   return target;

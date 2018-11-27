@@ -139,6 +139,6 @@ const printf = (format: string | NormalObject, target: number): string | number 
   if(conf.percent) {
     result += '%';
   }
-  return /^(?:[-+ ]|0(?!\d*\.\d+))|[ %]$/.test(result as string) ? result : Number(result);
+  return /^(?:[+ ]|0(?!\d*\.\d+)|-(?![1-9]))|[ %]$/.test(result as string) ? result : Number(result);
 };
 export default printf;

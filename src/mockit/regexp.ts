@@ -1,4 +1,3 @@
-import PathMap, { Path } from '../helpers/pathmap';
 import RegexpParser, { regexpRule } from '../helpers/regexp';
 import { NormalObject, ParamsRegexp } from '../types';
 import Mockit from './namespace';
@@ -48,7 +47,7 @@ export default class ToRegexp extends Mockit<string> {
       return result;
     });
   }
-  public generate(datas: PathMap<any>, dpath: Path) {
+  public generate() {
     let { instance } = this;
     const { Config, Regexp } = this.params;
     if(!instance) {

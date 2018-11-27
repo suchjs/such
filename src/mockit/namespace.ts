@@ -1,21 +1,18 @@
-import PathMap, { Path } from '../helpers/pathmap';
+import { deepCopy, typeOf } from '../helpers/utils';
 import store from '../store';
-import { NormalObject, ParamsFunc, ParamsFuncItem } from '../types';
+import { NormalObject, ParamsFunc, ParamsFuncOptions, SuchOptions } from '../types';
 const { fns: globalFns, vars: globalVars, mockits } = store;
 //
 export type Result<T> = T | never;
 export type ModifierFn<T> = (res: T) => T | string | never;
 export type RuleFn = (cur: NormalObject) => void | NormalObject;
 export default abstract class Mockit<T> {
-  protected userFns: NormalObject = [];
-  protected userFnQueue: string[] = [];
-  protected userFnParams: NormalObject = {};
   protected params: NormalObject = {};
-  protected generateFn: undefined | ((datas: PathMap<any>, dpath: Path) => Result<T>);
-  protected ignoreRules: string[] = [];
-  private isValidOk: boolean = false;
-  private hasValid: boolean = false;
-  private invalidKeys: string[] = [];
+  protected origParams: NormalObject = {};
+  protected generateFn: undefined | ((options: SuchOptions) => Result<T>);
+  protected isValidOk: boolean = false;
+  protected hasValid: boolean = false;
+  protected invalidKeys: string[] = [];
   /**
    * Creates an instance of Mockit.
    * @memberof Mockit
@@ -23,6 +20,17 @@ export default abstract class Mockit<T> {
   constructor(protected readonly constructorName: string) {
     const constrName = constructorName || this.constructor.name;
     if(mockits[constrName]) {
+      const { define } = mockits[constrName];
+      if(typeOf(define) === 'Object') {
+        Object.keys(define).map((key) => {
+          const value = define[key];
+          if(typeOf(value) === 'Object') {
+            (this as NormalObject)[key] = deepCopy({}, value);
+          } else {
+            (this as NormalObject)[key] = value;
+          }
+        });
+      }
       return;
     }
     mockits[constrName] = {
@@ -37,8 +45,9 @@ export default abstract class Mockit<T> {
       if(!Func) {
         return;
       }
-      for(let i = 0, j = Func.length; i < j; i++) {
-        const item: ParamsFuncItem = Func[i];
+      const options = Func.options;
+      for(let i = 0, j = options.length; i < j; i++) {
+        const item: ParamsFuncOptions = options[i];
         const { name, params } = item;
         params.map((param) => {
           if(param.variable) {
@@ -101,8 +110,27 @@ export default abstract class Mockit<T> {
       params[key] = value;
     }
     this.resetValidInfo();
-    this.params = params;
-    return params;
+    deepCopy(this.origParams, params);
+    deepCopy(this.params, params);
+    // must after copy,otherwise will override modified values
+    this.validate(params);
+    return this;
+  }
+  /**
+   *
+   *
+   * @memberof Mockit
+   */
+  public frozen() {
+    // frozen params for extend type.
+    const constrName = this.constructorName || this.constructor.name;
+    const { params, origParams, generateFn } = this;
+    mockits[constrName].define = {
+      params,
+      origParams,
+      generateFn,
+    };
+    return this;
   }
   /**
    *
@@ -110,7 +138,7 @@ export default abstract class Mockit<T> {
    * @param {() => Result<T>} [fn]
    * @memberof Mockit
    */
-  public reGenerate(fn?: (data: PathMap<any>, dpath: Path) => Result<T>) {
+  public reGenerate(fn?: (options: SuchOptions) => Result<T>) {
     this.generateFn = fn;
   }
   /**
@@ -120,37 +148,32 @@ export default abstract class Mockit<T> {
    * @returns {Result<T>}
    * @memberof Mockit
    */
-  public make(datas: PathMap<any>, dpath: Path): Result<T> {
-    const { params, userFnQueue, userFns, userFnParams, invalidKeys } = this;
-    if(!this.hasValid) {
-      this.isValidOk = this.validParams();
-    }
-    if(!this.isValidOk) {
-      throw new Error(`invalid params:${invalidKeys.join(',')}`);
-    }
+  public make(options: SuchOptions): Result<T> {
+    this.validate();
+    const { params } = this;
     const { modifiers, modifierFns } = mockits[this.constructorName || this.constructor.name];
     // tslint:disable-next-line:max-line-length
-    let result = typeof this.generateFn === 'function' ? this.generateFn.call(this, datas, dpath) : this.generate(datas, dpath);
+    let result = typeof this.generateFn === 'function' ? this.generateFn.call(this, options) : this.generate(options);
     let i;
     let j = modifiers.length;
     for (i = 0; i < j; i++) {
       const name = modifiers[i];
       if (params.hasOwnProperty(name)) {
         const fn = modifierFns[name];
-        const args = [result, params[name], datas, dpath];
+        const args = [result, params[name], options];
         result = fn.apply(this, args);
       }
     }
-    const { Config } = this.params;
-    for(i = 0, j = userFnQueue.length; i < j; i++) {
-      const name = userFnQueue[i];
-      const fn = userFns[name];
-      // tslint:disable-next-line:max-line-length
-      const args = (globalFns[name] ? [globalFns[name]] : [] ).concat([userFnParams[name], globalVars, result, Config || {} ]);
-      result = fn.apply({
-        datas,
-        dpath,
-      }, args);
+    const { Config, Func } = this.params;
+    if(Func) {
+      const { queue, params: fnsParams, fns } = Func;
+      for(i = 0, j = queue.length; i < j; i++) {
+        const name = queue[i];
+        const fn = fns[name];
+        // tslint:disable-next-line:max-line-length
+        const args = (globalFns[name] ? [globalFns[name]] : [] ).concat([fnsParams[name], globalVars, result, Config || {} ]);
+        result = fn.apply(options, args);
+      }
     }
     return result;
   }
@@ -161,7 +184,7 @@ export default abstract class Mockit<T> {
    * @returns {Result<T>}
    * @memberof Mockit
    */
-  public abstract generate(datas: PathMap<any>, dpath: Path): Result<T>;
+  public abstract generate(options: SuchOptions): Result<T>;
   /**
    *
    *
@@ -174,43 +197,6 @@ export default abstract class Mockit<T> {
   /**
    *
    *
-   * @protected
-   * @param {ParamsFunc} Func
-   * @memberof Mockit
-   */
-  protected parseFuncParams(Func: ParamsFunc) {
-    this.userFnQueue = [];
-    for(let i = 0, j = Func.length; i < j; i++) {
-      const { name, params } = Func[i];
-      const isUserDefined = globalFns.hasOwnProperty(name);
-      const confName = '__CONFIG__';
-      const varName = '__VARS__';
-      const argName = '__ARGS__';
-      const resName = '__RESULT__';
-      const fnName = isUserDefined ? '__FN__' : `${resName}.${name}`;
-      const useFnParam = isUserDefined ? [fnName] : [];
-      const lastParams: string[] = isUserDefined ? [resName] : [];
-      const paramValues: any[] = [];
-      let index: number = 0;
-      params.forEach((param) => {
-        const { value, variable } = param;
-        if(variable) {
-          // tslint:disable-next-line:max-line-length
-          lastParams.push(`${confName}.hasOwnProperty("${value}") ? ${confName}["${value}"] : ${varName}["${value}"]`);
-        } else {
-          paramValues.push(value);
-          lastParams.push(`${argName}[${index++}]`);
-        }
-      });
-      this.userFnQueue.push(name);
-      // tslint:disable-next-line:max-line-length
-      this.userFns[name] = new Function(useFnParam.concat(argName, varName, resName, confName).join(','), isUserDefined ? `return ${fnName}.apply(this,[${lastParams.join(',')}]);` : `return ${fnName}(${lastParams.join(',')})`);
-      this.userFnParams[name] = paramValues;
-    }
-  }
-  /**
-   *
-   *
    * @private
    * @param {("rule"|"modifier")} type
    * @param {string} name
@@ -220,10 +206,6 @@ export default abstract class Mockit<T> {
    * @memberof Mockit
    */
   private add(type: 'rule' | 'modifier', name: string,  fn: RuleFn | ModifierFn<T>, pos?: string): never | void {
-    // ignore not needed rules
-    if (this.ignoreRules.indexOf(name) > -1) {
-      return;
-    }
     const curName = this.constructorName || this.constructor.name;
     const { rules, ruleFns, modifiers, modifierFns } = mockits[curName];
     let target;
@@ -266,16 +248,15 @@ export default abstract class Mockit<T> {
    * @private
    * @memberof Mockit
    */
-  private validParams(): boolean {
-    const { params } = this;
+  private validParams(params?: NormalObject): boolean {
+    const isAll = params === undefined;
+    params = isAll ? this.origParams : params;
     const { rules, ruleFns } = mockits[this.constructorName || this.constructor.name];
     const keys = Object.keys(params);
-    rules.map((name: string) => {
+    const validRules = isAll ? rules : rules.filter((name: string) => keys.indexOf(name) > -1);
+    validRules.map((name: string) => {
       try {
         const res = ruleFns[name].call(this, params[name]);
-        if(name === 'Func' && params[name]) {
-          this.parseFuncParams(params[name]);
-        }
         if (typeof res === 'object') {
           this.params[name] = res;
         }
@@ -287,11 +268,27 @@ export default abstract class Mockit<T> {
         this.invalidKeys.push(`[(${name})${e.message}]`);
       }
     });
-    if(keys.length) {
+    if(isAll && keys.length) {
       // tslint:disable-next-line:no-console
       console.warn(`the params of keys:${keys.join(',')} has no valid rule.`);
     }
     return this.invalidKeys.length === 0;
+  }
+  /**
+   *
+   *
+   * @private
+   * @memberof Mockit
+   */
+  private validate(params?: NormalObject) {
+    const { invalidKeys } = this;
+    if(!this.hasValid) {
+      this.isValidOk = this.validParams(params);
+      this.hasValid = true;
+    }
+    if(!this.isValidOk) {
+      throw new Error(`invalid params:${invalidKeys.join(',')}`);
+    }
   }
   /**
    *

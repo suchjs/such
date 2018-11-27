@@ -1,8 +1,7 @@
-import PathMap, { Path } from '../helpers/pathmap';
 import { makeRandom } from '../helpers/utils';
 import { NormalObject } from '../types';
 import Mockit from './namespace';
-const uniRule = /^\\u((?:[0-9a-f]{2}){2,3})$/i;
+const uniRule = /^\\u((?:[0-9a-fA-F]{4}|[0-9a-fA-F]{6}))$/;
 const numRule = /^\d+$/;
 const hex2num = (hex: string): number => {
   return Number('0x' + hex);
@@ -58,7 +57,7 @@ export default class ToString extends Mockit<string> {
           }
         }
       } else {
-        const uniRangeRule = /^\\u((?:[0-9a-f]{2}){2,3})\-\\u((?:[0-9a-f]{2}){2,3})$/i;
+        const uniRangeRule = /^\\u([0-9a-fA-F]{4}|[0-9a-fA-F]{6})\-\\u([0-9a-fA-F]{4}|[0-9A-Fa-f]{6})$/;
         const numRangeRule = /^(\d+)\-(\d+)$/;
         range.map((code: string, index: number) => {
           let match: null | any[];
@@ -106,7 +105,7 @@ export default class ToString extends Mockit<string> {
       }
     });
   }
-  public generate(datas: PathMap<any>, dpath: Path) {
+  public generate() {
     const { params } = this;
     const { Length } = params;
     const { least, most } = Length || { least: 1, most: 100 };

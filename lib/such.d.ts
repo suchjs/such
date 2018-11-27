@@ -1,5 +1,5 @@
 import PathMap, { Path } from './helpers/pathmap';
-import { NormalObject } from './types';
+import { NormalObject, ParserConfig, SuchConfFile } from './types';
 export interface SuchConfig {
     instance?: boolean;
     config?: KeyRuleInterface;
@@ -19,13 +19,6 @@ export interface MockerOptions {
     path: Path;
     parent?: Mocker;
     config?: KeyRuleInterface;
-}
-export interface MockitOptions {
-    param: string;
-    ignoreRules?: string[];
-    init?: () => void;
-    generate?: () => any;
-    generateFn?: () => void;
 }
 export declare class Mocker {
     static parseKey(key: string): {
@@ -52,6 +45,13 @@ export default class Such {
     static readonly utils: {
         [index: string]: (...args: any[]) => any;
     };
+    static alias(short: string, long: string): void;
+    static config(config: SuchConfFile): void;
+    static parser(name: string, params: {
+        config: ParserConfig;
+        parse: () => void;
+        setting?: NormalObject;
+    }): never | void;
     static as(target: any, options?: SuchConfig): any;
     static assign(name: string, value: any, alwaysVar?: boolean): void;
     static define(type: string, ...args: any[]): void | never;

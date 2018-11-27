@@ -5,8 +5,9 @@ import * as mockitList from './mockit';
 import Mockit from './mockit/namespace';
 import Parser from './parser';
 import store from './store';
-import { MockitOptions, NormalObject, ParserConfig, SuchConfFile } from './types';
+import { MockitOptions, NormalObject, ParserConfig, SuchConfFile, SuchOptions } from './types';
 const { capitalize, isFn, isOptional, makeRandom, map, typeOf, deepCopy } = utils;
+const { alias, aliasTypes } = store;
 /**
  *
  *
@@ -282,21 +283,28 @@ export class Mocker {
         return result;
       };
     } else {
-      let match;
-      if (dataType === 'string' && (match = target.match(suchRule)) && AllMockits.hasOwnProperty(match[1])) {
-        this.type = match[1];
-        const klass = AllMockits[match[1]];
-        const instance = new klass();
-        const meta = target.replace(match[0], '').replace(/^\s*:\s*/, '');
-        if (meta !== '') {
-          const params = Parser.parse(meta);
-          instance.setParams(params);
+      if (dataType === 'string') {
+        const match = target.match(suchRule);
+        const type = match[1];
+        this.type = alias[type] ? alias[type] : type;
+        if(AllMockits.hasOwnProperty(this.type)) {
+          const klass = AllMockits[this.type];
+          const instance = new klass();
+          const meta = target.replace(match[0], '').replace(/^\s*:\s*/, '');
+          if (meta !== '') {
+            const params = Parser.parse(meta);
+            instance.setParams(params);
+          }
+          this.mockit = instance;
+          this.mockFn = (dpath: Path) => instance.make({
+            datas,
+            dpath,
+            such: Such,
+          });
+          return;
         }
-        this.mockit = instance;
-        this.mockFn = (dpath: Path) => instance.make(datas, dpath);
-      } else {
-        this.mockFn = (dpath: Path) => target;
       }
+      this.mockFn = (dpath: Path) => target;
     }
   }
 
@@ -341,29 +349,52 @@ export default class Such {
    *
    *
    * @static
+   * @param {string} short
+   * @param {string} long
+   * @memberof Such
+   */
+  public static alias(short: string, long: string) {
+    if(short === '' || long === '' || short === long) {
+      throw new Error(`wrong alias params:[${short}][${long}]`);
+    }
+    if(aliasTypes.indexOf(long) > -1) {
+      throw new Error(`the type of "${long}" has an alias yet,can not use "${short}" for alias name.`);
+    } else {
+      alias[short] = long;
+      aliasTypes.push(long);
+    }
+  }
+  /**
+   *
+   *
+   * @static
    * @param {SuchConfFile} config
    * @memberof Such
    */
   public static config(config: SuchConfFile) {
-    const { parser, define, assign } = config;
+    const { parsers, types, globals } = config;
+    const fnHashs: NormalObject = { parsers: 'parser', types: 'define', globals: 'assign'};
     const lastConf: SuchConfFile = {};
-    if(config.extends && typeof (Such as NormalObject).loadConf === 'function') {
-      const confFiles = typeof config.extends === 'string' ? [config.extends] : config.extends;
-      const confs = (Such as NormalObject).loadConf(confFiles);
+    const such = Such as NormalObject;
+    if(config.extends && typeof such.loadConf === 'function') {
+      const confFiles = typeof config.extends === 'string' ? [ config.extends ] : config.extends;
+      const confs = such.loadConf(confFiles);
       confs.map((conf: SuchConfFile) => {
+        delete conf.extends;
         deepCopy(lastConf, conf);
       });
     }
     deepCopy(lastConf, {
-      parser: parser || {},
-      define: define || {},
-      assign: assign || {},
+      parsers: parsers || {},
+      types: types || {},
+      globals: globals || {},
     });
     Object.keys(lastConf).map((key: string) => {
-      const conf = (lastConf as NormalObject)[key] as NormalObject;
-      Object.keys(conf).map((name) => {
+      const conf = lastConf[key as keyof SuchConfFile] as NormalObject;
+      const fnName = fnHashs[key] || key;
+      Object.keys(conf).map((name: string) => {
         const args = typeOf(conf[name]) === 'Array' ? conf[name] : [conf[name]];
-        (Such as NormalObject)[key](name,  ...args);
+        such[fnName](name,  ...args);
       });
     });
   }
@@ -425,7 +456,7 @@ export default class Such {
     const opts = args.pop();
     // tslint:disable-next-line:max-line-length
     const config: MockitOptions = argsNum === 2 && typeof opts === 'string' ? ({ param: opts } as MockitOptions) : (argsNum === 1 && typeof opts === 'function' ? { generate: opts } : opts);
-    const { param, init, generateFn, generate, ignoreRules } = config;
+    const { param, init, generateFn, generate } = config;
     const params = typeof param === 'string' ? Parser.parse(param) : {};
     const constrName = `To${capitalize(type)}`;
     if (!AllMockits.hasOwnProperty(type)) {
@@ -441,8 +472,6 @@ export default class Such {
         klass = class extends (base as {new(name: string): any}) {
           constructor() {
             super(constrName);
-            this.ignoreRules = ignoreRules || [];
-            this.setParams(params);
           }
           public init() {
             super.init();
@@ -452,6 +481,7 @@ export default class Such {
             if (isFn(generateFn)) {
               this.reGenerate(generateFn);
             }
+            this.setParams(params).frozen();
           }
         };
       } else {
@@ -459,16 +489,15 @@ export default class Such {
         klass = class extends Mockit<any> {
           constructor() {
             super(constrName);
-            this.ignoreRules = ignoreRules || [];
-            this.setParams(params, undefined);
           }
           public init() {
             if(isFn(init)) {
               init.call(this);
             }
+            this.setParams(params, undefined).frozen();
           }
-          public generate(datas: PathMap<any>, dpath: Path) {
-            return generate.call(this, datas, dpath);
+          public generate(options: SuchOptions) {
+            return generate.call(this, options);
           }
           public test() {
             return true;
@@ -511,5 +540,4 @@ export default class Such {
     }
     return this.mocker.mock([]);
   }
-
 }

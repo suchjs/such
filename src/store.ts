@@ -4,6 +4,8 @@ export interface Store {
   vars: NormalObject;
   fns: NormalObject;
   mockits: NormalObject;
+  alias: NormalObject;
+  aliasTypes: string[];
 }
 const store: Store = (() => {
   const fns: {[index: string]: () => any} = {};
@@ -18,6 +20,8 @@ const store: Store = (() => {
   fn.fns = fns;
   fn.vars = vars;
   fn.mockits = {};
+  fn.alias = {};
+  fn.aliasTypes = [];
   return fn;
 })();
 export default store;

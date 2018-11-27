@@ -1,5 +1,5 @@
-import PathMap, { Path as DPath } from '../helpers/pathmap';
-import { ParamsPath, ParamsPathItem } from '../types';
+import { Path as DPath } from '../helpers/pathmap';
+import { ParamsPath, ParamsPathItem, SuchOptions } from '../types';
 import Mockit from './namespace';
 export default class ToRef extends Mockit<any> {
   constructor(constructName: string) {
@@ -13,7 +13,8 @@ export default class ToRef extends Mockit<any> {
       }
     });
   }
-  public generate(datas: PathMap<any>, dpath: DPath) {
+  public generate(options: SuchOptions) {
+    const { datas, dpath } = options;
     const { Path } = this.params;
     const result: any[] = [];
     let isExists = true;

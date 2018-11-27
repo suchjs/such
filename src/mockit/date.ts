@@ -2,7 +2,7 @@ import { strRule } from '../config';
 import { dateformat, strtotime } from '../helpers/dateformat';
 import PathMap, { Path } from '../helpers/pathmap';
 import { decodeTrans, makeRandom } from '../helpers/utils';
-import { ParamsCount, ParamsFormat } from '../types';
+import { ParamsCount, ParamsFormat, SuchOptions } from '../types';
 import Mockit, { ModifierFn } from './namespace';
 const makeDate = (param: string | number): Date | never => {
   let date: Date;
@@ -63,7 +63,7 @@ export default class ToDate extends Mockit<string | Date> {
       return dateformat(format, result as Date);
     })  as ModifierFn<string>);
   }
-  public generate(datas: PathMap<any>, dpath: Path) {
+  public generate() {
     const { Count } = this.params;
     const { range } = Count;
     const time = makeRandom(range[0], range[1]);

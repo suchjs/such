@@ -15,7 +15,6 @@
     ],
     "baseUrl": ".",
     "paths":{
-      "@/*": ["./src/*"]
     }
   },
   "include": [
@@ -24,6 +23,7 @@
   "exclude": [
     "node_modules",
     "lib/*",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "src/local"
   ]
 }

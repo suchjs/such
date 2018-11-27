@@ -1,0 +1,1 @@
+{"version":3,"file":"recommend.js","sourceRoot":"","sources":["../../src/config/recommend.ts"],"names":[],"mappings":";;AACA,IAAM,KAAK,GAAiB;IAC1B,KAAK,EAAE;QACL,OAAO,EAAE,CAAC,QAAQ,EAAE,IAAI,CAAC;KAC1B;IACD,KAAK,EAAE;QACL,GAAG,EAAE,SAAS;KACf;CACF,CAAC;AACF,kBAAe,KAAK,CAAC"}

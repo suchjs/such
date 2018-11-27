@@ -1,8 +1,8 @@
-import PathMap, { Path as DPath } from '../helpers/pathmap';
+import { SuchOptions } from '../types';
 import Mockit from './namespace';
 export default class ToRef extends Mockit<any> {
     constructor(constructName: string);
     init(): void;
-    generate(datas: PathMap<any>, dpath: DPath): any;
+    generate(options: SuchOptions): any;
     test(): boolean;
 }

@@ -1,3 +1,4 @@
+import PathMap, { Path } from './helpers/pathmap';
 export interface NormalObject {
     [index: string]: any;
 }
@@ -19,11 +20,20 @@ export interface ParamsCount {
 export interface ParamsFormat {
     format: string;
 }
-export interface ParamsFuncItem {
+export interface ParamsFuncOptions {
     name: string;
     params?: any[];
 }
-export declare type ParamsFunc = ParamsFuncItem[];
+export interface ParamsFunc {
+    queue: string[];
+    params: {
+        [index: string]: any[];
+    };
+    fns: {
+        [index: string]: NormalFn;
+    };
+    options: ParamsFuncOptions[];
+}
 export interface ParamsRegexp {
     rule: string;
 }
@@ -52,4 +62,42 @@ export interface ParserInstance {
     config: ParserConfig;
     setting?: object;
     parse(): object | never;
+}
+export interface MockitOptions {
+    param: string;
+    ignoreRules?: string[];
+    init?: () => void;
+    generate?: () => any;
+    generateFn?: () => void;
+}
+export declare type NormalFn = (...args: any[]) => any;
+export interface FnList {
+    [index: string]: NormalFn;
+}
+export interface SuchConfGlobal {
+    vars?: NormalObject;
+    fns?: FnList;
+}
+export interface SuchConfTypes {
+    [index: string]: NormalFn | MockitOptions | [string, string] | [string, MockitOptions];
+}
+export interface SuchConfParser {
+    [index: string]: ParserInstance;
+}
+export interface SuchConfFile {
+    extends?: string | string[];
+    globals?: SuchConfGlobal;
+    parsers?: SuchConfParser;
+    types?: SuchConfTypes;
+    alias?: {
+        [index: string]: string;
+    };
+}
+export interface SuchInstance {
+    [index: string]: any;
+}
+export interface SuchOptions {
+    datas: PathMap<any>;
+    dpath: Path;
+    such: SuchInstance;
 }

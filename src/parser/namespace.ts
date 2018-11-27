@@ -1,5 +1,5 @@
 import { encodeSplitor, splitor as confSplitor } from '../config';
-import { deepLoop, encodeRegexpChars, typeOf } from '../helpers/utils';
+import { encodeRegexpChars, typeOf } from '../helpers/utils';
 import { NormalObject, ParserConfig } from '../types';
 export interface Tags {
   start: string;
@@ -22,7 +22,7 @@ export abstract class ParserInterface {
   protected setting: NormalObject = {
     frozen: true,
   };
-  protected frozenData: NormalObject = {
+  protected defaults: NormalObject = {
     params: [],
     patterns: [],
     code: '',
@@ -42,9 +42,9 @@ export abstract class ParserInterface {
    * @memberof ParserInterface
    */
   public init() {
-    const { frozenData } = this;
-    Object.keys(frozenData).forEach((key) => {
-      (this as NormalObject)[key] = frozenData[key];
+    const { defaults } = this;
+    Object.keys(defaults).forEach((key) => {
+      (this as NormalObject)[key] = defaults[key];
     });
     return this;
   }
@@ -316,11 +316,10 @@ export class Dispatcher {
    * @memberof Dispatcher
    */
   protected getInstance(name: string) {
-    if (this.instances[name]) {
-      return this.instances[name].init();
-    } else {
-      return this.instances[name] = new this.parsers[name]();
-    }
+    // if (this.instances[name]) {
+    //   return this.instances[name].init();
+    // }
+    return new this.parsers[name]();
   }
   /**
    *

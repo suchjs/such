@@ -1,4 +1,3 @@
-import PathMap, { Path } from '../helpers/pathmap';
 import printf, {rule as formatRule } from '../helpers/printf';
 import { isOptional } from '../helpers/utils';
 import { NormalObject } from '../types';
@@ -92,7 +91,7 @@ export default class ToNumber extends Mockit<number> {
       return printf(Format.format, result);
     }) as ModifierFn<number>);
   }
-  public generate(datas: PathMap<any>, dpath: Path) {
+  public generate() {
     const { Count, Config } = this.params;
     let result: number;
     if (Count) {
