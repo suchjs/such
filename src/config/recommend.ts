@@ -3,6 +3,10 @@ const confs: SuchConfFile = {
   types: {
     integer: ['number', '%d'],
     percent: ['number', '[0,100]:%d%'],
+    chinese: ['string', '[\\u4E00,\\u9FA5]'],
+    uppercase: ['string', '[65,90]'],
+    lowercase: ['string', '[97,122]'],
+    alphaNumericDash: ['string', '[48-57,97-122,65-90,95]'],
     // tslint:disable-next-line:max-line-length
     url: ['regexp', '/(?<protocol>http|https|ftp|sftp|mailto|telnet|pop|smb|sms|ssh|mid):\\/\\/(?<domain>(?:[a-z0-9]+(?:-?[a-z0-9]+|[a-z0-9]*))\\.(?<ltd>com|cn|com\\.cn|org|net|gov\\.cn|wang|ren|xyz|top|cc|io))\\/(?<pathname>(?:[0-9a-z]\\/)*(?<filename>\\w+(?<extname>\\.(?:html|htm|php|do)))?)(?<query>\\?([0-9a-z_]+=(?:[0-9a-z]+|(?:%[0-9A-F]{2}){2,})&)*([0-9a-z_]+=(?:[0-9a-z]+|(?:%[0-9A-F]{2}){2,})))(?<hash>#[0-9a-z_=]{5,})?/'],
     // tslint:disable-next-line:max-line-length
