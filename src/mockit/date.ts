@@ -1,6 +1,5 @@
 import { strRule } from '../config';
 import { dateformat, strtotime } from '../helpers/dateformat';
-import PathMap, { Path } from '../helpers/pathmap';
 import { decodeTrans, makeRandom } from '../helpers/utils';
 import { ParamsCount, ParamsFormat, SuchOptions } from '../types';
 import Mockit, { ModifierFn } from './namespace';

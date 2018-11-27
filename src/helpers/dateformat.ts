@@ -113,7 +113,7 @@ const strToDate = (dateStr: string, baseDate?: Date | string | number): Date | n
     return makeDate(year, month, day);
   } else if (match = dateStr.match(r6)) {
     const needReverse = match[5] ? '-' : '';
-    let group;
+    let group = null;
     const info: DateHashInfo = {
       year: [],
       month: [],
@@ -128,7 +128,7 @@ const strToDate = (dateStr: string, baseDate?: Date | string | number): Date | n
       date: 0,
       fullYear: 0,
     };
-    while ((group = r6e.exec(dateStr)) !== undefined) {
+    while ((group = r6e.exec(dateStr)) !== null) {
       const type = group[2];
       const num = group[1];
       info[type as DateHashInfoKey].push('(' + num + ')');
@@ -150,11 +150,9 @@ const strToDate = (dateStr: string, baseDate?: Date | string | number): Date | n
       const num = result[key];
       const method = capitalize(key);
       if (num) {
-        const setFn = lastDate[`set${method}` as DateMethods];
-        const getFn = lastDate[`get${method}` as DateMethods];
-        const orig = getFn() as number;
+        const orig = lastDate[`get${method}` as DateMethods]() as number;
         try {
-          setFn.call(lastDate, orig + num);
+          (lastDate[`set${method}` as DateMethods] as (num: number) => any)(orig + num);
         } catch (e) {
           throw e;
         }
@@ -172,6 +170,9 @@ export const strtotime = (date: any) => {
     let result: Date;
     try {
       result = new Date(date);
+      if(isNaN(+result)) {
+        throw new Error('invalid date');
+      }
     } catch(e) {
       try {
         result = strToDate(date);

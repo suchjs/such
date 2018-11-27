@@ -1043,6 +1043,7 @@ class RegexpGroup extends RegexpPart {
   constructor() {
     super();
     this.isComplete = false;
+    this.buildForTimes = true;
   }
   public addNewGroup(queue?: RegexpPart[]) {
     const { groups } = this;

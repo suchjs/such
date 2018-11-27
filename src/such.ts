@@ -285,23 +285,26 @@ export class Mocker {
     } else {
       if (dataType === 'string') {
         const match = target.match(suchRule);
-        const type = match[1];
-        this.type = alias[type] ? alias[type] : type;
-        if(AllMockits.hasOwnProperty(this.type)) {
-          const klass = AllMockits[this.type];
-          const instance = new klass();
-          const meta = target.replace(match[0], '').replace(/^\s*:\s*/, '');
-          if (meta !== '') {
-            const params = Parser.parse(meta);
-            instance.setParams(params);
+        const type = match && match[1];
+        if(type) {
+          const lastType = alias[type] ? alias[type] : type;
+          if(AllMockits.hasOwnProperty(lastType)) {
+            this.type = lastType;
+            const klass = AllMockits[lastType];
+            const instance = new klass();
+            const meta = target.replace(match[0], '').replace(/^\s*:\s*/, '');
+            if (meta !== '') {
+              const params = Parser.parse(meta);
+              instance.setParams(params);
+            }
+            this.mockit = instance;
+            this.mockFn = (dpath: Path) => instance.make({
+              datas,
+              dpath,
+              such: Such,
+            });
+            return;
           }
-          this.mockit = instance;
-          this.mockFn = (dpath: Path) => instance.make({
-            datas,
-            dpath,
-            such: Such,
-          });
-          return;
         }
       }
       this.mockFn = (dpath: Path) => target;
