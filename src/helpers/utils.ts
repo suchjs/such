@@ -82,7 +82,7 @@ export const makeStrRangeList = (first?: string, last?: string, ...args: string[
   return args.length > 0 && args.length % 2 === 0 ? results.concat(makeStrRangeList(...args)) : results;
 };
 export const isOptional = (): boolean => {
-  return Math.round(Math.random()) === 0;
+  return Math.random() >= 0.5;
 };
 export const capitalize = (target: string): string => {
   return target && target.length ? target.charAt(0).toUpperCase() + target.slice(1) : '';
@@ -98,7 +98,18 @@ export const getExp = (exp: string): any | never => {
     throw new Error(`wrong expression of "${exp}".reason:${e}`);
   }
 };
-
+export const getExpValue = (...args: any[]): any | never => {
+  const param = '__$__';
+  const value = args.pop();
+  let cur;
+  while((cur = args.shift()) !== undefined) {
+    try {
+      return (new Function(param, `return ${param}.${value}`))(cur);
+    } catch(e) {
+      // continue
+    }
+  }
+};
 export const range = (start: number, end: number, step: number = 1) => {
   return Array.apply(null, new Array(end - start + 1)).map((_: undefined, index: number) => {
     return start + index * step;

@@ -1,4 +1,4 @@
-import { deepCopy, typeOf } from '../helpers/utils';
+import { deepCopy, getExpValue, typeOf } from '../helpers/utils';
 import store from '../store';
 import { NormalObject, ParamsFunc, ParamsFuncOptions, SuchOptions } from '../types';
 const { fns: globalFns, vars: globalVars, mockits } = store;
@@ -50,9 +50,14 @@ export default abstract class Mockit<T> {
         const item: ParamsFuncOptions = options[i];
         const { name, params } = item;
         params.map((param) => {
+          // if object,valid
           if(param.variable) {
             try {
-              new Function('__CONFIG__', 'return __CONFIG__.' + param.value)(globalVars);
+              if((param.value.indexOf('.') > -1 || param.value.indexOf('[') > -1)) {
+                new Function('__CONFIG__', 'return __CONFIG__.' + param.value)(globalVars);
+              } else if(!globalVars.hasOwnProperty(param.value)) {
+                throw new Error(`"${param.value} is not assigned."`);
+              }
             } catch(e) {
               throw new Error(`the modifier function ${name}'s param ${param.value} is not correct:${e.message}`);
             }
@@ -171,7 +176,7 @@ export default abstract class Mockit<T> {
         const name = queue[i];
         const fn = fns[i];
         // tslint:disable-next-line:max-line-length
-        const args = (globalFns[name] ? [globalFns[name]] : [] ).concat([fnsParams[i], globalVars, result, Config || {} ]);
+        const args = (globalFns[name] ? [globalFns[name]] : [] ).concat([fnsParams[i], globalVars, result, Config || {}, getExpValue]);
         result = fn.apply(options, args);
       }
     }

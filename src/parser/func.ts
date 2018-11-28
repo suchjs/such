@@ -10,6 +10,7 @@ const parseFuncParams = (options: ParamsFuncOptions) => {
   const varName = '__VARS__';
   const argName = '__ARGS__';
   const resName = '__RESULT__';
+  const expName = '__EXP__';
   const fnName = isUserDefined ? '__FN__' : `${resName}.${name}`;
   const useFnParam = isUserDefined ? [fnName] : [];
   const lastParams: string[] = isUserDefined ? [resName] : [];
@@ -18,8 +19,9 @@ const parseFuncParams = (options: ParamsFuncOptions) => {
   params.forEach((param: any) => {
     const { value, variable } = param;
     if(variable) {
+      const isObjChain = value.indexOf('.') > -1 || value.indexOf('[') > -1;
       // tslint:disable-next-line:max-line-length
-      lastParams.push(`${confName}.hasOwnProperty("${value}") ? ${confName}["${value}"] : ${varName}["${value}"]`);
+      lastParams.push(isObjChain ? `${expName}(${confName},"${value}")` : `${confName}.hasOwnProperty("${value}") ? ${confName}["${value}"] : ${varName}["${value}"]`);
     } else {
       paramValues.push(value);
       lastParams.push(`${argName}[${index++}]`);
@@ -28,7 +30,7 @@ const parseFuncParams = (options: ParamsFuncOptions) => {
   // tslint:disable-next-line:max-line-length
   return {
     // tslint:disable-next-line:max-line-length
-    fn: new Function(useFnParam.concat(argName, varName, resName, confName).join(','), isUserDefined ? `return ${fnName}.apply(this,[${lastParams.join(',')}]);` : `return ${fnName}(${lastParams.join(',')})`),
+    fn: new Function(useFnParam.concat(argName, varName, resName, confName, expName).join(','), isUserDefined ? `return ${fnName}.apply(this,[${lastParams.join(',')}]);` : `return ${fnName}(${lastParams.join(',')})`),
     param: paramValues,
   };
 };
