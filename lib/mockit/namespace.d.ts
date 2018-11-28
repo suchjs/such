@@ -21,8 +21,8 @@ export default abstract class Mockit<T> {
     make(options: SuchOptions): Result<T>;
     abstract generate(options: SuchOptions): Result<T>;
     abstract test(target: T): boolean;
-    private add(type, name, fn, pos?);
-    private validParams(params?);
-    private validate(params?);
-    private resetValidInfo();
+    private add;
+    private validParams;
+    private validate;
+    private resetValidInfo;
 }

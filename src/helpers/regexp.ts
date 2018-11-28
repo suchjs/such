@@ -99,6 +99,17 @@ export default class Parser {
       return res + queue.build(conf);
     }, '');
   }
+  // get all info
+  public info() {
+    const { rule, context, lastRule, flags, queues } = this;
+    return {
+      rule,
+      context,
+      lastRule,
+      flags,
+      queues,
+    };
+  }
   // parse
   private parse() {
     const { context } = this;

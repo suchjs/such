@@ -1,4 +1,6 @@
 # suchjs
+[![npm version](https://badge.fury.io/js/suchjs.svg)](https://badge.fury.io/js/suchjs)
+
 An easy to use and extend mock tool.
 
 ## Documents

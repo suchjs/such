@@ -5,4 +5,5 @@ node_modules
 # build 
 /src/local
 .DS_Store*
+yarn.lock
 package-lock.json

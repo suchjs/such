@@ -32,7 +32,44 @@ export default class Parser {
     constructor(rule: string, config?: ParserConf);
     setConfig(conf: ParserConf): void;
     build(): string | never;
-    private parse();
-    private checkFlags();
-    private hasFlag(flag);
+    info(): {
+        rule: string;
+        context: string;
+        lastRule: string;
+        flags: Flag[];
+        queues: RegexpPart[];
+    };
+    private parse;
+    private checkFlags;
+    private hasFlag;
 }
+interface NumberRange {
+    min: number;
+    max: number;
+}
+declare abstract class RegexpPart {
+    input: string;
+    readonly queues: RegexpPart[];
+    isComplete: boolean;
+    parent: null | RegexpPart;
+    buildForTimes: boolean;
+    abstract readonly type: string;
+    protected min: number;
+    protected max: number;
+    protected curCodePoint: number;
+    protected dataConf: NormalObject;
+    constructor(input?: string);
+    codePoint: number;
+    setRange(options: NumberRange): void;
+    add(target: string | RegexpPart, options?: NormalObject): void | boolean | never;
+    pop(): RegexpPart;
+    build(conf: BuildConfData): string | never;
+    setDataConf(conf: BuildConfData, result: string): void;
+    toString(): string;
+    untilEnd(context: string): void;
+    isAncestorOf(target: RegexpPart): boolean;
+    getRuleInput(parseReference?: boolean): string;
+    protected buildRuleInputFromQueues(): string;
+    protected prebuild(conf: BuildConfData): string | never;
+}
+export {};

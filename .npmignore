@@ -8,5 +8,7 @@ tslint.json
 yarn.lock
 .DS_Store
 .vscode
+.travis.yml
 package-lock.json
 webpack.config.js
+jest.config.json
