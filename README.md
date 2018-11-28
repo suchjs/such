@@ -1,5 +1,5 @@
 # suchjs
-[![npm version](https://badge.fury.io/js/suchjs.svg)](https://badge.fury.io/js/suchjs)
+[![npm version](https://badge.fury.io/js/suchjs.svg)](https://badge.fury.io/js/suchjs)&nbsp;&nbsp;[![Build Status](https://travis-ci.org/suchjs/such.svg?branch=master)](https://travis-ci.org/suchjs/such)
 
 An easy to use and extend mock tool.
 
