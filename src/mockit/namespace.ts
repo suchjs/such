@@ -114,7 +114,7 @@ export default abstract class Mockit<T> {
     deepCopy(this.params, params);
     // must after copy,otherwise will override modified values
     this.validate(params);
-    return this;
+    return this.origParams;
   }
   /**
    *
@@ -125,11 +125,11 @@ export default abstract class Mockit<T> {
     // frozen params for extend type.
     const constrName = this.constructorName || this.constructor.name;
     const { params, origParams, generateFn } = this;
-    mockits[constrName].define = {
+    mockits[constrName].define = deepCopy({}, {
       params,
       origParams,
       generateFn,
-    };
+    });
     return this;
   }
   /**
@@ -169,9 +169,9 @@ export default abstract class Mockit<T> {
       const { queue, params: fnsParams, fns } = Func;
       for(i = 0, j = queue.length; i < j; i++) {
         const name = queue[i];
-        const fn = fns[name];
+        const fn = fns[i];
         // tslint:disable-next-line:max-line-length
-        const args = (globalFns[name] ? [globalFns[name]] : [] ).concat([fnsParams[name], globalVars, result, Config || {} ]);
+        const args = (globalFns[name] ? [globalFns[name]] : [] ).concat([fnsParams[i], globalVars, result, Config || {} ]);
         result = fn.apply(options, args);
       }
     }

@@ -46,15 +46,15 @@ const parser: ParserInstance =  {
     const { patterns, code } = this.info();
     const result: ParamsFunc = {
       queue: [],
-      fns: {},
-      params: {},
+      fns: [],
+      params: [],
       options: [],
     };
     if(!patterns.length) {
       this.halt(`no modify functions find in "${code}"`);
     } else {
       const rule = /(['"])((?:(?!\1)[^\\]|\\.)*)\1|([\w$]+(?:\.[\w$]+|\[(?:(['"])(?:(?!\4)[^\\]|\\.)*\4|\d+)\])*)/g;
-      const nativeValues = ['true', 'false', 'undefined', 'null'];
+      const nativeValues = ['true', 'false', 'undefined', 'null', 'NaN'];
       patterns.forEach((match: any[]) => {
         const [ _, name, args ] = match;
         const params = [];
@@ -83,8 +83,8 @@ const parser: ParserInstance =  {
         };
         result.options.push(options);
         const { fn, param } = parseFuncParams(options);
-        result.fns[name] = fn as NormalFn;
-        result.params[name] = param;
+        result.fns.push(fn as NormalFn);
+        result.params.push(param);
       });
       return result;
     }

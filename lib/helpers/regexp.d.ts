@@ -43,11 +43,11 @@ export default class Parser {
     private checkFlags;
     private hasFlag;
 }
-interface NumberRange {
+export interface NumberRange {
     min: number;
     max: number;
 }
-declare abstract class RegexpPart {
+export declare abstract class RegexpPart {
     input: string;
     readonly queues: RegexpPart[];
     isComplete: boolean;
@@ -72,4 +72,143 @@ declare abstract class RegexpPart {
     protected buildRuleInputFromQueues(): string;
     protected prebuild(conf: BuildConfData): string | never;
 }
-export {};
+export declare abstract class RegexpEmpty extends RegexpPart {
+    constructor(input?: string);
+}
+export declare abstract class RegexpOrigin extends RegexpPart {
+    protected prebuild(): string;
+}
+export declare class RegexpReference extends RegexpPart {
+    readonly type = "reference";
+    ref: RegexpGroup | null;
+    index: number;
+    constructor(input: string);
+    protected prebuild(conf: BuildConfData): any;
+}
+export declare class RegexpSpecial extends RegexpEmpty {
+    readonly special: string;
+    readonly type = "special";
+    constructor(special: string);
+}
+export declare class RegexpAny extends RegexpPart {
+    readonly type = "any";
+    constructor();
+    protected prebuild(conf: BuildConfData): string;
+}
+export declare class RegexpNull extends RegexpPart {
+    readonly type = "null";
+    constructor();
+    protected prebuild(): string;
+}
+export declare class RegexpBackspace extends RegexpPart {
+    readonly type = "backspace";
+    constructor();
+    protected prebuild(): string;
+}
+export declare class RegexpBegin extends RegexpEmpty {
+    readonly type = "begin";
+}
+export declare class RegexpControl extends RegexpPart {
+    readonly type = "control";
+    constructor(input: string);
+    protected prebuild(): string;
+}
+export declare class RegexpCharset extends RegexpPart {
+    readonly type = "charset";
+    readonly charset: string;
+    constructor(input: string);
+    protected prebuild(conf: BuildConfData): string;
+}
+export declare class RegexpPrint extends RegexpPart {
+    readonly type = "print";
+    protected prebuild(): string;
+}
+export declare class RegexpIgnore extends RegexpEmpty {
+    readonly type = "ignore";
+    protected prebuild(): string;
+}
+export declare class RegexpChar extends RegexpOrigin {
+    readonly type = "char";
+    constructor(input: string);
+}
+export declare class RegexpTranslateChar extends RegexpOrigin {
+    readonly type = "translate";
+    constructor(input: string);
+    protected prebuild(): string;
+}
+export declare class RegexpOctal extends RegexpPart {
+    readonly type = "octal";
+    constructor(input: string);
+    protected prebuild(): string;
+}
+export declare abstract class RegexpTimes extends RegexpPart {
+    readonly type = "times";
+    protected readonly maxNum: number;
+    protected greedy: boolean;
+    protected abstract readonly rule: RegExp;
+    protected minRepeat: number;
+    protected maxRepeat: number;
+    constructor();
+    target: RegexpPart;
+    untilEnd(context: string): number;
+    abstract parse(): void;
+}
+export declare class RegexpTimesMulti extends RegexpTimes {
+    protected rule: RegExp;
+    parse(): void;
+}
+export declare class RegexpTimesQuantifiers extends RegexpTimes {
+    protected rule: RegExp;
+    parse(): void;
+}
+export declare class RegexpSet extends RegexpPart {
+    readonly type = "set";
+    reverse: boolean;
+    constructor();
+    add(target: RegexpPart): void;
+    isSetStart(): boolean;
+    getRuleInput(): string;
+    protected prebuild(conf: BuildConfData): string;
+}
+export declare class RegexpRange extends RegexpPart {
+    readonly type = "range";
+    constructor();
+    add(target: RegexpPart): void;
+    getRuleInput(): string;
+    protected prebuild(): string;
+}
+export declare abstract class RegexpHexCode extends RegexpOrigin {
+    readonly type = "hexcode";
+    protected abstract rule: RegExp;
+    protected abstract codeType: string;
+    untilEnd(context: string): number;
+}
+export declare class RegexpUnicode extends RegexpHexCode {
+    protected rule: RegExp;
+    protected codeType: string;
+}
+export declare class RegexpUnicodeAll extends RegexpHexCode {
+    protected rule: RegExp;
+    protected codeType: string;
+}
+export declare class RegexpASCII extends RegexpHexCode {
+    protected rule: RegExp;
+    protected codeType: string;
+}
+export declare class RegexpGroup extends RegexpPart {
+    readonly type = "group";
+    captureIndex: number;
+    groupIndex: number;
+    captureName: string;
+    isRoot: boolean;
+    private groups;
+    private curRule;
+    constructor();
+    addNewGroup(queue?: RegexpPart[]): void;
+    add(target: RegexpPart): void;
+    isGroupStart(): boolean;
+    getRuleInput(parseReference: boolean): string;
+    protected buildRule(flags: FlagsHash): any;
+    protected prebuild(conf: BuildConfData): string;
+    private isEndLimitChar;
+}

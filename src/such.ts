@@ -484,7 +484,8 @@ export default class Such {
             if (isFn(generateFn)) {
               this.reGenerate(generateFn);
             }
-            this.setParams(params).frozen();
+            this.setParams(params);
+            this.frozen();
           }
         };
       } else {
@@ -497,7 +498,8 @@ export default class Such {
             if(isFn(init)) {
               init.call(this);
             }
-            this.setParams(params, undefined).frozen();
+            this.setParams(params, undefined);
+            this.frozen();
           }
           public generate(options: SuchOptions) {
             return generate.call(this, options);

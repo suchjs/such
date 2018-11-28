@@ -1,6 +1,6 @@
+
+import { default as Conf } from './config/recommend';
 import Such from './such';
 import { NormalObject } from './types';
-Such.define('boolean', (utils: NormalObject) => {
-  return utils.isOptional();
-});
+Such.config(Conf);
 (window as NormalObject).Such = Such;

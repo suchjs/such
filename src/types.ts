@@ -45,12 +45,8 @@ export interface ParamsFuncOptions {
 }
 export interface ParamsFunc {
   queue: string[];
-  params: {
-    [index: string]: any[];
-  };
-  fns: {
-    [index: string]: NormalFn;
-  };
+  params: any[][];
+  fns: NormalFn[];
   options: ParamsFuncOptions[];
 }
 /**
