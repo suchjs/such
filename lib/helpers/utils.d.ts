@@ -10,5 +10,6 @@ export declare const isOptional: () => boolean;
 export declare const capitalize: (target: string) => string;
 export declare const decodeTrans: (target: string) => string;
 export declare const getExp: (exp: string) => any;
+export declare const getExpValue: (...args: any[]) => any;
 export declare const range: (start: number, end: number, step?: number) => any;
 export declare const deepCopy: (target: any, ...args: any[]) => any;

@@ -1,4 +1,4 @@
-import printf, {rule as formatRule } from '../helpers/printf';
+import printf, {rule as formatRule } from 'nprintf';
 import { isOptional } from '../helpers/utils';
 import { NormalObject } from '../types';
 import Mockit, { ModifierFn } from './namespace';

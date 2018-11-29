@@ -1,4 +1,4 @@
-import { parserRule } from '../helpers/regexp';
+import { parserRule } from 'reregexp';
 import { ParamsRegexp, ParserInstance } from '../types';
 const parser: ParserInstance =  {
   config: {

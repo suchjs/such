@@ -1,4 +1,4 @@
-import RegexpParser, { regexpRule } from '../helpers/regexp';
+import RegexpParser, { regexpRule } from 'reregexp';
 import { NormalObject, ParamsRegexp } from '../types';
 import Mockit from './namespace';
 export default class ToRegexp extends Mockit<string> {

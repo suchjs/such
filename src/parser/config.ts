@@ -1,4 +1,4 @@
-import { regexpRule } from '../helpers/regexp';
+import { regexpRule } from 'reregexp';
 import { decodeTrans, getExp } from '../helpers/utils';
 import { NormalObject, ParamsConfig, ParserInstance } from '../types';
 

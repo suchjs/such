@@ -29,11 +29,15 @@
     "start": "tsc && node lib/index.js",
     "test": "jest",
     "local": "ts-node -r tsconfig-paths/register src/local/test.ts",
-    "build:browser": "webpack --progress",
+    "build": "rm -rf ./lib/* && tsc",
+    "build:browser": "webpack --progress --mode='production'",
     "coverage": "jest --coverage --coverageReporters=text-lcov | coveralls",
-    "prepublish": "tsc"
+    "prepublish": "npm run build"
   },
-  "dependencies": {},
+  "dependencies": {
+    "nprintf": "^0.0.2",
+    "reregexp": "^0.0.1"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/suchjs/such"
