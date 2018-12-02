@@ -1,6 +1,6 @@
 {
   "name": "suchjs",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "An easy to use and extend mock tool.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -30,7 +30,7 @@
     "test": "jest",
     "local": "ts-node -r tsconfig-paths/register src/local/test.ts",
     "build": "rm -rf ./lib/* && tsc",
-    "build:browser": "webpack --progress --mode='production'",
+    "build:web": "webpack --progress --mode=\"production\" && cp ./dist/such.$npm_package_version.min.js ./dist/such.min.js",
     "coverage": "jest --coverage --coverageReporters=text-lcov | coveralls",
     "prepublish": "npm run build"
   },

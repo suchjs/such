@@ -69,6 +69,7 @@ export interface ParamsPathItem {
   depth: number;
   path: Array<string | number>;
   fullpath: string;
+  variable: string;
 }
 export type ParamsPath = ParamsPathItem[];
 /**
@@ -109,10 +110,10 @@ export interface ParserInstance {
  * @interface MockitOptions
  */
 export interface MockitOptions {
-  param: string;
-  ignoreRules?: string[];
+  param?: string;
+  configOptions?: NormalObject;
   init?: () => void;
-  generate?: () => any;
+  generate: () => any;
   generateFn?: () => void;
 }
 export type NormalFn = (...args: any[]) => any;
@@ -145,4 +146,12 @@ export interface SuchOptions {
   datas: PathMap<any>;
   dpath: Path;
   such: SuchInstance;
+}
+//
+
+export type TypeContructor = (new (t?: any) => any);
+// tslint:disable-next-line:max-line-length
+export type MockitConfigItem<T> = T | TypeContructor[] | {type: T, default: (new() => T) | (() => (new() => T)), validator?: () => boolean | never, required?: boolean};
+export interface MockitConfig {
+  [index: string]: MockitConfigItem<any>;
 }

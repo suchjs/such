@@ -8,9 +8,13 @@ const confs: SuchConfFile = {
     lowercase: ['string', '[97,122]'],
     alphaNumericDash: ['string', '[48-57,97-122,65-90,95]'],
     // tslint:disable-next-line:max-line-length
-    url: ['regexp', '/(?<protocol>http|https|ftp|sftp|mailto|telnet|pop|smb|sms|ssh|mid):\\/\\/(?<domain>(?:[a-z0-9]+(?:-?[a-z0-9]+|[a-z0-9]*))\\.(?<ltd>com|cn|com\\.cn|org|net|gov\\.cn|wang|ren|xyz|top|cc|io))\\/(?<pathname>(?:[0-9a-z]\\/)*(?<filename>\\w+(?<extname>\\.(?:html|htm|php|do)))?)(?<query>\\?([0-9a-z_]+=(?:[0-9a-z]+|(?:%[0-9A-F]{2}){2,})&)*([0-9a-z_]+=(?:[0-9a-z]+|(?:%[0-9A-F]{2}){2,})))(?<hash>#[0-9a-z_=]{5,})?/'],
+    url: ['regexp', '/(?<protocol>http|https|ftp|sftp|mailto|telnet|pop|smb|sms|ssh|mid):\\/\\/(?<domain>(?:[a-z0-9]+(?:-?[a-z0-9]+|[a-z0-9]*))\\.(?<ltd>com|cn|com\\.cn|org|net|gov\\.cn|wang|ren|xyz|top|cc|io))\\/(?<pathname>(?:[0-9a-z]+\\/)*(?<filename>\\w+(?<extname>\\.(?:html|htm|php|do)))?)(?<query>\\?([0-9a-z_]+=(?:[0-9a-z]+|(?:%[0-9A-F]{2}){2,})&)*([0-9a-z_]+=(?:[0-9a-z]+|(?:%[0-9A-F]{2}){2,})))(?<hash>#[0-9a-z_=]{5,})?/'],
     // tslint:disable-next-line:max-line-length
     email: ['regexp', '/(?<user>(?:[a-z0-9]+(?:[-_]?[a-z0-9]+|[a-z0-9]*)))@(?<domain>(?:[a-z0-9]+(?:-?[a-z0-9]+|[a-z0-9]*))\\.(?<ltd>com|cn|com\\.cn|org|net|gov\\.cn|wang|ren|xyz|top|cc|io))/'],
+    boolean(options) {
+      const { such } = options;
+      return such.utils.isOptional();
+    },
     color$hex(options) {
       const { such } = options;
       return '#' + such.utils.makeRandom(0x000000, 0xffffff).toString(16).toUpperCase();
@@ -42,6 +46,7 @@ const confs: SuchConfFile = {
   },
   alias: {
     int: 'integer',
+    bool: 'boolean',
   },
 };
 export default confs;

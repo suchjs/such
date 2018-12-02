@@ -6,6 +6,8 @@ export interface Store {
     mockits: NormalObject;
     alias: NormalObject;
     aliasTypes: string[];
+    fileCache: NormalObject;
+    config: NormalObject;
 }
 declare const store: Store;
 export default store;

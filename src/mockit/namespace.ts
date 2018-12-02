@@ -1,12 +1,17 @@
-import { deepCopy, getExpValue, typeOf } from '../helpers/utils';
+import { deepCopy, getExpValue, isFn, isNoEmptyObject, typeOf } from '../helpers/utils';
 import store from '../store';
-import { NormalObject, ParamsFunc, ParamsFuncOptions, SuchOptions } from '../types';
+import {
+  MockitConfig, MockitConfigItem, NormalObject, ParamsFunc,
+  ParamsFuncOptions, SuchOptions, TypeContructor,
+} from '../types';
 const { fns: globalFns, vars: globalVars, mockits } = store;
 //
 export type Result<T> = T | never;
 export type ModifierFn<T> = (res: T) => T | string | never;
 export type RuleFn = (cur: NormalObject) => void | NormalObject;
+
 export default abstract class Mockit<T> {
+  protected configOptions: MockitConfig = {};
   protected params: NormalObject = {};
   protected origParams: NormalObject = {};
   protected generateFn: undefined | ((options: SuchOptions) => Result<T>);
@@ -65,6 +70,51 @@ export default abstract class Mockit<T> {
         });
       }
     });
+    const { configOptions } = this;
+    // if set configOptions,validate config
+    if(isNoEmptyObject(configOptions)) {
+      this.addRule('Config', function(Config: NormalObject) {
+          const last = deepCopy({}, Config || {});
+          Object.keys(configOptions).map((key: string) => {
+            const cur: MockitConfigItem<any> = configOptions[key];
+            let required = false;
+            let def: any;
+            let type: TypeContructor | TypeContructor[];
+            const typeNames: string[] = [];
+            let validator = (target: any) => {
+              const targetType = typeOf(target);
+              const allTypes = typeOf(type) === 'Array' ? type : [type];
+              let flag = false;
+              (allTypes as TypeContructor[]).map((Cur) => {
+                const curName = Cur.name;
+                typeNames.push(curName);
+                if(!flag) {
+                  flag = targetType === curName;
+                }
+              });
+              return flag;
+            };
+            const hasKey = last.hasOwnProperty(key);
+            if(typeOf(cur) === 'Object') {
+              required = !!cur.required;
+              def = isFn(cur.default) ? cur.default() : cur.default;
+              type = cur.type;
+              validator = isFn(cur.validator) ? cur.validator : validator;
+            }
+            if(required && !hasKey) {
+              throw new Error(`${constrName} required set config "${key}"`);
+            } else if(hasKey && !validator.call(null, last[key])) {
+              // tslint:disable-next-line:max-line-length
+              throw new Error(`the config of "${key}"'s value ${last[key]} is not instance of ${typeNames.join(',')}`);
+            } else {
+              if(!hasKey && def !== undefined) {
+                last[key] = def;
+              }
+            }
+          });
+          return last;
+      });
+    }
   }
   /**
    *
@@ -118,7 +168,7 @@ export default abstract class Mockit<T> {
     deepCopy(this.origParams, params);
     deepCopy(this.params, params);
     // must after copy,otherwise will override modified values
-    this.validate(params);
+    this.validate();
     return this.origParams;
   }
   /**
@@ -129,10 +179,11 @@ export default abstract class Mockit<T> {
   public frozen() {
     // frozen params for extend type.
     const constrName = this.constructorName || this.constructor.name;
-    const { params, origParams, generateFn } = this;
+    const { params, origParams, generateFn, configOptions } = this;
     mockits[constrName].define = deepCopy({}, {
       params,
       origParams,
+      configOptions,
       generateFn,
     });
     return this;
@@ -253,13 +304,11 @@ export default abstract class Mockit<T> {
    * @private
    * @memberof Mockit
    */
-  private validParams(params?: NormalObject): boolean {
-    const isAll = params === undefined;
-    params = isAll ? this.origParams : params;
+  private validParams(): boolean {
+    const params = this.origParams;
     const { rules, ruleFns } = mockits[this.constructorName || this.constructor.name];
     const keys = Object.keys(params);
-    const validRules = isAll ? rules : rules.filter((name: string) => keys.indexOf(name) > -1);
-    validRules.map((name: string) => {
+    rules.map((name: string) => {
       try {
         const res = ruleFns[name].call(this, params[name]);
         if (typeof res === 'object') {
@@ -273,7 +322,7 @@ export default abstract class Mockit<T> {
         this.invalidKeys.push(`[(${name})${e.message}]`);
       }
     });
-    if(isAll && keys.length) {
+    if(keys.length) {
       // tslint:disable-next-line:no-console
       console.warn(`the params of keys:${keys.join(',')} has no valid rule.`);
     }
@@ -285,10 +334,10 @@ export default abstract class Mockit<T> {
    * @private
    * @memberof Mockit
    */
-  private validate(params?: NormalObject) {
+  private validate() {
     const { invalidKeys } = this;
     if(!this.hasValid) {
-      this.isValidOk = this.validParams(params);
+      this.isValidOk = this.validParams();
       this.hasValid = true;
     }
     if(!this.isValidOk) {

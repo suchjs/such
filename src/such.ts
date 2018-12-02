@@ -6,7 +6,7 @@ import Mockit from './mockit/namespace';
 import Parser from './parser';
 import store from './store';
 import { MockitOptions, NormalObject, ParserConfig, SuchConfFile, SuchOptions } from './types';
-const { capitalize, isFn, isOptional, makeRandom, map, typeOf, deepCopy } = utils;
+const { capitalize, isFn, isOptional, makeRandom, map, typeOf, deepCopy, isNoEmptyObject } = utils;
 const { alias, aliasTypes } = store;
 /**
  *
@@ -459,7 +459,7 @@ export default class Such {
     const opts = args.pop();
     // tslint:disable-next-line:max-line-length
     const config: MockitOptions = argsNum === 2 && typeof opts === 'string' ? ({ param: opts } as MockitOptions) : (argsNum === 1 && typeof opts === 'function' ? { generate: opts } : opts);
-    const { param, init, generateFn, generate } = config;
+    const { param, init, generateFn, generate, configOptions } = config;
     const params = typeof param === 'string' ? Parser.parse(param) : {};
     const constrName = `To${capitalize(type)}`;
     if (!AllMockits.hasOwnProperty(type)) {
@@ -478,13 +478,18 @@ export default class Such {
           }
           public init() {
             super.init();
+            if(isNoEmptyObject(configOptions)) {
+              this.configOptions = deepCopy({}, this.configOptions, configOptions);
+            }
             if (isFn(init)) {
               init.call(this);
             }
             if (isFn(generateFn)) {
               this.reGenerate(generateFn);
             }
-            this.setParams(params);
+            if(isNoEmptyObject(params)) {
+              this.setParams(params);
+            }
             this.frozen();
           }
         };
@@ -495,10 +500,15 @@ export default class Such {
             super(constrName);
           }
           public init() {
+            if(isNoEmptyObject(configOptions)) {
+              this.configOptions = deepCopy({}, this.configOptions, configOptions);
+            }
             if(isFn(init)) {
               init.call(this);
             }
-            this.setParams(params, undefined);
+            if(isNoEmptyObject(params)) {
+              this.setParams(params, undefined);
+            }
             this.frozen();
           }
           public generate(options: SuchOptions) {

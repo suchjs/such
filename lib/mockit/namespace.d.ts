@@ -1,9 +1,10 @@
-import { NormalObject, SuchOptions } from '../types';
+import { MockitConfig, NormalObject, SuchOptions } from '../types';
 export declare type Result<T> = T | never;
 export declare type ModifierFn<T> = (res: T) => T | string | never;
 export declare type RuleFn = (cur: NormalObject) => void | NormalObject;
 export default abstract class Mockit<T> {
     protected readonly constructorName: string;
+    protected configOptions: MockitConfig;
     protected params: NormalObject;
     protected origParams: NormalObject;
     protected generateFn: undefined | ((options: SuchOptions) => Result<T>);

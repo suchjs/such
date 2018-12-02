@@ -23,6 +23,11 @@ export default class ToNumber extends Mockit<number> {
   }
   //
   public init() {
+    this.configOptions = {
+      step: {
+        type: Number,
+      },
+    };
     // Count Rule
     this.addRule('Count', function(Count: NormalObject) {
       if(!Count) {return; }
@@ -65,25 +70,6 @@ export default class ToNumber extends Mockit<number> {
       const { format } = Format;
       if (!formatRule.test(format)) {
         throw new Error(`Wrong format rule(${format})`);
-      }
-    });
-    // Config rule
-    this.addRule('Config', function(Config: NormalObject) {
-      if(!Config) {return; }
-      const allowKeys = ['step'];
-      const curKeys = Object.keys(Config);
-      for(let i = 0, j = curKeys.length; i < j; i++) {
-        const key = curKeys[i];
-        if(allowKeys.indexOf(key) < 0) {
-          throw new Error(`unexpected config key:${key},the number type can only set keys like "${allowKeys.join()}".`);
-        }
-        if(key === 'step') {
-          if(isNaN(Config[key])) {
-            throw new Error(`the config of step is not a number,got ${Config[key]}.`);
-          } else if(+Config[key] <= 0) {
-            throw new Error(`the config of step can not be set to 0 or less than 0.`);
-          }
-        }
       }
     });
     // Format Modifier

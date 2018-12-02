@@ -1,5 +1,5 @@
 const path = require('path');
-
+const version = require('./package.json').version;
 module.exports = {
   entry: './src/browser.ts',
   module: {
@@ -15,7 +15,9 @@ module.exports = {
     extensions: [ '.ts', '.js' ]
   },
   output: {
-    filename: 'such.min.js',
+    filename: () => {
+      return `such.${version}.min.js`
+    },
     path: path.resolve(__dirname, 'dist')
   }
 };

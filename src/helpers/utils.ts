@@ -140,3 +140,9 @@ export const deepCopy = (target: any, ...args: any[]) => {
   }
   return target;
 };
+export const isNoEmptyObject = (target: any) => {
+  return typeOf(target) === 'Object' && Object.keys(target).length > 0;
+};
+export const isPromise = (target: any) => {
+  return typeOf(target) === 'Promise' || (target && isFn(target.then));
+};

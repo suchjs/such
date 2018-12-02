@@ -13,3 +13,5 @@ export declare const getExp: (exp: string) => any;
 export declare const getExpValue: (...args: any[]) => any;
 export declare const range: (start: number, end: number, step?: number) => any;
 export declare const deepCopy: (target: any, ...args: any[]) => any;
+export declare const isNoEmptyObject: (target: any) => boolean;
+export declare const isPromise: (target: any) => boolean;
