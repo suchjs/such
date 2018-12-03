@@ -37,7 +37,7 @@ npm install --save-dev suchjs
 }
 ```
 2. in your data dir(e.g ./suchas/data),you can create a dict file such as `test.txt`,the file will more like this.
-> Hello  
+> Hello  
   World  
   Welcome
 
@@ -75,27 +75,32 @@ such init
 ```
 ## Support types
 - base types  
-1. `string`
+1. `string`  
+
     ```javascript
     // make a string the unicode point between 97 to 122(lowercase),the length is between 10 to 20
     :string[97,122]:{10,20} // e.g: asjshgddsgdh
     ```
-2. `number`
+2. `number`  
+
     ```javascript
     // make a number between 200 to 300,and format it.
     :number[200,300]:%.2f // e.g 235.18
     ```
-3. `date`
+3. `date`  
+
     ```javascript
     // make a date between today and tomorrow
     :date["today","tomorrow"]:%yyyy-mm-dd HH\:MM\:ss // e.g 2018-12-02 12:01:35
     ```
 4. `regexp`  
+
     ```javascript
     // make a string match the regexp
     :regexp/[a-z]{3,5}(\\d+)\\1/ //e.g ask2525
     ```
-5. `id`
+5. `id`  
+
     ```javascript
     {
       "books[1,5]":{
@@ -116,7 +121,8 @@ such init
     }
     */
     ```
-6. `ref`
+6. `ref`  
+
     ```javascript
     // get a reference of other field what has been has a data.
     {
@@ -133,10 +139,13 @@ such init
     */
     ```
 - extend types,e.g recommend  
-  `boolean` `bool`(alias short) `url` `uppercase` `lowercase` `email` `integer` `int`(alias short) ... for more,you can see [such:recommend](./src/config/recommend)
+
+  `boolean` `bool`(alias short) `url` `uppercase` `lowercase` `email` `integer` `int`(alias short) ... for more,you can see [such:recommend](https://github.com/suchjs/such/blob/master/src/config/recommend.ts)
 
 ## Questions & Bugs?
+
 Welcome to report to us with issue if you meet any question or bug. [Issue](https://github.com/suchjs/such/issues)
 
 ## License
+
 [MIT License](./LICENSE).
