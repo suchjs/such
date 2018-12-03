@@ -45,7 +45,7 @@ export default {
       if(variable) {
         fullpath = fullpath.replace(`<${variable}>`, config[variable]);
       } else {
-        fullpath = path.resolve(config.rootDir, fullpath);
+        fullpath = path.resolve(config.dataDir || config.rootDir, fullpath);
       }
       return fullpath;
     });
