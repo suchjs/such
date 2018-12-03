@@ -1,4 +1,4 @@
-import { deepCopy, getExpValue, isFn, isNoEmptyObject, typeOf } from '../helpers/utils';
+import { deepCopy, getExpValue, isFn, isNoEmptyObject, isPromise, typeOf, withPromise } from '../helpers/utils';
 import store from '../store';
 import {
   MockitConfig, MockitConfigItem, NormalObject, ParamsFunc,
@@ -206,32 +206,20 @@ export default abstract class Mockit<T> {
    */
   public make(options: SuchOptions): Result<T> {
     this.validate();
-    const { params } = this;
-    const { modifiers, modifierFns } = mockits[this.constructorName || this.constructor.name];
     // tslint:disable-next-line:max-line-length
     let result = typeof this.generateFn === 'function' ? this.generateFn.call(this, options) : this.generate(options);
-    let i;
-    let j = modifiers.length;
-    for (i = 0; i < j; i++) {
-      const name = modifiers[i];
-      if (params.hasOwnProperty(name)) {
-        const fn = modifierFns[name];
-        const args = [result, params[name], options];
-        result = fn.apply(this, args);
+    let isPromRes = isPromise(result);
+    if(!isPromRes && typeOf(result) === 'Array') {
+      result = withPromise(result);
+      isPromRes = isPromise(result[0]);
+      if(isPromRes) {
+        result = Promise.all(result);
       }
     }
-    const { Config, Func } = this.params;
-    if(Func) {
-      const { queue, params: fnsParams, fns } = Func;
-      for(i = 0, j = queue.length; i < j; i++) {
-        const name = queue[i];
-        const fn = fns[i];
-        // tslint:disable-next-line:max-line-length
-        const args = (globalFns[name] ? [globalFns[name]] : [] ).concat([fnsParams[i], globalVars, result, Config || {}, getExpValue]);
-        result = fn.apply(options, args);
-      }
-    }
-    return result;
+    // judge if promise
+    return isPromRes ? result.then((res: any) => {
+      return this.runAll(res, options);
+    }) : this.runAll(result, options);
   }
   /**
    *
@@ -354,5 +342,63 @@ export default abstract class Mockit<T> {
     this.isValidOk = false;
     this.hasValid = false;
     this.invalidKeys = [];
+  }
+  /**
+   *
+   *
+   * @private
+   * @param {*} result
+   * @param {SuchOptions} options
+   * @returns
+   * @memberof Mockit
+   */
+  private runModifiers(result: any, options: SuchOptions) {
+    const { params } = this;
+    const { modifiers, modifierFns } = mockits[this.constructorName || this.constructor.name];
+    for (let i = 0, j = modifiers.length; i < j; i++) {
+      const name = modifiers[i];
+      if (params.hasOwnProperty(name)) {
+        const fn = modifierFns[name];
+        const args = [result, params[name], options];
+        result = fn.apply(this, args);
+      }
+    }
+    return result;
+  }
+  /**
+   *
+   *
+   * @private
+   * @param {*} result
+   * @param {SuchOptions} options
+   * @returns
+   * @memberof Mockit
+   */
+  private runFuncs(result: any, options: SuchOptions) {
+    const { Config, Func } = this.params;
+    if(Func) {
+      const { queue, params: fnsParams, fns } = Func;
+      for(let i = 0, j = queue.length; i < j; i++) {
+        const name = queue[i];
+        const fn = fns[i];
+        // tslint:disable-next-line:max-line-length
+        const args = (globalFns[name] ? [globalFns[name]] : [] ).concat([fnsParams[i], globalVars, result, Config || {}, getExpValue]);
+        result = fn.apply(options, args);
+      }
+    }
+    return result;
+  }
+  /**
+   *
+   *
+   * @private
+   * @param {*} result
+   * @param {SuchOptions} options
+   * @returns
+   * @memberof Mockit
+   */
+  private runAll(result: any, options: SuchOptions) {
+    result = this.runModifiers(result, options);
+    return this.runFuncs(result, options);
   }
 }

@@ -1,4 +1,5 @@
 import { Path as DPath } from '../helpers/pathmap';
+import { withPromise } from '../helpers/utils';
 import { ParamsPath, ParamsPathItem, SuchOptions } from '../types';
 import Mockit from './namespace';
 export default class ToRef extends Mockit<any> {
@@ -36,7 +37,7 @@ export default class ToRef extends Mockit<any> {
         throw new Error(`the path of "${lastPath ? '/' + lastPath.join('/') : item.fullpath}" is not exists in the datas.`);
       }
     });
-    return Path.length === 1 ? result[0] : result;
+    return Path.length === 1 ? result[0] : withPromise(result);
   }
   public test() {
     return true;

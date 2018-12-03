@@ -20,6 +20,10 @@ export interface MockerOptions {
     parent?: Mocker;
     config?: KeyRuleInterface;
 }
+export interface PromiseResult {
+    dpath: Path;
+    result: Promise<any>;
+}
 export declare class Mocker {
     static parseKey(key: string): {
         key: string;
@@ -37,6 +41,7 @@ export declare class Mocker {
     readonly isRoot: boolean;
     readonly mockFn: (dpath: Path) => any;
     readonly mockit: NormalObject;
+    readonly promises: PromiseResult[];
     constructor(options: MockerOptions, rootInstances?: PathMap<Mocker>, rootDatas?: PathMap<any>);
     setParams(value: string | NormalObject): any;
     mock(dpath: Path): any;

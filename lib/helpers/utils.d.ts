@@ -15,3 +15,5 @@ export declare const range: (start: number, end: number, step?: number) => any;
 export declare const deepCopy: (target: any, ...args: any[]) => any;
 export declare const isNoEmptyObject: (target: any) => boolean;
 export declare const isPromise: (target: any) => boolean;
+export declare const shiftObject: (obj: NormalObject, keys: string[]) => NormalObject;
+export declare const withPromise: (res: any[]) => any[];

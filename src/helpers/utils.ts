@@ -146,3 +146,34 @@ export const isNoEmptyObject = (target: any) => {
 export const isPromise = (target: any) => {
   return typeOf(target) === 'Promise' || (target && isFn(target.then));
 };
+export const shiftObject = (obj: NormalObject, keys: string[]) => {
+  const res: NormalObject = {};
+  keys.map((key: string) => {
+    res[key] = obj[key];
+    delete obj[key];
+  });
+  return res;
+};
+export const withPromise = (res: any[]) => {
+  let last: any[] = [];
+  let hasPromise = false;
+  res.map((item: any) => {
+    const imPromise = isPromise(item);
+    if(hasPromise) {
+      if(imPromise) {
+        last.push(item);
+      } else {
+        last.push(Promise.resolve(item));
+      }
+    } else {
+      if(imPromise) {
+        hasPromise = true;
+        last = last.map((cur) => Promise.resolve(cur));
+        last.push(item);
+      } else {
+        last.push(item);
+      }
+    }
+  });
+  return last;
+};

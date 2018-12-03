@@ -81,8 +81,14 @@ export interface SuchConfTypes {
 export interface SuchConfParser {
     [index: string]: ParserInstance;
 }
+export interface SuchConfConfig {
+    suchDir?: string;
+    dataDir?: string;
+    preload?: boolean | string[];
+}
 export interface SuchConfFile {
     extends?: string | string[];
+    config?: SuchConfConfig;
     globals?: SuchConfGlobal;
     parsers?: SuchConfParser;
     types?: SuchConfTypes;

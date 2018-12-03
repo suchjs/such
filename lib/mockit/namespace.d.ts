@@ -26,4 +26,7 @@ export default abstract class Mockit<T> {
     private validParams;
     private validate;
     private resetValidInfo;
+    private runModifiers;
+    private runFuncs;
+    private runAll;
 }

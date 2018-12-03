@@ -49,6 +49,11 @@ export interface MockerOptions {
   parent?: Mocker;
   config?: KeyRuleInterface;
 }
+//
+export interface PromiseResult {
+  dpath: Path;
+  result: Promise<any>;
+}
 // all mockits
 const AllMockits: NormalObject = {};
 map(mockitList, (item, key) => {
@@ -117,6 +122,7 @@ export class Mocker {
   public readonly isRoot: boolean;
   public readonly mockFn: (dpath: Path) => any;
   public readonly mockit: NormalObject;
+  public readonly promises: PromiseResult[] = [];
   /**
    * Creates an instance of Mocker.
    * @param {MockerOptions} options
@@ -336,7 +342,32 @@ export class Mocker {
     if (this.isRoot && optional && isOptional()) {
       return;
     }
-    return this.mockFn(dpath);
+    const result = this.mockFn(dpath);
+    if(this.isRoot) {
+      if(this.promises.length) {
+        const queues: Array<Promise<any>> = [];
+        const dpaths: Path[] = [];
+        this.promises.map((item: PromiseResult ) => {
+          const { result: promise, dpath: curDPath } = item;
+          queues.push(promise);
+          dpaths.push(curDPath);
+        });
+        return Promise.all(queues).then((results: any[]) => {
+          results.map((res: any, i: number) => {
+            this.datas.set(dpaths[i], res);
+          });
+          return this.datas.get([]);
+        });
+      }
+    } else {
+      if(utils.isPromise(result)) {
+        this.root.promises.push({
+          dpath,
+          result,
+        });
+      }
+    }
+    return result;
   }
 }
 /**
