@@ -61,7 +61,7 @@ Such.as("test.json")
   "test": "Hello" || "World" || "Welcome"
 }
 ```
-You can also install `such-cli`,and do those in the command line.(will supply soon)
+You can also install `such-cli`,and do those in the command line.
 ```bash
 npm install --save-dev such-cli
 such init
