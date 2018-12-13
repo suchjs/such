@@ -1,6 +1,6 @@
 import { NormalObject } from '../types';
 export const encodeRegexpChars = (chars: string) => {
-  return chars.replace(/([()[{^$.*+?-])/g, '\\$1');
+  return chars.replace(/([()\[{^$.*+?\/\-])/g, '\\$1');
 };
 export const typeOf = (target: any): string => {
   return Object.prototype.toString.call(target).slice(8, -1);
@@ -36,32 +36,6 @@ export const map = (target: (any[] | NormalObject | string), fn: (item: any, ind
     }
   }
 };
-// tslint:disable-next-line:max-line-length
-export const deepLoop = (obj: any, fn: (key: string | number, value: any, parent: object, path: string) => any, curPath: string[] = []) => {
-  const type = typeOf(obj);
-  if(type === 'Object') {
-    for(const key in obj) {
-      if(obj.hasOwnProperty(key)) {
-        const value = obj[key];
-        const valType = typeOf(value);
-        fn.call(null, key, value, obj, curPath.concat(key).join('.'));
-        if(['Object', 'Array'].indexOf(valType) > -1) {
-          deepLoop(obj[key], fn, curPath.concat(key));
-        }
-      }
-    }
-  } else if(type === 'Array') {
-    for(let key = 0, len = obj.length; key < len; key++) {
-      const value = obj[key];
-      const valType = typeOf(value);
-      fn.call(null, key, value, obj, curPath.concat('' + key).join('.'));
-      if(['Object', 'Array'].indexOf(valType) > -1) {
-        deepLoop(obj[key], fn, curPath.concat('' + key));
-      }
-    }
-  }
-  return;
-};
 export const makeRandom = (min: number, max: number): number => {
   if(min === max) {
     return min;
@@ -88,7 +62,7 @@ export const capitalize = (target: string): string => {
   return target && target.length ? target.charAt(0).toUpperCase() + target.slice(1) : '';
 };
 export const decodeTrans = (target: string): string => {
-  return target.replace(/\\(.)/g, (_, res) => res);
+  return target.replace(/\\(.)/g, '$1');
 };
 export const getExp = (exp: string): any | never => {
   const fn = new Function('', `return ${exp}`);

@@ -3,7 +3,6 @@ export declare const encodeRegexpChars: (chars: string) => string;
 export declare const typeOf: (target: any) => string;
 export declare const isFn: (target: any) => boolean;
 export declare const map: (target: string | any[] | NormalObject, fn: (item: any, index: string | number) => void) => NormalObject;
-export declare const deepLoop: (obj: any, fn: (key: string | number, value: any, parent: object, path: string) => any, curPath?: string[]) => void;
 export declare const makeRandom: (min: number, max: number) => number;
 export declare const makeStrRangeList: (first?: string, last?: string, ...args: string[]) => string[];
 export declare const isOptional: () => boolean;
