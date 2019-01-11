@@ -1,8 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
-import { typeOf } from '../helpers/utils';
+import { NormalObject } from 'reregexp';
+import { makeRandom, typeOf } from '../helpers/utils';
 import store from '../store';
+import { ParamsPathItem } from '../types';
 const { fileCache, config } = store;
 
 // tslint:disable-next-line:max-line-length
@@ -130,4 +132,32 @@ export const loadTemplate = (file: string) => {
       }
     });
   });
+};
+// get real path
+export const getRealPath = (item: ParamsPathItem) => {
+  const { variable } = item;
+  let { fullpath } = item;
+  if(variable) {
+    fullpath = fullpath.replace(`<${variable}>`, config[variable]);
+  } else {
+    fullpath = path.join(config.dataDir || config.rootDir, fullpath);
+  }
+  return fullpath;
+};
+// default cascader handle
+export const getCascaderValue = (data: NormalObject, values: any[]) => {
+  const len = values.length;
+  let i = 0;
+  while(i < len) {
+    const cur = values[i++];
+    data = data[cur];
+  }
+  if(Array.isArray(data)) {
+    const index = makeRandom(0, data.length - 1);
+    return data[index];
+  } else {
+    const keys = Object.keys(data);
+    const index = makeRandom(0, keys.length - 1);
+    return keys[index];
+  }
 };

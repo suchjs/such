@@ -29,6 +29,7 @@ export declare class Mocker {
         key: string;
         config: NormalObject;
     };
+    result: any;
     readonly target: any;
     readonly config: NormalObject;
     readonly path: Path;
@@ -64,7 +65,9 @@ export default class Such {
     readonly options: SuchConfig;
     readonly mocker: Mocker;
     readonly instances: PathMap<Mocker>;
+    readonly mockits: PathMap<NormalObject>;
     readonly datas: PathMap<any>;
+    readonly paths: PathMap<Path>;
     protected struct: NormalObject;
     private initail;
     constructor(target: any, options?: SuchConfig);

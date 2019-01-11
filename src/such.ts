@@ -110,6 +110,7 @@ export class Mocker {
       config,
     };
   }
+  public result: any;
   public readonly target: any;
   public readonly config: NormalObject = {};
   public readonly path: Path;
@@ -130,6 +131,7 @@ export class Mocker {
    * @param {PathMap<any>} [rootDatas]
    * @memberof Mocker
    */
+  // tslint:disable-next-line:max-line-length
   constructor(options: MockerOptions, rootInstances?: PathMap<Mocker>, rootDatas?: PathMap<any>) {
     const { target, path, config, parent } = options;
     this.target = target;
@@ -308,6 +310,7 @@ export class Mocker {
               datas,
               dpath,
               such: Such,
+              mocker: this,
             });
             return;
           }
@@ -352,7 +355,7 @@ export class Mocker {
           queues.push(promise);
           dpaths.push(curDPath);
         });
-        return Promise.all(queues).then((results: any[]) => {
+        return this.result = Promise.all(queues).then((results: any[]) => {
           results.map((res: any, i: number) => {
             this.datas.set(dpaths[i], res);
           });
@@ -367,7 +370,7 @@ export class Mocker {
         });
       }
     }
-    return result;
+    return this.result = result;
   }
 }
 /**
@@ -559,7 +562,9 @@ export default class Such {
   public readonly options: SuchConfig;
   public readonly mocker: Mocker;
   public readonly instances: PathMap<Mocker>;
+  public readonly mockits: PathMap<NormalObject>;
   public readonly datas: PathMap<any>;
+  public readonly paths: PathMap<Path>;
   protected struct: NormalObject;
   private initail: boolean = false;
   constructor(target: any, options?: SuchConfig) {

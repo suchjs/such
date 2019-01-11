@@ -377,9 +377,12 @@ export class Dispatcher {
         }
         let match = null;
         const parser = parsers[type];
-        const { rule } = parser;
+        const { rule, separator } = parser;
         tryTypes.push(type);
         if(match = context.match(rule)) {
+          if(separator && match[0].slice(-1) === separator) {
+            throw new Error(`no need separator "${separator}" in type "${type}" of code "${context}"`);
+          }
           const instance = this.getInstance(type);
           const [ start, end ] = pair.split(splitor);
           const [ param ] = match;

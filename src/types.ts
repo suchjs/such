@@ -152,6 +152,7 @@ export interface SuchOptions {
   datas: PathMap<any>;
   dpath: Path;
   such: SuchInstance;
+  mocker: NormalObject;
 }
 //
 

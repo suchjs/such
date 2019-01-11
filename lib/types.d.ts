@@ -103,6 +103,7 @@ export interface SuchOptions {
     datas: PathMap<any>;
     dpath: Path;
     such: SuchInstance;
+    mocker: NormalObject;
 }
 export declare type TypeContructor = (new (t?: any) => any);
 export declare type MockitConfigItem<T> = T | TypeContructor[] | {

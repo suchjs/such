@@ -1,5 +1,5 @@
-import { Path as DPath } from '../helpers/pathmap';
-import { withPromise } from '../helpers/utils';
+import { getRefMocker, withPromise } from '../helpers/utils';
+import { Mocker } from '../such';
 import { ParamsPath, ParamsPathItem, SuchOptions } from '../types';
 import Mockit from './namespace';
 export default class ToRef extends Mockit<any> {
@@ -15,27 +15,12 @@ export default class ToRef extends Mockit<any> {
     });
   }
   public generate(options: SuchOptions) {
-    const { datas, dpath } = options;
+    const { mocker } = options;
     const { Path } = this.params;
     const result: any[] = [];
-    let isExists = true;
     Path.map((item: ParamsPathItem) => {
-      let lastPath: DPath;
-      if(!item.relative) {
-        lastPath = item.path;
-      } else {
-        if(dpath.length < item.depth + 1) {
-          isExists = false;
-        } else {
-          lastPath = dpath.slice(0, - (1 + item.depth)).concat(item.path);
-        }
-      }
-      if(isExists && datas.has(lastPath)) {
-        result.push(datas.get(lastPath));
-      } else {
-        // tslint:disable-next-line:max-line-length
-        throw new Error(`the path of "${lastPath ? '/' + lastPath.join('/') : item.fullpath}" is not exists in the datas.`);
-      }
+      const refMocker = getRefMocker(item, mocker as Mocker);
+      result.push(refMocker.result);
     });
     return Path.length === 1 ? result[0] : withPromise(result);
   }

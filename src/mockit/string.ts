@@ -90,26 +90,12 @@ export default class ToString extends Mockit<string> {
         range: result,
       };
     });
-    // Length Rule
-    this.addRule('Length', function(Length: NormalObject) {
-      if(!Length) {return; }
-      const { least, most } = Length;
-      if(isNaN(least)) {
-        throw new Error(`The length param of least expect a number,but got ${least}`);
-      }
-      if(isNaN(most)) {
-        throw new Error(`The length param of most expect a number,but got ${most}`);
-      }
-      if(Number(least) >  Number(most)) {
-        throw new Error(`The length param of least  ${least} is big than the most ${most}`);
-      }
-    });
   }
   public generate() {
     const { params } = this;
     const { Length } = params;
     const { least, most } = Length || { least: 1, most: 100 };
-    const { range } = params.Count || { range: [[0, 127]] };
+    const { range } = params.Count || { range: [[32, 126]] };
     const index = range.length - 1;
     const total = makeRandom(Number(least), Number(most));
     let result: string = '';

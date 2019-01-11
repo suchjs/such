@@ -1,6 +1,6 @@
 {
   "name": "suchjs",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "An easy to use and extend mock tool.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -35,7 +35,7 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
-    "nprintf": "^0.0.2",
+    "nprintf": "^0.0.6",
     "reregexp": "^0.1.8"
   },
   "repository": {

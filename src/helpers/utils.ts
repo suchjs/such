@@ -1,4 +1,6 @@
-import { NormalObject } from '../types';
+import { Mocker } from '../such';
+import { NormalObject, ParamsPathItem } from '../types';
+import PathMap, { Path } from './pathmap';
 export const encodeRegexpChars = (chars: string) => {
   return chars.replace(/([()\[{^$.*+?\/\-])/g, '\\$1');
 };
@@ -150,4 +152,46 @@ export const withPromise = (res: any[]) => {
     }
   });
   return last;
+};
+export const isRelativePath = (first: Path, second: Path): boolean => {
+  if(first.length > second.length) {
+    return isRelativePath(second, first);
+  }
+  const len = first.length;
+  let i = 0;
+  while(i < len) {
+    const cur = first[i].toString();
+    const compare = second[i].toString();
+    if(cur !== compare) {
+      break;
+    }
+    i++;
+  }
+  return i === len;
+};
+export const getRefMocker = (item: ParamsPathItem, mocker: Mocker) => {
+  let isExists = true;
+  let lastPath: Path;
+  const { root, path } = mocker;
+  const { instances } = root;
+  if(!item.relative) {
+    lastPath = item.path;
+  } else {
+    if(path.length < item.depth + 1) {
+      isExists = false;
+    } else {
+      lastPath = path.slice(0, - (1 + item.depth)).concat(item.path);
+    }
+  }
+  let refMocker: Mocker;
+  if(isExists && (refMocker = instances.get(lastPath))) {
+    if(isRelativePath(path, lastPath)) {
+      throw new Error(`the ref path of "${path.join('/')}" and "${lastPath.join('/')}" is a relative path.`);
+    } else {
+      return refMocker;
+    }
+  } else {
+    // tslint:disable-next-line:max-line-length
+    throw new Error(`the path of "${lastPath ? '/' + lastPath.join('/') : item.fullpath}" is not exists in the instances.`);
+  }
 };

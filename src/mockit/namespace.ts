@@ -310,10 +310,6 @@ export default abstract class Mockit<T> {
         this.invalidKeys.push(`[(${name})${e.message}]`);
       }
     });
-    if(keys.length) {
-      // tslint:disable-next-line:no-console
-      console.warn(`the params of keys:${keys.join(',')} has no valid rule.`);
-    }
     return this.invalidKeys.length === 0;
   }
   /**

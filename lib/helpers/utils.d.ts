@@ -1,4 +1,5 @@
-import { NormalObject } from '../types';
+import { Mocker } from '../such';
+import { NormalObject, ParamsPathItem } from '../types';
 export declare const encodeRegexpChars: (chars: string) => string;
 export declare const typeOf: (target: any) => string;
 export declare const isFn: (target: any) => boolean;
@@ -16,3 +17,5 @@ export declare const isNoEmptyObject: (target: any) => boolean;
 export declare const isPromise: (target: any) => boolean;
 export declare const shiftObject: (obj: NormalObject, keys: string[]) => NormalObject;
 export declare const withPromise: (res: any[]) => any[];
+export declare const isRelativePath: (first: (string | number)[], second: (string | number)[]) => boolean;
+export declare const getRefMocker: (item: ParamsPathItem, mocker: Mocker) => Mocker;

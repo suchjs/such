@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { deepCopy, typeOf } from './helpers/utils';
+import ToCascader from './node/mockit/cascader';
 import ToDict from './node/mockit/dict';
 import { getAllFiles, loadAllData, loadTemplate } from './node/utils';
 import store from './store';
@@ -96,6 +97,7 @@ if(lastConfFile) {
 }
 // add node types
 Such.define('dict', ToDict);
+Such.define('cascader', ToCascader);
 // redefine such.as,support .json file
 const origSuchas = Such.as;
 Such.as = function(target: any, options?: SuchConfig) {
