@@ -33,24 +33,9 @@ describe('validate parser and dispatch', () => {
         most: '5',
       },
     });
-    expect(Parser.parse('{1,}')).toEqual({
-      Length: {
-        least: '1',
-        most: '',
-      },
-    });
-    expect(Parser.parse('{,1}')).toEqual({
-      Length: {
-        least: '',
-        most: '1',
-      },
-    });
-    expect(Parser.parse('{\\,,1}')).toEqual({
-      Length: {
-        least: '\\,',
-        most: '1',
-      },
-    });
+    expect(() => Parser.parse('{1,}')).toThrow();
+    expect(() => Parser.parse('{,1}')).toThrow();
+    expect(() => Parser.parse('{\\,,1}')).toThrow();
   });
   test('config parser', () => {
     expect(Parser.parse('#[a=true,b="333",c=1e10,d,f=false,g="\\""]')).toEqual({
