@@ -1,8 +1,8 @@
-import { NormalObject } from '../types';
+import { TObject } from '../types';
 import { typeOf } from './utils';
 export type PathKey = string | number;
 export type Path = PathKey[];
-export type PathValue<T> = {[index: string]: T} | T[];
+export type PathValue<T> = { [index: string]: T } | T[];
 /**
  *
  *
@@ -10,8 +10,8 @@ export type PathValue<T> = {[index: string]: T} | T[];
  * @template T
  */
 export default class PathMap<T> {
-  private result: PathValue<T>  = null;
-  private initial: boolean = false;
+  private result: PathValue<T> = null;
+  private initial = false;
   constructor(public readonly isPlain: boolean) {}
   /**
    *
@@ -24,19 +24,19 @@ export default class PathMap<T> {
   public set(keys: Path, value: T) {
     const valueType = typeOf(value);
     const len = keys.length;
-    if(this.isPlain && (valueType === 'Array' || valueType === 'Object')) {
+    if (this.isPlain && (valueType === 'Array' || valueType === 'Object')) {
       return;
     }
-    if(!this.initial) {
+    if (!this.initial) {
       this.result = typeof keys[0] === 'number' ? [] : {};
       this.initial = true;
     }
-    let data: NormalObject = this.result;
+    let data: TObject = this.result;
     let i = 0;
-    for(; i < len - 1; i++) {
+    for (; i < len - 1; i++) {
       const key = keys[i];
       const next = keys[i + 1];
-      if(!data[key]) {
+      if (!data[key]) {
         data[key] = typeof next === 'number' ? [] : {};
       }
       data = data[key];
@@ -54,11 +54,11 @@ export default class PathMap<T> {
   public get(keys: Path): T {
     let result = this.result;
     try {
-      for(let i = 0, len = keys.length; i < len; i++) {
+      for (let i = 0, len = keys.length; i < len; i++) {
         const key = keys[i];
-        result = (result as NormalObject)[key as PathKey];
+        result = (result as TObject)[key as PathKey];
       }
-    } catch(e) {
+    } catch (e) {
       // not exists
     }
     return result as any;
@@ -79,18 +79,20 @@ export default class PathMap<T> {
    */
   public has(keys: Path): boolean {
     let result = this.result;
-    let flag: boolean = true;
-    for(let i = 0, len = keys.length; i < len; i++) {
+    let flag = true;
+    for (let i = 0, len = keys.length; i < len; i++) {
       const key = keys[i];
-      if(typeof key === 'number') {
+      if (typeof key === 'number') {
         flag = typeOf(result) === 'Array' && (result as any[]).length > key;
       } else {
-        flag = typeOf(result) === 'Object' && (result as NormalObject).hasOwnProperty(key);
+        flag =
+          typeOf(result) === 'Object' &&
+          (result as TObject).hasOwnProperty(key);
       }
-      if(!flag) {
+      if (!flag) {
         break;
       }
-      result = (result as NormalObject)[key];
+      result = (result as TObject)[key];
     }
     return flag;
   }

@@ -1,5 +1,5 @@
 import { ParamsPath, ParamsPathItem, ParserInstance } from '../types';
-const parser: ParserInstance =  {
+const parser: ParserInstance = {
   config: {
     startTag: ['&'],
     endTag: [],
@@ -10,16 +10,17 @@ const parser: ParserInstance =  {
   },
   parse(): ParamsPath | never {
     const { patterns, code } = this.info();
-    if(!patterns.length) {
+    if (!patterns.length) {
       this.halt(`no path params found:${code}`);
     }
     const result: ParamsPath = [];
     patterns.forEach((match: any[]) => {
       const [fullpath, prefix, curPath] = match;
       const relative = !!prefix;
-      const variable = relative && prefix.charAt(0) === '<' ? prefix.slice(1, -1) : undefined;
+      const variable =
+        relative && prefix.charAt(0) === '<' ? prefix.slice(1, -1) : undefined;
       let depth = 0;
-      if(relative && !variable) {
+      if (relative && !variable) {
         const segs = prefix.split('/');
         depth = segs.length - (segs[0] === '.' ? 1 : 0);
       }
@@ -30,7 +31,7 @@ const parser: ParserInstance =  {
         fullpath,
         variable,
       };
-      result.push(cur) ;
+      result.push(cur);
     });
     return result;
   },

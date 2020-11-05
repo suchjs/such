@@ -1,10 +1,10 @@
-import printf, {rule as formatRule } from 'nprintf';
+import printf, { rule as formatRule } from 'nprintf';
 import { isOptional } from '../helpers/utils';
-import { NormalObject } from '../types';
+import { TObject } from '../types';
 import Mockit, { ModifierFn } from './namespace';
 
 const factor = (type: number) => {
-  const epsilon = (Number as NormalObject).EPSILON || Math.pow(2, -52);
+  const epsilon = Number.EPSILON || Math.pow(2, -52);
   switch (type) {
     case 2:
       return 1 - Math.random();
@@ -29,24 +29,30 @@ export default class ToNumber extends Mockit<number> {
       },
     };
     // Count Rule
-    this.addRule('Count', function(Count: NormalObject) {
-      if(!Count) {return; }
+    this.addRule('Count', function (Count: TObject) {
+      if (!Count) {
+        return;
+      }
       const { range } = Count;
       const size = range.length;
       if (size !== 2) {
         // tslint:disable-next-line:max-line-length
-        throw new Error(size < 2 ? `the count param must have the min and the max params` : `the count param length should be 2,but got ${size}`);
+        throw new Error(
+          size < 2
+            ? `the count param must have the min and the max params`
+            : `the count param length should be 2,but got ${size}`,
+        );
       }
-      let [ min, max ] = range;
+      let [min, max] = range;
       min = min.trim();
       max = max.trim();
-      if(min === '' && max === '') {
+      if (min === '' && max === '') {
         throw new Error(`the min param and max param can not both undefined`);
       }
-      if(min === '') {
+      if (min === '') {
         min = Number.MIN_SAFE_INTEGER || Number.MIN_VALUE;
       }
-      if(max === '') {
+      if (max === '') {
         max = Number.MAX_SAFE_INTEGER || Number.MAX_VALUE;
       }
       if (isNaN(min)) {
@@ -58,24 +64,28 @@ export default class ToNumber extends Mockit<number> {
       const lastMin = Number(min);
       const lastMax = Number(max);
       if (lastMin > lastMax) {
-        throw new Error(`the min number ${min} is big than the max number ${max}`);
+        throw new Error(
+          `the min number ${min} is big than the max number ${max}`,
+        );
       }
       return {
         range: [lastMin, lastMax],
       };
     });
     // Format rule
-    this.addRule('Format', function(Format: NormalObject) {
-      if(!Format) {return; }
+    this.addRule('Format', function (Format: TObject) {
+      if (!Format) {
+        return;
+      }
       const { format } = Format;
       if (!formatRule.test(format)) {
         throw new Error(`Wrong format rule(${format})`);
       }
     });
     // Format Modifier
-    this.addModifier('Format', (function(result: number, Format: NormalObject) {
+    this.addModifier('Format', function (result: number, Format: TObject) {
       return printf(Format.format, result);
-    }) as ModifierFn<number>);
+    } as ModifierFn<number>);
   }
   public generate() {
     const { Count, Config } = this.params;
@@ -84,11 +94,14 @@ export default class ToNumber extends Mockit<number> {
       const { range } = Count;
       const step = Config && Config.step;
       const [min, max] = range;
-      if(step) {
+      if (step) {
         const minPlus = 0;
         const maxPlus = Math.floor((max - min) / step);
-        if(maxPlus > minPlus) {
-          return +min + step * (minPlus + Math.floor(Math.random() * (maxPlus - minPlus)));
+        if (maxPlus > minPlus) {
+          return (
+            +min +
+            step * (minPlus + Math.floor(Math.random() * (maxPlus - minPlus)))
+          );
         }
       }
       result = +min + (max - min) * factor(3);
@@ -98,7 +111,7 @@ export default class ToNumber extends Mockit<number> {
     }
     return result;
   }
-  public test() {
+  public test(): boolean {
     return true;
   }
 }

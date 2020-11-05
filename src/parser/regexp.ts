@@ -1,6 +1,6 @@
 import { parserRule } from 'reregexp';
 import { ParamsRegexp, ParserInstance } from '../types';
-const parser: ParserInstance =  {
+const parser: ParserInstance = {
   config: {
     startTag: ['/'],
     endTag: [],
@@ -8,7 +8,7 @@ const parser: ParserInstance =  {
   },
   parse(): ParamsRegexp | never {
     const { params } = this.info();
-    if(params.length !== 1) {
+    if (params.length !== 1) {
       return this.halt(`invalid regexp rule:${params.join('')}`);
     }
     return {

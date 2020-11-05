@@ -1,19 +1,20 @@
-import { NormalObject } from './types';
+import Mockit from './mockit/namespace';
+import { TObject } from './types';
 export interface Store {
-  (name: string, value: any, alwaysVar: boolean): void;
-  vars: NormalObject;
-  fns: NormalObject;
-  mockits: NormalObject;
-  alias: NormalObject;
+  (name: string, value: unknown, alwaysVar: boolean): void;
+  vars: TObject;
+  fns: TObject;
+  mockits: TObject<Mockit<unknown>>;
+  alias: TObject<string>;
   aliasTypes: string[];
-  fileCache: NormalObject;
-  config: NormalObject;
+  fileCache: TObject;
+  config: TObject;
 }
 const store: Store = (() => {
-  const fns: {[index: string]: () => any} = {};
-  const vars: NormalObject = {};
-  const fn = ((name: string, value: any, alwaysVar: boolean): void => {
-    if(typeof value !== 'function' || alwaysVar) {
+  const fns: { [index: string]: () => unknown } = {};
+  const vars: TObject = {};
+  const fn = ((name: string, value: unknown, alwaysVar: boolean): void => {
+    if (typeof value !== 'function' || alwaysVar) {
       vars[name] = value;
     } else {
       fns[name] = value;

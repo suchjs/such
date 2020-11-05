@@ -1,4 +1,4 @@
-import { NormalObject, PrototypeMethodNames } from '../types';
+import { TObject, PrototypeMethodNames } from '../types';
 import { capitalize } from './utils';
 /*1.形如2016/06/01,2016-06-01,2016.06.01
 2.特殊日期
@@ -30,8 +30,12 @@ interface DateHashResult extends DateHashInterface<number> {
  * @param date
  */
 const fixDate = (date?: Date | string | number): Date => {
-  if (typeof date === 'undefined') {return new Date(); }
-  if (date instanceof Date) {return date; }
+  if (typeof date === 'undefined') {
+    return new Date();
+  }
+  if (date instanceof Date) {
+    return date;
+  }
   return new Date(date);
 };
 /**
@@ -40,13 +44,19 @@ const fixDate = (date?: Date | string | number): Date => {
  * @param month
  * @param day
  */
-const makeDate = (year: string | null, month: string | null, day: string | null): Date => {
+const makeDate = (
+  year: string | null,
+  month: string | null,
+  day: string | null,
+): Date => {
   const localDate = new Date();
   const fullYear = localDate.getFullYear().toString();
   year = year || fullYear;
   month = month || (localDate.getMonth() + 1).toString();
   day = day || localDate.getDate().toString();
-  year = (year.length < 4 ? fullYear.slice(0, fullYear.length - year.length) : '') + year;
+  year =
+    (year.length < 4 ? fullYear.slice(0, fullYear.length - year.length) : '') +
+    year;
   const strDate = [year, month, day].join('/') + ' 00:00:00';
   return new Date(strDate);
 };
@@ -55,16 +65,49 @@ const makeDate = (year: string | null, month: string | null, day: string | null)
  * @param dateStr
  * @param baseDate
  */
-const strToDate = (dateStr: string, baseDate?: Date | string | number): Date | never => {
-  const mS: string[] = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const strToDate = (
+  dateStr: string,
+  baseDate?: Date | string | number,
+): Date | never => {
+  const mS: string[] = [
+    'jan',
+    'feb',
+    'mar',
+    'apr',
+    'may',
+    'jun',
+    'jul',
+    'aug',
+    'sep',
+    'oct',
+    'nov',
+    'dec',
+  ];
   // tslint:disable-next-line:max-line-length
-  const mL: string[] = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+  const mL: string[] = [
+    'january',
+    'february',
+    'march',
+    'april',
+    'may',
+    'june',
+    'july',
+    'august',
+    'september',
+    'october',
+    'november',
+    'december',
+  ];
   const r1 = /^(\d{4})([-\/.])(\d{1,2})\2(\d{1,2})$/;
   const r2 = /^(today|yesterday|tomorrow)$/;
   const r3 = /^(\d{4})(\d{1,2})(\d{1,2})$/;
   const r4 = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4})?)$/;
   // tslint:disable-next-line:max-line-length
-  const r5 = new RegExp('^(' + mS.concat(mL).join('|') + ')(?:\\s+|\\.)(?:(([13]?1)(?:st)?|([12]?2)(?:nd)?|([12]?3)(?:rd)?|([12]0|[12]?[4-9])(?:th)?|(30)th))(?:\\s*,\\s*(\\d{2}|\\d{4}))?$');
+  const r5 = new RegExp(
+    '^(' +
+      mS.concat(mL).join('|') +
+      ')(?:\\s+|\\.)(?:(([13]?1)(?:st)?|([12]?2)(?:nd)?|([12]?3)(?:rd)?|([12]0|[12]?[4-9])(?:th)?|(30)th))(?:\\s*,\\s*(\\d{2}|\\d{4}))?$',
+  );
   const r6 = /^(([+-]?\d+)\s+(day|month|week|year)s?(\s+(?!$)|))+?(\s+ago)?$/;
   const r6e = /([+-]?\d+)\s+(day|month|week|year)s?/g;
   let match;
@@ -73,9 +116,9 @@ const strToDate = (dateStr: string, baseDate?: Date | string | number): Date | n
   if (dateStr === '') {
     localDate.setHours(0, 0, 0, 0);
     return localDate;
-  } else if (match = dateStr.match(r1)) {
+  } else if ((match = dateStr.match(r1))) {
     return makeDate(match[1], match[3], match[4]);
-  } else if (match = dateStr.match(r2)) {
+  } else if ((match = dateStr.match(r2))) {
     const addNum: SpecialDayAdd = {
       today: 0,
       tomorrow: 1,
@@ -91,15 +134,19 @@ const strToDate = (dateStr: string, baseDate?: Date | string | number): Date | n
       return baseDate;
     } else {
       if (addNum[key]) {
-        return makeDate(null, null, (localDate.getDate() + addNum[key]).toString());
+        return makeDate(
+          null,
+          null,
+          (localDate.getDate() + addNum[key]).toString(),
+        );
       }
       return makeDate(null, null, null);
     }
-  } else if (match = dateStr.match(r3)) {
+  } else if ((match = dateStr.match(r3))) {
     return makeDate.apply(null, match.slice(1, 4));
-  } else if (match = dateStr.match(r4)) {
+  } else if ((match = dateStr.match(r4))) {
     return makeDate(match[4], match[1], match[2]);
-  } else if (match = dateStr.match(r5)) {
+  } else if ((match = dateStr.match(r5))) {
     let month = match[1];
     const day = match[3];
     const year = match[8];
@@ -111,7 +158,7 @@ const strToDate = (dateStr: string, baseDate?: Date | string | number): Date | n
       month = (atML + 1).toString();
     }
     return makeDate(year, month, day);
-  } else if (match = dateStr.match(r6)) {
+  } else if ((match = dateStr.match(r6))) {
     const needReverse = match[5] ? '-' : '';
     let group = null;
     const info: DateHashInfo = {
@@ -136,14 +183,21 @@ const strToDate = (dateStr: string, baseDate?: Date | string | number): Date | n
     Object.keys(info).map((key: DateHashInfoKey) => {
       const arr = info[key];
       if (arr.length) {
-        result[key] = new Function('', 'return ' + needReverse + '(' + arr.join('+') + ')')();
+        result[key] = new Function(
+          '',
+          'return ' + needReverse + '(' + arr.join('+') + ')',
+        )();
       } else {
         result[key] = 0;
       }
     });
     result.date = result.week * 7 + result.day;
     result.fullYear = result.year;
-    const setFnQueues: Array<keyof DateHashResult> = ['date', 'month', 'fullYear'];
+    const setFnQueues: Array<keyof DateHashResult> = [
+      'date',
+      'month',
+      'fullYear',
+    ];
     const lastDate: Date = fixDate(baseDate);
     for (let i = 0, j = setFnQueues.length; i < j; i++) {
       const key: keyof DateHashResult = setFnQueues[i];
@@ -152,7 +206,9 @@ const strToDate = (dateStr: string, baseDate?: Date | string | number): Date | n
       if (num) {
         const orig = lastDate[`get${method}` as DateMethods]() as number;
         try {
-          (lastDate[`set${method}` as DateMethods] as (num: number) => any)(orig + num);
+          (lastDate[`set${method}` as DateMethods] as (num: number) => any)(
+            orig + num,
+          );
         } catch (e) {
           throw e;
         }
@@ -164,19 +220,19 @@ const strToDate = (dateStr: string, baseDate?: Date | string | number): Date | n
   }
 };
 export const strtotime = (date: any) => {
-  if(!isNaN(date)) {
+  if (!isNaN(date)) {
     return new Date(+date);
-  } else if(typeof date === 'string') {
+  } else if (typeof date === 'string') {
     let result: Date;
     try {
       result = new Date(date);
-      if(isNaN(+result)) {
+      if (isNaN(+result)) {
         throw new Error('invalid date');
       }
-    } catch(e) {
+    } catch (e) {
       try {
         result = strToDate(date);
-      } catch(e) {
+      } catch (e) {
         throw e;
       }
     }
@@ -185,10 +241,31 @@ export const strtotime = (date: any) => {
     throw new Error(`invalid date:${date}`);
   }
 };
-const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const dayNames = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+];
 // tslint:disable-next-line:max-line-length
-const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const formatter: NormalObject = {
+const monthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+const formatter: TObject = {
   d() {
     return this.getDate();
   },
@@ -247,7 +324,9 @@ const formatter: NormalObject = {
     return this.getMilliseconds().toString().padStart(3, '0');
   },
   L() {
-    return Math.round(this.getMilliseconds() / 10).toString().padStart(2, '0');
+    return Math.round(this.getMilliseconds() / 10)
+      .toString()
+      .padStart(2, '0');
   },
   tt() {
     return this.getHours() >= 12 ? 'pm' : 'am';
@@ -262,18 +341,18 @@ const formatter: NormalObject = {
     return formatter.TT.call(this).charAt(0);
   },
   S() {
-    return ['st', 'nd', 'rd'][this.getDate() % 10 - 1] || 'th';
+    return ['st', 'nd', 'rd'][(this.getDate() % 10) - 1] || 'th';
   },
   N() {
     return this.getDay() || 7;
   },
 };
-const zerofill = function(fnName: string, date: Date) {
+const zerofill = function (fnName: string, date: Date) {
   return formatter[fnName].call(date).toString().padStart(2, '0');
 };
 export const dateformat = (fmt: string, date: Date) => {
   return fmt.replace(/[A-Za-z]*/g, (type: string) => {
-    if(formatter[type]) {
+    if (formatter[type]) {
       return formatter[type].call(date);
     }
     return type;

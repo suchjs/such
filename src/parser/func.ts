@@ -1,7 +1,13 @@
 import { encodeSplitor } from '../config';
 import { getExp } from '../helpers/utils';
 import store from '../store';
-import { NormalFn, NormalObject, ParamsFunc, ParamsFuncOptions, ParserInstance } from '../types';
+import {
+  NormalFn,
+  TObject,
+  ParamsFunc,
+  ParamsFuncOptions,
+  ParserInstance,
+} from '../types';
 const { fns: globalFns } = store;
 const parseFuncParams = (options: ParamsFuncOptions) => {
   const { name, params } = options;
@@ -15,13 +21,17 @@ const parseFuncParams = (options: ParamsFuncOptions) => {
   const useFnParam = isUserDefined ? [fnName] : [];
   const lastParams: string[] = isUserDefined ? [resName] : [];
   const paramValues: any[] = [];
-  let index: number = 0;
+  let index = 0;
   params.forEach((param: any) => {
     const { value, variable } = param;
-    if(variable) {
+    if (variable) {
       const isObjChain = value.indexOf('.') > -1 || value.indexOf('[') > -1;
       // tslint:disable-next-line:max-line-length
-      lastParams.push(isObjChain ? `${expName}(${confName},"${value}")` : `${confName}.hasOwnProperty("${value}") ? ${confName}["${value}"] : ${varName}["${value}"]`);
+      lastParams.push(
+        isObjChain
+          ? `${expName}(${confName},"${value}")`
+          : `${confName}.hasOwnProperty("${value}") ? ${confName}["${value}"] : ${varName}["${value}"]`,
+      );
     } else {
       paramValues.push(value);
       lastParams.push(`${argName}[${index++}]`);
@@ -30,11 +40,16 @@ const parseFuncParams = (options: ParamsFuncOptions) => {
   // tslint:disable-next-line:max-line-length
   return {
     // tslint:disable-next-line:max-line-length
-    fn: new Function(useFnParam.concat(argName, varName, resName, confName, expName).join(','), isUserDefined ? `return ${fnName}.apply(this,[${lastParams.join(',')}]);` : `return ${fnName}(${lastParams.join(',')})`),
+    fn: new Function(
+      useFnParam.concat(argName, varName, resName, confName, expName).join(','),
+      isUserDefined
+        ? `return ${fnName}.apply(this,[${lastParams.join(',')}]);`
+        : `return ${fnName}(${lastParams.join(',')})`,
+    ),
     param: paramValues,
   };
 };
-const parser: ParserInstance =  {
+const parser: ParserInstance = {
   config: {
     startTag: ['@'],
     endTag: [],
@@ -42,7 +57,9 @@ const parser: ParserInstance =  {
     // tslint:disable-next-line:max-line-length
     pattern: /^([a-z][\w$]*)(?:\(((?:(?:(['"])(?:(?!\3)[^\\]|\\.)*\3|[\w$]+(?:\.[\w$]+|\[(?:(['"])(?:(?!\4)[^\\]|\\.)*\4|\d+)\])*)\s*(?:,(?!\s*\))|(?=\s*\)))\s*)*)\)|)/,
     // tslint:disable-next-line:max-line-length
-    rule: new RegExp(`^@(?:[a-z][\\w$]*(?:\\((?:(?:(['"])(?:(?!\\1)[^\\\\]|\\\\.)*\\1|[\\w$]+(?:\\.[\\w$]+|\\[(?:(['"])(?:(?!\\2)[^\\\\]|\\.)*\\2|\\d+)\\])*)\\s*(?:,(?!\\s*\\))|(?=\\s*\\)))\\s*)*\\)|)(?:\\|(?!$|${encodeSplitor})|(?=\\s*$|${encodeSplitor})))*`),
+    rule: new RegExp(
+      `^@(?:[a-z][\\w$]*(?:\\((?:(?:(['"])(?:(?!\\1)[^\\\\]|\\\\.)*\\1|[\\w$]+(?:\\.[\\w$]+|\\[(?:(['"])(?:(?!\\2)[^\\\\]|\\.)*\\2|\\d+)\\])*)\\s*(?:,(?!\\s*\\))|(?=\\s*\\)))\\s*)*\\)|)(?:\\|(?!$|${encodeSplitor})|(?=\\s*$|${encodeSplitor})))*`,
+    ),
   },
   parse(): ParamsFunc | never {
     const { patterns, code } = this.info();
@@ -52,21 +69,21 @@ const parser: ParserInstance =  {
       params: [],
       options: [],
     };
-    if(!patterns.length) {
+    if (!patterns.length) {
       this.halt(`no modify functions find in "${code}"`);
     } else {
       const rule = /(['"])((?:(?!\1)[^\\]|\\.)*)\1|([\w$]+(?:\.[\w$]+|\[(?:(['"])(?:(?!\4)[^\\]|\\.)*\4|\d+)\])*)/g;
       const nativeValues = ['true', 'false', 'undefined', 'null', 'NaN'];
       patterns.forEach((match: any[]) => {
-        const [ _, name, args ] = match;
+        const [_, name, args] = match;
         const params = [];
-        if(args) {
+        if (args) {
           let segs: any[] | null = null;
-          while((segs = rule.exec(args)) !== null) {
+          while ((segs = rule.exec(args)) !== null) {
             const plainValue = segs[3];
-            const cur: NormalObject = {};
-            if(plainValue) {
-              if(nativeValues.indexOf(plainValue) > -1 || !isNaN(plainValue)) {
+            const cur: TObject = {};
+            if (plainValue) {
+              if (nativeValues.indexOf(plainValue) > -1 || !isNaN(plainValue)) {
                 cur.value = getExp(plainValue);
               } else {
                 cur.value = plainValue;

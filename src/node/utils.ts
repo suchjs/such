@@ -1,28 +1,34 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
-import { NormalObject } from 'reregexp';
+import { TObject } from 'reregexp';
 import { makeRandom, typeOf } from '../helpers/utils';
 import store from '../store';
 import { ParamsPathItem } from '../types';
 const { fileCache, config } = store;
 
 // tslint:disable-next-line:max-line-length
-export const loadDict: (filePath: string | string[], useCache?: boolean) => Promise<string[] | string[][]> = function(filePath: string | string[], useCache: boolean = true) {
-  if(typeOf(filePath) === 'Array') {
+export const loadDict: (
+  filePath: string | string[],
+  useCache?: boolean,
+) => Promise<string[] | string[][]> = function (
+  filePath: string | string[],
+  useCache = true,
+) {
+  if (typeOf(filePath) === 'Array') {
     const queues: Array<Promise<string[]>> = [];
     (filePath as string[]).map((curFile: string) => {
       queues.push(loadDict(curFile) as Promise<string[]>);
     });
     return Promise.all(queues);
   }
-  const lastPath = filePath  as string;
-  if(useCache && fileCache[lastPath]) {
+  const lastPath = filePath as string;
+  if (useCache && fileCache[lastPath]) {
     return Promise.resolve(fileCache[lastPath]);
   } else {
     try {
       const result: string[] = [];
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         const rl = readline.createInterface({
           input: fs.createReadStream(lastPath),
           crlfDelay: Infinity,
@@ -35,8 +41,8 @@ export const loadDict: (filePath: string | string[], useCache?: boolean) => Prom
           resolve(result);
         });
       });
-    } catch(e) {
-      // tslint:disable-next-line:no-console
+    } catch (e) {
+      // eslint-disable-next-line no-console
       console.error(`load dict ${filePath} failed:${e.message}`);
       return Promise.reject(e.message);
     }
@@ -44,9 +50,12 @@ export const loadDict: (filePath: string | string[], useCache?: boolean) => Prom
 };
 // get all files
 export const getAllFiles = (directory: string): Promise<string[]> => {
-  const walk = function(dir: string, done: (err: any, results?: string[]) => any) {
+  const walk = function (
+    dir: string,
+    done: (err: any, results?: string[]) => any,
+  ) {
     let results: string[] = [];
-    fs.readdir(dir, function(err, list) {
+    fs.readdir(dir, function (err, list) {
       if (err) {
         return done(err);
       }
@@ -57,9 +66,9 @@ export const getAllFiles = (directory: string): Promise<string[]> => {
         }
         const file = list[--i];
         const cur = path.join(dir, file);
-        fs.stat(cur, function(_, stat) {
+        fs.stat(cur, function (_, stat) {
           if (stat && stat.isDirectory()) {
-            walk(cur, function(__, res) {
+            walk(cur, function (__, res) {
               results = results.concat(res);
               next();
             });
@@ -73,7 +82,7 @@ export const getAllFiles = (directory: string): Promise<string[]> => {
   };
   return new Promise((resolve, reject) => {
     walk(directory, (err, results) => {
-      if(err) {
+      if (err) {
         reject(err);
       } else {
         resolve(results);
@@ -82,15 +91,17 @@ export const getAllFiles = (directory: string): Promise<string[]> => {
   });
 };
 // load json files
-export const loadJson = (filePath: string | string[]): Promise<string[] | string[][]> => {
-  if(typeOf(filePath) === 'Array') {
+export const loadJson = (
+  filePath: string | string[],
+): Promise<string[] | string[][]> => {
+  if (typeOf(filePath) === 'Array') {
     const queues: Array<Promise<string[]>> = [];
     (filePath as string[]).map((curFile: string) => {
       queues.push(loadJson(curFile) as Promise<string[]>);
     });
     return Promise.all(queues);
   }
-  const lastPath = filePath  as string;
+  const lastPath = filePath as string;
   fileCache[lastPath] = require(lastPath);
   return Promise.resolve(fileCache[lastPath]);
 };
@@ -98,26 +109,26 @@ export const loadJson = (filePath: string | string[]): Promise<string[] | string
 export const loadAllData = (allFiles: string[]) => {
   const dictFiles: string[] = [];
   const jsonFiles = allFiles.filter((file) => {
-    if(path.extname(file) === '.json') {
+    if (path.extname(file) === '.json') {
       return true;
     } else {
       dictFiles.push(file);
     }
   });
-  return Promise.all([loadJson(jsonFiles), loadDict(dictFiles)] ) ;
+  return Promise.all([loadJson(jsonFiles), loadDict(dictFiles)]);
 };
 // load template json
 export const loadTemplate = (file: string) => {
   return new Promise((resolve, reject) => {
     fs.stat(file, (err, stat) => {
-      if(err) {
+      if (err) {
         reject(err);
       } else {
-        if(fileCache[file] && stat.mtime === fileCache[file].mtime) {
+        if (fileCache[file] && stat.mtime === fileCache[file].mtime) {
           resolve(fileCache[file].content);
         } else {
           fs.readFile(file, 'utf8', (e, data) => {
-            if(e) {
+            if (e) {
               reject(e);
             } else {
               const content = JSON.parse(data);
@@ -134,10 +145,10 @@ export const loadTemplate = (file: string) => {
   });
 };
 // get real path
-export const getRealPath = (item: ParamsPathItem) => {
+export const getRealPath = (item: ParamsPathItem): string => {
   const { variable } = item;
   let { fullpath } = item;
-  if(variable) {
+  if (variable) {
     fullpath = fullpath.replace(`<${variable}>`, config[variable]);
   } else {
     fullpath = path.join(config.dataDir || config.rootDir, fullpath);
@@ -145,14 +156,14 @@ export const getRealPath = (item: ParamsPathItem) => {
   return fullpath;
 };
 // default cascader handle
-export const getCascaderValue = (data: NormalObject, values: any[]) => {
+export const getCascaderValue = (data: TObject, values: any[]) => {
   const len = values.length;
   let i = 0;
-  while(i < len) {
+  while (i < len) {
     const cur = values[i++];
     data = data[cur];
   }
-  if(Array.isArray(data)) {
+  if (Array.isArray(data)) {
     const index = makeRandom(0, data.length - 1);
     return data[index];
   } else {

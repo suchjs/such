@@ -8,40 +8,59 @@ const confs: SuchConfFile = {
     lowercase: ['string', '[97,122]'],
     alphaNumericDash: ['string', '[48-57,97-122,65-90,95]'],
     // tslint:disable-next-line:max-line-length
-    url: ['regexp', '/(?<protocol>http|https|ftp|telnet|file):\\/\\/(?<domain>(?:[a-z0-9]+(?:-?[a-z0-9]+|[a-z0-9]*))\\.(?<ltd>com|cn|com\\.cn|org|net|gov\\.cn|wang|ren|xyz|top|cc|io))(?<port>(?::(?:6[0-5][0-5][0-3][0-5]|[1-5]\\d{4}|[1-9]\\d{0,3}))?)\\/(?<pathname>(?:[0-9a-z]+\\/)*(?<filename>\\w+(?<extname>\\.(?:html|htm|php|do)))?)(?<query>\\?([0-9a-z_]+=(?:[0-9a-z]+|(?:%[0-9A-F]{2}){2,})&)*([0-9a-z_]+=(?:[0-9a-z]+|(?:%[0-9A-F]{2}){2,})))(?<hash>#[0-9a-z_=]{5,})?/'],
+    url: [
+      'regexp',
+      '/(?<protocol>http|https|ftp|telnet|file):\\/\\/(?<domain>(?:[a-z0-9]+(?:-?[a-z0-9]+|[a-z0-9]*))\\.(?<ltd>com|cn|com\\.cn|org|net|gov\\.cn|wang|ren|xyz|top|cc|io))(?<port>(?::(?:6[0-5][0-5][0-3][0-5]|[1-5]\\d{4}|[1-9]\\d{0,3}))?)\\/(?<pathname>(?:[0-9a-z]+\\/)*(?<filename>\\w+(?<extname>\\.(?:html|htm|php|do)))?)(?<query>\\?([0-9a-z_]+=(?:[0-9a-z]+|(?:%[0-9A-F]{2}){2,})&)*([0-9a-z_]+=(?:[0-9a-z]+|(?:%[0-9A-F]{2}){2,})))(?<hash>#[0-9a-z_=]{5,})?/',
+    ],
     // tslint:disable-next-line:max-line-length
-    email: ['regexp', '/(?<user>(?:[a-z0-9]+(?:[-_]?[a-z0-9]+|[a-z0-9]*)))@(?<domain>(?:[a-z0-9]+(?:-?[a-z0-9]+|[a-z0-9]*))\\.(?<ltd>com|cn|com\\.cn|org|net|gov\\.cn|wang|ren|xyz|top|cc|io))/'],
-    boolean(options) {
+    email: [
+      'regexp',
+      '/(?<user>(?:[a-z0-9]+(?:[-_]?[a-z0-9]+|[a-z0-9]*)))@(?<domain>(?:[a-z0-9]+(?:-?[a-z0-9]+|[a-z0-9]*))\\.(?<ltd>com|cn|com\\.cn|org|net|gov\\.cn|wang|ren|xyz|top|cc|io))/',
+    ],
+    boolean(options): boolean {
       const { such } = options;
       return such.utils.isOptional();
     },
-    color$hex(options) {
+    color$hex(options): string {
       const { such } = options;
-      return '#' + such.utils.makeRandom(0x000000, 0xffffff).toString(16).toUpperCase();
+      return (
+        '#' +
+        such.utils.makeRandom(0x000000, 0xffffff).toString(16).toUpperCase()
+      );
     },
-    color$rgb(options) {
+    color$rgb(options): string {
       const { such } = options;
-      const instance = such.as(':int[0,255]', {instance: true});
-      return 'rgb(' + [instance.a(), instance.a(), instance.a()].join(',') + ')';
+      const instance = such.as(':int[0,255]', { instance: true });
+      return (
+        'rgb(' + [instance.a(), instance.a(), instance.a()].join(',') + ')'
+      );
     },
-    color$rgba(options) {
+    color$rgba(options): string {
       const { such } = options;
-      const instance = such.as(':int[0,255]', {instance: true});
+      const instance = such.as(':int[0,255]', { instance: true });
       const opacity = such.as(':number[0,1]:%.2f');
-      return 'rgba(' + [instance.a(), instance.a(), instance.a(), opacity || 0].join(',') + ')';
+      return (
+        'rgba(' +
+        [instance.a(), instance.a(), instance.a(), opacity || 0].join(',') +
+        ')'
+      );
     },
-    color$hsl(options) {
+    color$hsl(options): string {
       const { such } = options;
       const highlight = such.as(':int[0,360]');
-      const instance = such.as(':percent', {instance: true});
+      const instance = such.as(':percent', { instance: true });
       return 'hsl(' + [highlight, instance.a(), instance.a()].join(',') + ')';
     },
-    color$hsla(options) {
+    color$hsla(options): string {
       const { such } = options;
       const highlight = such.as(':int[0,360]');
-      const instance = such.as(':percent', {instance: true});
+      const instance = such.as(':percent', { instance: true });
       const opacity = such.as(':number[0,1]:%.2f');
-      return 'hsla(' + [highlight, instance.a(), instance.a(), opacity || 0].join(',') + ')';
+      return (
+        'hsla(' +
+        [highlight, instance.a(), instance.a(), opacity || 0].join(',') +
+        ')'
+      );
     },
   },
   alias: {

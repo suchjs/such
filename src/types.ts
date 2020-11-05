@@ -1,9 +1,11 @@
 import PathMap, { Path } from './helpers/pathmap';
-export interface NormalObject {
-  [index: string]: any;
+export interface TObject<T = unknown> {
+  [index: string]: T;
 }
-export type valueof<T> = T[keyof T];
-export type PrototypeMethodNames<T> = {[K in keyof T]: T[K] extends () => void ? K : never; }[keyof T];
+export type ValueOf<T> = T[keyof T];
+export type PrototypeMethodNames<T> = {
+  [K in keyof T]: T[K] extends () => void ? K : never;
+}[keyof T];
 /**
  *
  * @interface ParamsWrapper
@@ -41,11 +43,11 @@ export interface ParamsFormat {
  */
 export interface ParamsFuncOptions {
   name: string;
-  params?: any[];
+  params?: unknown[];
 }
 export interface ParamsFunc {
   queue: string[];
-  params: any[][];
+  params: unknown[][];
   fns: NormalFn[];
   options: ParamsFuncOptions[];
 }
@@ -100,8 +102,8 @@ export interface ParserConfig {
 }
 export interface ParserInstance {
   config: ParserConfig;
-  setting?: object;
-  parse(): object | never;
+  setting?: TObject;
+  parse(): TObject | never;
 }
 // such config
 /**
@@ -111,21 +113,25 @@ export interface ParserInstance {
  */
 export interface MockitOptions {
   param?: string;
-  configOptions?: NormalObject;
+  configOptions?: TObject;
   init?: () => void;
-  generate: () => any;
+  generate: () => unknown;
   generateFn?: () => void;
 }
-export type NormalFn = (...args: any[]) => any;
+export type NormalFn = (...args: unknown[]) => unknown;
 export interface FnList {
   [index: string]: NormalFn;
 }
 export interface SuchConfGlobal {
-  vars?: NormalObject;
+  vars?: TObject;
   fns?: FnList;
 }
 export interface SuchConfTypes {
-  [index: string]: NormalFn | MockitOptions | [string, string] | [string, MockitOptions];
+  [index: string]:
+    | NormalFn
+    | MockitOptions
+    | [string, string]
+    | [string, MockitOptions];
 }
 export interface SuchConfParser {
   [index: string]: ParserInstance;
@@ -141,24 +147,32 @@ export interface SuchConfFile {
   globals?: SuchConfGlobal;
   parsers?: SuchConfParser;
   types?: SuchConfTypes;
-  alias?: {[index: string]: string};
+  alias?: { [index: string]: string };
 }
 //
 export interface SuchInstance {
-  [index: string]: any;
+  [index: string]: unknown;
 }
 //
 export interface SuchOptions {
-  datas: PathMap<any>;
+  datas: PathMap<unknown>;
   dpath: Path;
   such: SuchInstance;
-  mocker: NormalObject;
+  mocker: TObject;
 }
 //
 
-export type TypeContructor = (new (t?: any) => any);
-// tslint:disable-next-line:max-line-length
-export type MockitConfigItem<T> = T | TypeContructor[] | {type: T, default: (new() => T) | (() => (new() => T)), validator?: () => boolean | never, required?: boolean};
+export type TypeConstructor = new (t?: unknown) => unknown;
+
+export type MockitConfigItem<T> =
+  | T
+  | TypeConstructor[]
+  | {
+      type: T;
+      default: (new () => T) | (() => new () => T);
+      validator?: () => boolean | never;
+      required?: boolean;
+    };
 export interface MockitConfig {
-  [index: string]: MockitConfigItem<any>;
+  [index: string]: MockitConfigItem<unknown>;
 }

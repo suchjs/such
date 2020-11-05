@@ -1,28 +1,42 @@
 import { suchRule } from './config';
 import PathMap, { Path } from './helpers/pathmap';
 import * as utils from './helpers/utils';
-import * as mockitList from './mockit';
+import { mockitList, TMockitList } from './mockit';
 import Mockit from './mockit/namespace';
 import Parser from './parser';
 import store from './store';
-import { MockitOptions, NormalObject, ParserConfig, SuchConfFile, SuchOptions } from './types';
-const { capitalize, isFn, isOptional, makeRandom, map, typeOf, deepCopy, isNoEmptyObject } = utils;
+import {
+  MockitOptions,
+  TObject,
+  ParserConfig,
+  SuchConfFile,
+  SuchOptions,
+} from './types';
+const {
+  capitalize,
+  isFn,
+  isOptional,
+  makeRandom,
+  typeOf,
+  deepCopy,
+  isNoEmptyObject,
+} = utils;
 const { alias, aliasTypes } = store;
 /**
  *
  *
- * @interface SuchConfig
+ * @interface ISuchConfig
  */
-export interface SuchConfig {
+export interface ISuchConfig {
   instance?: boolean;
-  config?: KeyRuleInterface;
+  config?: IKeyRule;
 }
 /**
  *
  *
- * @interface KeyRuleInterface
+ * @interface IKeyRule
  */
-export interface KeyRuleInterface {
+export interface IKeyRule {
   min?: number;
   max?: number;
   optional?: boolean;
@@ -34,9 +48,9 @@ export interface KeyRuleInterface {
  *
  * @interface MockitInstances
  */
-export interface MockitInstances {
-  [index: string]: any;
-}
+export type MockitInstances<T extends Mockit<unknown>> = {
+  [index: string]: T;
+};
 /**
  *
  *
@@ -44,23 +58,24 @@ export interface MockitInstances {
  * @interface MockerOptions
  */
 export interface MockerOptions {
-  target: any;
+  target: unknown;
   path: Path;
   parent?: Mocker;
-  config?: KeyRuleInterface;
+  config?: IKeyRule;
 }
 //
 export interface PromiseResult {
   dpath: Path;
-  result: Promise<any>;
+  result: Promise<unknown>;
 }
 // all mockits
-const AllMockits: NormalObject = {};
-map(mockitList, (item, key) => {
-  if ((key as string).indexOf('_') === 0) {
+const AllMockits: TMockitList = {};
+Object.keys(mockitList).map((key: string) => {
+  if (key.startsWith('_')) {
+    // ignore special mockits name begin with '_'
     return;
   }
-  AllMockits[key] = item;
+  AllMockits[key] = mockitList[key];
 });
 
 /**
@@ -78,10 +93,15 @@ export class Mocker {
    * @returns
    * @memberof Mocker
    */
-  public static parseKey(key: string) {
+  public static parseKey(
+    key: string,
+  ): {
+    key: string;
+    config: TObject;
+  } {
     const rule = /(\??)(:?)(?:\{(\d+)(?:,(\d+))?}|\[(\d+)(?:,(\d+))?])?$/;
-    let match: any[];
-    const config: NormalObject = {};
+    let match: Array<string | undefined>;
+    const config: TObject = {};
     if ((match = key.match(rule)).length && match[0] !== '') {
       const [all, query, colon, lMin, lMax, aMin, aMax] = match;
       const hasArrLen = aMin !== undefined;
@@ -110,19 +130,19 @@ export class Mocker {
       config,
     };
   }
-  public result: any;
-  public readonly target: any;
-  public readonly config: NormalObject = {};
+  public result: unknown;
+  public readonly target: unknown;
+  public readonly config: IKeyRule = {};
   public readonly path: Path;
   public readonly type: string;
   public readonly instances?: PathMap<Mocker>;
-  public readonly datas?: PathMap<any>;
+  public readonly datas?: PathMap<unknown>;
   public readonly root: Mocker;
   public readonly parent: Mocker;
   public readonly dataType: string;
   public readonly isRoot: boolean;
-  public readonly mockFn: (dpath: Path) => any;
-  public readonly mockit: NormalObject;
+  public readonly mockFn: (dpath: Path) => unknown;
+  public readonly mockit: Mockit;
   public readonly promises: PromiseResult[] = [];
   /**
    * Creates an instance of Mocker.
@@ -131,8 +151,11 @@ export class Mocker {
    * @param {PathMap<any>} [rootDatas]
    * @memberof Mocker
    */
-  // tslint:disable-next-line:max-line-length
-  constructor(options: MockerOptions, rootInstances?: PathMap<Mocker>, rootDatas?: PathMap<any>) {
+  constructor(
+    options: MockerOptions,
+    rootInstances?: PathMap<Mocker>,
+    rootDatas?: PathMap<unknown>,
+  ) {
     const { target, path, config, parent } = options;
     this.target = target;
     this.path = path;
@@ -147,15 +170,16 @@ export class Mocker {
       this.parent = parent;
       this.root = parent.root;
     }
-    const dataType = typeOf(this.target).toLowerCase();
+    const dataType = typeOf(target).toLowerCase();
     const { min, max, oneOf, alwaysArray } = this.config;
     const { instances, datas } = this.root;
     const hasLength = !isNaN(min);
     this.dataType = dataType;
-    if (dataType === 'array') {
+    if (Array.isArray(target)) {
       const totalIndex = target.length - 1;
       const getInstance = (mIndex?: number): Mocker => {
-        mIndex = typeof mIndex === 'number' ? mIndex : makeRandom(0, totalIndex);
+        mIndex =
+          typeof mIndex === 'number' ? mIndex : makeRandom(0, totalIndex);
         const nowPath = path.concat(mIndex);
         let instance = instances.get(nowPath);
         if (!(instance instanceof Mocker)) {
@@ -170,11 +194,11 @@ export class Mocker {
       };
       if (!hasLength) {
         // e.g {"a":["b","c"]},orignal array type
-        const mockers = target.map((_: any, index: number) => {
+        const mockers = target.map((_: unknown, index: number) => {
           return getInstance(index);
         });
         this.mockFn = (dpath: Path) => {
-          const result: any[] = [];
+          const result: unknown[] = [];
           mockers.map((instance: Mocker, index: number) => {
             const curDpath = dpath.concat(index);
             const value = instance.mock(curDpath);
@@ -185,10 +209,16 @@ export class Mocker {
         };
       } else {
         // mock array type
-        const makeArrFn = (dpath: Path, instance: Mocker | Mocker[], total?: number) => {
-          const result: any[] = [];
-          // tslint:disable-next-line:max-line-length
-          const makeInstance = instance instanceof Mocker ? (i: number) => instance as Mocker : (i: number) => (instance as Mocker[])[i];
+        const makeArrFn = (
+          dpath: Path,
+          instance: Mocker | Mocker[],
+          total?: number,
+        ) => {
+          const result: unknown[] = [];
+          const makeInstance =
+            instance instanceof Mocker
+              ? (_i: number) => instance as Mocker
+              : (i: number) => (instance as Mocker[])[i];
           total = typeof total === 'number' ? total : makeRandom(min, max);
           for (let i = 0; i < total; i++) {
             const cur = makeInstance(i);
@@ -199,17 +229,23 @@ export class Mocker {
           }
           return result;
         };
-        const makeOptional = (dpath: Path, instance: Mocker, total: number): never | any => {
+        const makeOptional = (
+          dpath: Path,
+          instance: Mocker,
+          total: number,
+        ): never | unknown => {
           let result;
           if (total > 1) {
-            throw new Error(`optional func of the total param can not more than 1`);
+            throw new Error(
+              `optional func of the total param can not more than 1`,
+            );
           } else if (total === 1) {
             result = instance.mock(dpath);
           }
           datas.set(dpath, result);
           return result;
         };
-        let resultFn: (dpath: Path, instance: Mocker) => any;
+        let resultFn: (dpath: Path, instance: Mocker) => unknown;
         if (oneOf) {
           if (alwaysArray) {
             // e.g {"a:[0,1]":[{b:1},{"c":1},{"d":1}]}
@@ -232,8 +268,10 @@ export class Mocker {
           // e.g {"a[1,3]":["amd","cmd","umd"]}
           // e.g {"a{0,3}":["amd","cmd","umd"]}
           const makeRandArrFn = (dpath: Path, total?: number) => {
-            total = !isNaN(total) ? total : makeRandom(min, max);
-            const targets = Array.apply(null, new Array(total)).map(() => {
+            total = !isNaN(total) ? Number(total) : makeRandom(min, max);
+            const targets = Array.from({
+              length: total,
+            }).map(() => {
               return getInstance();
             });
             return makeArrFn(dpath, targets, total);
@@ -245,16 +283,19 @@ export class Mocker {
           } else {
             this.mockFn = (dpath: Path) => {
               const total = makeRandom(min, max);
-              if (total <= 1) {return makeOptional(dpath, getInstance(), total); }
+              if (total <= 1) {
+                return makeOptional(dpath, getInstance(), total);
+              }
               return makeRandArrFn(dpath, total);
             };
           }
         }
       }
     } else if (dataType === 'object') {
+      const oTarget = target as TObject;
       // parse key
-      const keys: NormalObject[] = Object.keys(target).map((i: string) => {
-        const val = target[i];
+      const keys = Object.keys(oTarget).map((i: string) => {
+        const val = oTarget[i];
         const { key, config: conf } = Mocker.parseKey(i);
         return {
           key,
@@ -263,7 +304,7 @@ export class Mocker {
         };
       });
       this.mockFn = (dpath: Path) => {
-        const result: NormalObject = {};
+        const result: TObject = {};
         const prevPath = this.path;
         keys.map((item) => {
           const { key, config: conf, target: tar } = item;
@@ -292,26 +333,28 @@ export class Mocker {
       };
     } else {
       if (dataType === 'string') {
-        const match = target.match(suchRule);
+        const sTarget = target as string;
+        const match = sTarget.match(suchRule);
         const type = match && match[1];
-        if(type) {
+        if (type) {
           const lastType = alias[type] ? alias[type] : type;
-          if(AllMockits.hasOwnProperty(lastType)) {
+          if (AllMockits.hasOwnProperty(lastType)) {
             this.type = lastType;
             const klass = AllMockits[lastType];
             const instance = new klass();
-            const meta = target.replace(match[0], '').replace(/^\s*:\s*/, '');
+            const meta = sTarget.replace(match[0], '').replace(/^\s*:\s*/, '');
             if (meta !== '') {
               const params = Parser.parse(meta);
               instance.setParams(params);
             }
             this.mockit = instance;
-            this.mockFn = (dpath: Path) => instance.make({
-              datas,
-              dpath,
-              such: Such,
-              mocker: this,
-            });
+            this.mockFn = (dpath: Path) =>
+              instance.make({
+                datas,
+                dpath,
+                such: Such,
+                mocker: this,
+              });
             return;
           }
         }
@@ -326,9 +369,11 @@ export class Mocker {
    * @param {*} value
    * @memberof Mocker
    */
-  public setParams(value: string | NormalObject) {
+  public setParams(value: string | TObject) {
     if (this.mockit) {
-      return this.mockit.setParams(typeof value === 'string' ? Parser.parse(value) : value);
+      return this.mockit.setParams(
+        typeof value === 'string' ? Parser.parse(value) : value,
+      );
     } else {
       throw new Error('This mocker is not the mockit type.');
     }
@@ -346,31 +391,31 @@ export class Mocker {
       return;
     }
     const result = this.mockFn(dpath);
-    if(this.isRoot) {
-      if(this.promises.length) {
+    if (this.isRoot) {
+      if (this.promises.length) {
         const queues: Array<Promise<any>> = [];
         const dpaths: Path[] = [];
-        this.promises.map((item: PromiseResult ) => {
+        this.promises.map((item: PromiseResult) => {
           const { result: promise, dpath: curDPath } = item;
           queues.push(promise);
           dpaths.push(curDPath);
         });
-        return this.result = Promise.all(queues).then((results: any[]) => {
+        return (this.result = Promise.all(queues).then((results: any[]) => {
           results.map((res: any, i: number) => {
             this.datas.set(dpaths[i], res);
           });
           return this.datas.get([]);
-        });
+        }));
       }
     } else {
-      if(utils.isPromise(result)) {
+      if (utils.isPromise(result)) {
         this.root.promises.push({
           dpath,
           result,
         });
       }
     }
-    return this.result = result;
+    return (this.result = result);
   }
 }
 /**
@@ -381,7 +426,7 @@ export class Mocker {
  */
 // tslint:disable-next-line:max-classes-per-file
 export default class Such {
-  public static readonly utils: {[index: string]: (...args: any[]) => any} = utils;
+  public static readonly utils = utils;
   /**
    *
    *
@@ -390,12 +435,14 @@ export default class Such {
    * @param {string} long
    * @memberof Such
    */
-  public static alias(short: string, long: string) {
-    if(short === '' || long === '' || short === long) {
+  public static alias(short: string, long: string): void | never {
+    if (short === '' || long === '' || short === long) {
       throw new Error(`wrong alias params:[${short}][${long}]`);
     }
-    if(aliasTypes.indexOf(long) > -1) {
-      throw new Error(`the type of "${long}" has an alias yet,can not use "${short}" for alias name.`);
+    if (aliasTypes.indexOf(long) > -1) {
+      throw new Error(
+        `the type of "${long}" has an alias yet,can not use "${short}" for alias name.`,
+      );
     } else {
       alias[short] = long;
       aliasTypes.push(long);
@@ -410,11 +457,16 @@ export default class Such {
    */
   public static config(config: SuchConfFile) {
     const { parsers, types, globals } = config;
-    const fnHashs: NormalObject = { parsers: 'parser', types: 'define', globals: 'assign'};
+    const fnHashs: TObject = {
+      parsers: 'parser',
+      types: 'define',
+      globals: 'assign',
+    };
     const lastConf: SuchConfFile = {};
-    const such = Such as NormalObject;
-    if(config.extends && typeof such.loadConf === 'function') {
-      const confFiles = typeof config.extends === 'string' ? [ config.extends ] : config.extends;
+    const such = Such;
+    if (config.extends && typeof such.loadConf === 'function') {
+      const confFiles =
+        typeof config.extends === 'string' ? [config.extends] : config.extends;
       const confs = such.loadConf(confFiles);
       confs.map((conf: SuchConfFile) => {
         delete conf.extends;
@@ -427,11 +479,11 @@ export default class Such {
       globals: globals || {},
     });
     Object.keys(lastConf).map((key: string) => {
-      const conf = lastConf[key as keyof SuchConfFile] as NormalObject;
+      const conf = lastConf[key as keyof SuchConfFile] as TObject;
       const fnName = fnHashs[key] || key;
       Object.keys(conf).map((name: string) => {
         const args = typeOf(conf[name]) === 'Array' ? conf[name] : [conf[name]];
-        such[fnName](name,  ...args);
+        such[fnName](name, ...args);
       });
     });
   }
@@ -442,15 +494,18 @@ export default class Such {
    * @param {string} name
    * @param {ParserConfig} config
    * @param {() => void} parse
-   * @param {NormalObject} [setting]
+   * @param {TObject} [setting]
    * @returns {(never | void)}
    * @memberof Such
    */
-  public static parser(name: string, params: {
-    config: ParserConfig;
-    parse: () => void;
-    setting?: NormalObject;
-  }): never | void {
+  public static parser(
+    name: string,
+    params: {
+      config: ParserConfig;
+      parse: () => void;
+      setting?: TObject;
+    },
+  ): never | void {
     const { config, parse, setting } = params;
     return Parser.addParser(name, config, parse, setting);
   }
@@ -461,7 +516,7 @@ export default class Such {
    * @param {*} target
    * @memberof Such
    */
-  public static as(target: any, options?: SuchConfig) {
+  public static as(target: any, options?: ISuchConfig) {
     const ret = new Such(target, options);
     return options && options.instance ? ret : ret.a();
   }
@@ -473,7 +528,7 @@ export default class Such {
    * @param {*} value
    * @memberof Such
    */
-  public static assign(name: string, value: any, alwaysVar: boolean = false) {
+  public static assign(name: string, value: any, alwaysVar = false) {
     store(name, value, alwaysVar);
   }
   /**
@@ -487,33 +542,42 @@ export default class Such {
    */
   public static define(type: string, ...args: any[]): void | never {
     const argsNum = args.length;
-    if(argsNum === 0 || argsNum > 2) {
+    if (argsNum === 0 || argsNum > 2) {
       throw new Error(`the static "define" method's arguments is not right.`);
     }
     const opts = args.pop();
     // tslint:disable-next-line:max-line-length
-    const config: MockitOptions = argsNum === 2 && typeof opts === 'string' ? ({ param: opts } as MockitOptions) : (argsNum === 1 && typeof opts === 'function' ? { generate: opts } : opts);
+    const config: MockitOptions =
+      argsNum === 2 && typeof opts === 'string'
+        ? ({ param: opts } as MockitOptions)
+        : argsNum === 1 && typeof opts === 'function'
+        ? { generate: opts }
+        : opts;
     const { param, init, generateFn, generate, configOptions } = config;
     const params = typeof param === 'string' ? Parser.parse(param) : {};
     const constrName = `To${capitalize(type)}`;
     if (!AllMockits.hasOwnProperty(type)) {
-      // tslint:disable-next-line:max-line-length
-      let klass;
-      if(argsNum === 2) {
+      let klass: Mockit;
+      if (argsNum === 2) {
         const baseType = args[0];
-        const base = AllMockits[baseType as string];
-        if(!base) {
-          throw new Error(`the defined type "${type}" what based on type of "${baseType}" is not exists.`);
+        const BaseClass = AllMockits[baseType as string] as (((...args:unknown[]) => unknown) extends Mockit);
+        if (!BaseClass) {
+          throw new Error(
+            `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
+          );
         }
-        // tslint:disable-next-line:max-classes-per-file
-        klass = class extends (base as {new(name: string): any}) {
+        klass = class extends BaseClass implements Mockit {
           constructor() {
             super(constrName);
           }
           public init() {
             super.init();
-            if(isNoEmptyObject(configOptions)) {
-              this.configOptions = deepCopy({}, this.configOptions, configOptions);
+            if (isNoEmptyObject(configOptions)) {
+              this.configOptions = deepCopy(
+                {},
+                this.configOptions,
+                configOptions,
+              );
             }
             if (isFn(init)) {
               init.call(this);
@@ -521,26 +585,29 @@ export default class Such {
             if (isFn(generateFn)) {
               this.reGenerate(generateFn);
             }
-            if(isNoEmptyObject(params)) {
+            if (isNoEmptyObject(params)) {
               this.setParams(params);
             }
             this.frozen();
           }
         };
       } else {
-        // tslint:disable-next-line:max-classes-per-file
-        klass = class extends Mockit<any> {
+        klass = class extends Mockit {
           constructor() {
             super(constrName);
           }
           public init() {
-            if(isNoEmptyObject(configOptions)) {
-              this.configOptions = deepCopy({}, this.configOptions, configOptions);
+            if (isNoEmptyObject(configOptions)) {
+              this.configOptions = deepCopy(
+                {},
+                this.configOptions,
+                configOptions,
+              );
             }
-            if(isFn(init)) {
+            if (isFn(init)) {
               init.call(this);
             }
-            if(isNoEmptyObject(params)) {
+            if (isNoEmptyObject(params)) {
               this.setParams(params, undefined);
             }
             this.frozen();
@@ -559,23 +626,27 @@ export default class Such {
     }
   }
   public readonly target: any;
-  public readonly options: SuchConfig;
+  public readonly options: ISuchConfig;
   public readonly mocker: Mocker;
   public readonly instances: PathMap<Mocker>;
-  public readonly mockits: PathMap<NormalObject>;
+  public readonly mockits: PathMap<TObject>;
   public readonly datas: PathMap<any>;
   public readonly paths: PathMap<Path>;
-  protected struct: NormalObject;
-  private initail: boolean = false;
-  constructor(target: any, options?: SuchConfig) {
+  protected struct: TObject;
+  private initail = false;
+  constructor(target: any, options?: ISuchConfig) {
     this.target = target;
     this.instances = new PathMap(false);
     this.datas = new PathMap(true);
-    this.mocker = new Mocker({
-      target,
-      path: [],
-      config: options && options.config,
-    }, this.instances, this.datas);
+    this.mocker = new Mocker(
+      {
+        target,
+        path: [],
+        config: options && options.config,
+      },
+      this.instances,
+      this.datas,
+    );
   }
   /**
    *
@@ -583,7 +654,7 @@ export default class Such {
    * @returns
    * @memberof Such
    */
-  public a() {
+  public a(): unknown {
     if (!this.initail) {
       this.initail = true;
     } else {

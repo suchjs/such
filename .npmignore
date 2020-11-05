@@ -1,14 +1,27 @@
 # dir
 /src/
+/local/
 /__tests__/
 /dist/
 /node_modules/
+/coverage
+
 # files
-tslint.json
-yarn.lock
+browser.ts
+
+# system temp file
 .DS_Store
+
+# vscode config
 .vscode
-.travis.yml
+
+# package
+yarn.lock
 package-lock.json
+
+# config files
+.travis.yml
 webpack.config.js
-jest.config.json
+jest.config.js
+.prettierrc.js
+.eslintrc.js

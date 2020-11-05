@@ -5,9 +5,9 @@ import { ParamsCount, ParamsFormat, SuchOptions } from '../types';
 import Mockit, { ModifierFn } from './namespace';
 const makeDate = (param: string | number): Date | never => {
   let date: Date;
-  if(!isNaN(param as number)) {
+  if (!isNaN(param as number)) {
     date = new Date(param as number);
-  } else if(strRule.test(param as string)) {
+  } else if (strRule.test(param as string)) {
     date = strtotime(RegExp.$2);
   } else {
     throw new Error(`invalid date:${param}`);
@@ -20,21 +20,25 @@ export default class ToDate extends Mockit<string | Date> {
   }
   public init() {
     // range
-    this.addRule('Count', function(Count: ParamsCount) {
-      if(!Count) {
+    this.addRule('Count', function (Count: ParamsCount) {
+      if (!Count) {
         return;
       }
       const { range } = Count;
-      if(range.length !== 2) {
-        throw new Error(`the time range should supply 2 arguments,but got ${range.length}`);
+      if (range.length !== 2) {
+        throw new Error(
+          `the time range should supply 2 arguments,but got ${range.length}`,
+        );
       } else {
-        const [ start, end ] = range;
+        const [start, end] = range;
         const startdate: Date | never = makeDate(start);
         const enddate: Date | never = makeDate(end);
         const starttime = startdate.getTime();
         const endtime = enddate.getTime();
-        if(endtime < starttime) {
-          throw new Error(`the time range of start time ${start} is big than end time ${end}.`);
+        if (endtime < starttime) {
+          throw new Error(
+            `the time range of start time ${start} is big than end time ${end}.`,
+          );
         } else {
           return {
             range: [starttime, endtime],
@@ -43,8 +47,8 @@ export default class ToDate extends Mockit<string | Date> {
       }
     });
     // Format rule
-    this.addRule('Format', function(Format: ParamsFormat) {
-      if(!Format) {
+    this.addRule('Format', function (Format: ParamsFormat) {
+      if (!Format) {
         return {
           format: 'yyyy-mm-dd',
         };
@@ -57,10 +61,10 @@ export default class ToDate extends Mockit<string | Date> {
       };
     });
     // modifier
-    this.addModifier('Format', (function(result: any, Format: ParamsFormat) {
+    this.addModifier('Format', function (result: any, Format: ParamsFormat) {
       const { format } = Format;
       return dateformat(format, result as Date);
-    })  as ModifierFn<string>);
+    } as ModifierFn<string>);
   }
   public generate() {
     const { Count } = this.params;

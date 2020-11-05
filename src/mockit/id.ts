@@ -21,9 +21,9 @@ export default class ToId extends Mockit<number> {
     const config = this.params.Config || {};
     const { start, step } = config;
     let len = dpath.length;
-    while(len--) {
+    while (len--) {
       const cur = dpath[len];
-      if(typeof cur === 'number') {
+      if (typeof cur === 'number') {
         return start + step * cur;
       }
     }

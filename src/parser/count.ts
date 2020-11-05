@@ -1,5 +1,5 @@
 import { ParamsCount, ParserInstance } from '../types';
-const parser: ParserInstance =  {
+const parser: ParserInstance = {
   config: {
     startTag: ['['],
     endTag: [']'],

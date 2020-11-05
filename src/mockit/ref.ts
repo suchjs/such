@@ -8,8 +8,8 @@ export default class ToRef extends Mockit<any> {
   }
   public init() {
     // path
-    this.addRule('Path', function(Path: ParamsPath) {
-      if(!Path) {
+    this.addRule('Path', function (Path: ParamsPath) {
+      if (!Path) {
         throw new Error(`the ref type must has a path param.`);
       }
     });

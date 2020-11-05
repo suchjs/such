@@ -1,5 +1,5 @@
 import RegexpParser, { regexpRule } from 'reregexp';
-import { NormalObject, ParamsRegexp } from '../types';
+import { TObject, ParamsRegexp } from '../types';
 import Mockit from './namespace';
 export default class ToRegexp extends Mockit<string> {
   private instance: RegexpParser;
@@ -8,35 +8,41 @@ export default class ToRegexp extends Mockit<string> {
   }
   public init() {
     // regexp rule
-    this.addRule('Regexp', function(Regexp: ParamsRegexp) {
-      if(!Regexp) {throw new Error(`the regexp type must has a regexp rule.`); }
+    this.addRule('Regexp', function (Regexp: ParamsRegexp) {
+      if (!Regexp) {
+        throw new Error(`the regexp type must has a regexp rule.`);
+      }
       const { rule } = Regexp;
-      if(!regexpRule.test(rule)) {
+      if (!regexpRule.test(rule)) {
         throw new Error('wrong regexp expression');
       }
     });
     // config rule
-    this.addRule('Config', function(Config: NormalObject) {
-      if(!Config) {return; }
-      const result: NormalObject = {};
+    this.addRule('Config', function (Config: TObject) {
+      if (!Config) {
+        return;
+      }
+      const result: TObject = {};
       const rule = /(.?)\|/g;
       Object.keys(Config).forEach((key) => {
         const value = Config[key];
-        if(typeof value === 'string') {
+        if (typeof value === 'string') {
           let match: null | any[];
           let segs: string[] = [];
           const groups: string[] = [];
           let lastIndex = 0;
-          while((match = rule.exec(value)) !== null) {
-            if(match[1] === '\\') {
+          while ((match = rule.exec(value)) !== null) {
+            if (match[1] === '\\') {
               segs.push(value.slice(lastIndex, rule.lastIndex));
             } else {
-              groups.push(segs.join('') + value.slice(lastIndex, rule.lastIndex - 1));
+              groups.push(
+                segs.join('') + value.slice(lastIndex, rule.lastIndex - 1),
+              );
               segs = [];
             }
             lastIndex = rule.lastIndex;
           }
-          if(lastIndex < value.length) {
+          if (lastIndex < value.length) {
             groups.push(value.slice(lastIndex, value.length));
           }
           result[key] = groups;
@@ -50,7 +56,7 @@ export default class ToRegexp extends Mockit<string> {
   public generate() {
     let { instance } = this;
     const { Config, Regexp } = this.params;
-    if(!instance) {
+    if (!instance) {
       instance = this.instance = new RegexpParser(Regexp.rule, {
         namedGroupConf: Config || {},
       });
