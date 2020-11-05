@@ -11,7 +11,7 @@ import store from '../store';
 import {
   MockitConfig,
   MockitConfigItem,
-  TObject,
+  TObj,
   ParamsFunc,
   ParamsFuncOptions,
   SuchOptions,
@@ -21,12 +21,12 @@ const { fns: globalFns, vars: globalVars, mockits } = store;
 //
 export type Result<T> = T | never;
 export type ModifierFn<T> = (res: T) => T | string | never;
-export type RuleFn = (cur: TObject) => void | TObject;
+export type RuleFn = (cur: TObj) => void | TObj;
 
 export default abstract class Mockit<T = unknown> {
   protected configOptions: MockitConfig = {};
-  protected params: TObject = {};
-  protected origParams: TObject = {};
+  protected params: TObj = {};
+  protected origParams: TObj = {};
   protected generateFn: undefined | ((options: SuchOptions) => Result<T>);
   protected isValidOk = false;
   protected hasValid = false;
@@ -43,9 +43,9 @@ export default abstract class Mockit<T = unknown> {
         Object.keys(define).map((key) => {
           const value = define[key];
           if (typeOf(value) === 'Object') {
-            (this as TObject)[key] = deepCopy({}, value);
+            (this as TObj)[key] = deepCopy({}, value);
           } else {
-            (this as TObject)[key] = value;
+            (this as TObj)[key] = value;
           }
         });
       }
@@ -93,7 +93,7 @@ export default abstract class Mockit<T = unknown> {
     const { configOptions } = this;
     // if set configOptions,validate config
     if (isNoEmptyObject(configOptions)) {
-      this.addRule('Config', function (Config: TObject) {
+      this.addRule('Config', function (Config: TObj) {
         const last = deepCopy({}, Config || {});
         Object.keys(configOptions).map((key: string) => {
           const cur: MockitConfigItem<any> = configOptions[key];
@@ -174,17 +174,17 @@ export default abstract class Mockit<T = unknown> {
   /**
    *
    *
-   * @param {TObject} params
+   * @param {TObj} params
    * @param {undefined} value
-   * @returns {(TObject|never)}
+   * @returns {(TObj|never)}
    * @memberof Mockit
    */
-  public setParams(params: TObject, value: undefined): TObject | never;
-  public setParams(key: string, value: TObject): TObject | never;
-  public setParams(key: unknown, value: unknown): TObject | never {
-    let params: TObject = {};
+  public setParams(params: TObj, value: undefined): TObj | never;
+  public setParams(key: string, value: TObj): TObj | never;
+  public setParams(key: unknown, value: unknown): TObj | never {
+    let params: TObj = {};
     if (typeof key === 'object' && value === undefined) {
-      params = key as TObject;
+      params = key as TObj;
     } else if (typeof key === 'string') {
       params[key] = value;
     }
@@ -227,7 +227,7 @@ export default abstract class Mockit<T = unknown> {
   /**
    *
    *
-   * @param {TObject} [Such]
+   * @param {TObj} [Such]
    * @returns {Result<T>}
    * @memberof Mockit
    */

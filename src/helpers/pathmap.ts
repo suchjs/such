@@ -1,4 +1,4 @@
-import { TObject } from '../types';
+import { TObj } from '../types';
 import { typeOf } from './utils';
 export type PathKey = string | number;
 export type Path = PathKey[];
@@ -31,7 +31,7 @@ export default class PathMap<T> {
       this.result = typeof keys[0] === 'number' ? [] : {};
       this.initial = true;
     }
-    let data: TObject = this.result;
+    let data: TObj = this.result;
     let i = 0;
     for (; i < len - 1; i++) {
       const key = keys[i];
@@ -56,7 +56,7 @@ export default class PathMap<T> {
     try {
       for (let i = 0, len = keys.length; i < len; i++) {
         const key = keys[i];
-        result = (result as TObject)[key as PathKey];
+        result = (result as TObj)[key as PathKey];
       }
     } catch (e) {
       // not exists
@@ -86,13 +86,12 @@ export default class PathMap<T> {
         flag = typeOf(result) === 'Array' && (result as any[]).length > key;
       } else {
         flag =
-          typeOf(result) === 'Object' &&
-          (result as TObject).hasOwnProperty(key);
+          typeOf(result) === 'Object' && (result as TObj).hasOwnProperty(key);
       }
       if (!flag) {
         break;
       }
-      result = (result as TObject)[key];
+      result = (result as TObj)[key];
     }
     return flag;
   }

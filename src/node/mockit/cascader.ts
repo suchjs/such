@@ -1,7 +1,13 @@
-import { getRefMocker, typeOf, withPromise } from '../../helpers/utils';
+import { getRefMocker, withPromise } from '../../helpers/utils';
 import store from '../../store';
 import { Mocker } from '../../such';
-import { TObject, SuchOptions } from '../../types';
+import {
+  TObj,
+  SuchOptions,
+  ParamsPath,
+  ParamsPathItem,
+  TStrList,
+} from '../../types';
 import { getCascaderValue, getRealPath, loadJson } from '../utils';
 const { config, fileCache } = store;
 
@@ -15,8 +21,8 @@ export default {
       type: Function,
     },
   },
-  init() {
-    this.addRule('Path', (Path: TObject) => {
+  init(): void {
+    this.addRule('Path', (Path: ParamsPath) => {
       if (!Path) {
         throw new Error('the cascader type must have a path or ref.');
       } else if (Path.length !== 1) {
@@ -24,7 +30,7 @@ export default {
       }
     });
   },
-  generate(options: SuchOptions) {
+  generate(options: SuchOptions): TStrList {
     const { mocker } = options;
     let { Path, Config } = this.params;
     let lastPath = Path[0];
@@ -42,17 +48,21 @@ export default {
       values.unshift(refMocker.result);
     }
     handle = handle || getCascaderValue;
-    // tslint:disable-next-line:max-line-length
-    const isSync =
-      config.preload === true ||
-      (typeOf(config.preload) === 'Array' &&
-        config.preload.indexOf(lastPath.fullpath) > -1);
+    let isSync = false;
+    const preload = config.preload as boolean | string[];
+    if (typeof preload === 'boolean') {
+      isSync = preload === true;
+    } else if (Array.isArray(config.preload)) {
+      isSync = (Path as ParamsPath).every((item: ParamsPathItem) =>
+        preload.includes(item.fullpath),
+      );
+    }
     const realPath = getRealPath(lastPath);
     if (isSync) {
       const data = fileCache[realPath];
       return handle(data, values);
     } else {
-      return loadJson(realPath).then((data: TObject) => {
+      return loadJson(realPath).then((data: TObj) => {
         return Promise.all(withPromise(values)).then((last: any[]) => {
           const cur = handle(data, last);
           return cur;

@@ -1,5 +1,5 @@
 import { Mocker } from '../such';
-import { TObject, ParamsPathItem } from '../types';
+import { TObj, ParamsPathItem } from '../types';
 import PathMap, { Path } from './pathmap';
 export const encodeRegexpChars = (chars: string) => {
   return chars.replace(/([()\[{^$.*+?\/\-])/g, '\\$1');
@@ -9,14 +9,14 @@ export const typeOf = (target: any): string => {
 };
 export const isFn = (target: any): boolean => typeof target === 'function';
 export const map = (
-  target: any[] | TObject | string,
+  target: any[] | TObj | string,
   fn: (item: any, index: number | string) => void,
 ) => {
   if (typeOf(target) === 'Array') {
     return (target as any[]).map(fn);
   } else if (typeOf(target) === 'Object') {
-    const ret: TObject = {};
-    target = target as TObject;
+    const ret: TObj = {};
+    target = target as TObj;
     for (const key in target) {
       if (target.hasOwnProperty(key)) {
         ret[key] = fn(target[key], key);
@@ -139,8 +139,8 @@ export const isNoEmptyObject = (target: any) => {
 export const isPromise = (target: any) => {
   return typeOf(target) === 'Promise' || (target && isFn(target.then));
 };
-export const shiftObject = (obj: TObject, keys: string[]) => {
-  const res: TObject = {};
+export const shifTObj = (obj: TObj, keys: string[]) => {
+  const res: TObj = {};
   keys.map((key: string) => {
     res[key] = obj[key];
     delete obj[key];

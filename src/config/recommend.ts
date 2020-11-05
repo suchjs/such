@@ -1,4 +1,4 @@
-import { SuchConfFile } from '../types';
+import { SuchConfFile, SuchOptions } from '../types';
 const confs: SuchConfFile = {
   types: {
     integer: ['number', '%d'],

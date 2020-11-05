@@ -1,12 +1,12 @@
-import { makeRandom, typeOf } from '../../helpers/utils';
+import { makeRandom } from '../../helpers/utils';
 import store from '../../store';
-import { TObject, ParamsPathItem } from '../../types';
+import { ParamsPath, ParamsPathItem } from '../../types';
 import { getRealPath, loadDict } from '../utils';
 const { config, fileCache } = store;
-
+type TString = string | string[];
 export default {
-  init() {
-    this.addRule('Path', function (Path: TObject) {
+  init(): void {
+    this.addRule('Path', function (Path: ParamsPath) {
       if (!Path) {
         throw new Error('the dict type must have a path param.');
       } else {
@@ -21,20 +21,22 @@ export default {
       }
     });
   },
-  generate() {
+  generate(): TString | Promise<TString> {
     const { Path, Length } = this.params;
-    // tslint:disable-next-line:max-line-length
-    const isSync =
-      config.preload === true ||
-      (typeOf(config.preload) === 'Array' &&
-        Path.every(
-          (item: ParamsPathItem) => config.preload.indexOf(item.fullpath) > -1,
-        ));
-    const makeOne = (result: string[][]) => {
+    const preload = config.preload as boolean | string[];
+    let isSync = false;
+    if (typeof preload === 'boolean') {
+      isSync = preload === true;
+    } else if (Array.isArray(config.preload)) {
+      isSync = Path.every((item: ParamsPathItem) =>
+        preload.includes(item.fullpath),
+      );
+    }
+    const makeOne = (result: string[][]): string => {
       const dict = result[makeRandom(0, result.length - 1)];
       return dict[makeRandom(0, dict.length - 1)];
     };
-    const makeAll = (result: string[][]) => {
+    const makeAll = (result: string[][]): TString => {
       let count = Length ? makeRandom(Length.least, Length.most) : 1;
       const one = count === 1;
       const last: string[] = [];

@@ -1,4 +1,4 @@
-import { TObject, PrototypeMethodNames } from '../types';
+import { TObj, PrototypeMethodNames } from '../types';
 import { capitalize } from './utils';
 /*1.形如2016/06/01,2016-06-01,2016.06.01
 2.特殊日期
@@ -265,7 +265,7 @@ const monthNames = [
   'November',
   'December',
 ];
-const formatter: TObject = {
+const formatter: TObj = {
   d() {
     return this.getDate();
   },

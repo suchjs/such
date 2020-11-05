@@ -7,7 +7,7 @@ import Parser from './parser';
 import store from './store';
 import {
   MockitOptions,
-  TObject,
+  TObj,
   ParserConfig,
   SuchConfFile,
   SuchOptions,
@@ -25,9 +25,9 @@ const { alias, aliasTypes } = store;
 /**
  *
  *
- * @interface ISuchConfig
+ * @interface IAsOptions
  */
-export interface ISuchConfig {
+export interface IAsOptions {
   instance?: boolean;
   config?: IKeyRule;
 }
@@ -97,11 +97,11 @@ export class Mocker {
     key: string,
   ): {
     key: string;
-    config: TObject;
+    config: TObj;
   } {
     const rule = /(\??)(:?)(?:\{(\d+)(?:,(\d+))?}|\[(\d+)(?:,(\d+))?])?$/;
     let match: Array<string | undefined>;
-    const config: TObject = {};
+    const config: TObj = {};
     if ((match = key.match(rule)).length && match[0] !== '') {
       const [all, query, colon, lMin, lMax, aMin, aMax] = match;
       const hasArrLen = aMin !== undefined;
@@ -292,7 +292,7 @@ export class Mocker {
         }
       }
     } else if (dataType === 'object') {
-      const oTarget = target as TObject;
+      const oTarget = target as TObj;
       // parse key
       const keys = Object.keys(oTarget).map((i: string) => {
         const val = oTarget[i];
@@ -304,7 +304,7 @@ export class Mocker {
         };
       });
       this.mockFn = (dpath: Path) => {
-        const result: TObject = {};
+        const result: TObj = {};
         const prevPath = this.path;
         keys.map((item) => {
           const { key, config: conf, target: tar } = item;
@@ -369,7 +369,7 @@ export class Mocker {
    * @param {*} value
    * @memberof Mocker
    */
-  public setParams(value: string | TObject) {
+  public setParams(value: string | TObj) {
     if (this.mockit) {
       return this.mockit.setParams(
         typeof value === 'string' ? Parser.parse(value) : value,
@@ -457,7 +457,7 @@ export default class Such {
    */
   public static config(config: SuchConfFile) {
     const { parsers, types, globals } = config;
-    const fnHashs: TObject = {
+    const fnHashs: TObj = {
       parsers: 'parser',
       types: 'define',
       globals: 'assign',
@@ -479,7 +479,7 @@ export default class Such {
       globals: globals || {},
     });
     Object.keys(lastConf).map((key: string) => {
-      const conf = lastConf[key as keyof SuchConfFile] as TObject;
+      const conf = lastConf[key as keyof SuchConfFile] as TObj;
       const fnName = fnHashs[key] || key;
       Object.keys(conf).map((name: string) => {
         const args = typeOf(conf[name]) === 'Array' ? conf[name] : [conf[name]];
@@ -494,7 +494,7 @@ export default class Such {
    * @param {string} name
    * @param {ParserConfig} config
    * @param {() => void} parse
-   * @param {TObject} [setting]
+   * @param {TObj} [setting]
    * @returns {(never | void)}
    * @memberof Such
    */
@@ -503,7 +503,7 @@ export default class Such {
     params: {
       config: ParserConfig;
       parse: () => void;
-      setting?: TObject;
+      setting?: TObj;
     },
   ): never | void {
     const { config, parse, setting } = params;
@@ -516,7 +516,7 @@ export default class Such {
    * @param {*} target
    * @memberof Such
    */
-  public static as(target: any, options?: ISuchConfig) {
+  public static as(target: any, options?: IAsOptions) {
     const ret = new Such(target, options);
     return options && options.instance ? ret : ret.a();
   }
@@ -626,15 +626,15 @@ export default class Such {
     }
   }
   public readonly target: any;
-  public readonly options: ISuchConfig;
+  public readonly options: IAsOptions;
   public readonly mocker: Mocker;
   public readonly instances: PathMap<Mocker>;
-  public readonly mockits: PathMap<TObject>;
+  public readonly mockits: PathMap<TObj>;
   public readonly datas: PathMap<any>;
   public readonly paths: PathMap<Path>;
-  protected struct: TObject;
+  protected struct: TObj;
   private initail = false;
-  constructor(target: any, options?: ISuchConfig) {
+  constructor(target: any, options?: IAsOptions) {
     this.target = target;
     this.instances = new PathMap(false);
     this.datas = new PathMap(true);

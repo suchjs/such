@@ -1,6 +1,6 @@
 import printf, { rule as formatRule } from 'nprintf';
 import { isOptional } from '../helpers/utils';
-import { TObject } from '../types';
+import { TObj } from '../types';
 import Mockit, { ModifierFn } from './namespace';
 
 const factor = (type: number) => {
@@ -29,7 +29,7 @@ export default class ToNumber extends Mockit<number> {
       },
     };
     // Count Rule
-    this.addRule('Count', function (Count: TObject) {
+    this.addRule('Count', function (Count: TObj) {
       if (!Count) {
         return;
       }
@@ -73,7 +73,7 @@ export default class ToNumber extends Mockit<number> {
       };
     });
     // Format rule
-    this.addRule('Format', function (Format: TObject) {
+    this.addRule('Format', function (Format: TObj) {
       if (!Format) {
         return;
       }
@@ -83,7 +83,7 @@ export default class ToNumber extends Mockit<number> {
       }
     });
     // Format Modifier
-    this.addModifier('Format', function (result: number, Format: TObject) {
+    this.addModifier('Format', function (result: number, Format: TObj) {
       return printf(Format.format, result);
     } as ModifierFn<number>);
   }

@@ -3,7 +3,7 @@ import { getExp } from '../helpers/utils';
 import store from '../store';
 import {
   NormalFn,
-  TObject,
+  TObj,
   ParamsFunc,
   ParamsFuncOptions,
   ParserInstance,
@@ -81,7 +81,7 @@ const parser: ParserInstance = {
           let segs: any[] | null = null;
           while ((segs = rule.exec(args)) !== null) {
             const plainValue = segs[3];
-            const cur: TObject = {};
+            const cur: TObj = {};
             if (plainValue) {
               if (nativeValues.indexOf(plainValue) > -1 || !isNaN(plainValue)) {
                 cur.value = getExp(plainValue);

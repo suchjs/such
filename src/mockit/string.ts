@@ -1,5 +1,5 @@
 import { makeRandom } from '../helpers/utils';
-import { TObject } from '../types';
+import { TObj } from '../types';
 import Mockit from './namespace';
 const uniRule = /^\\u((?:[0-9a-fA-F]{4}|[0-9a-fA-F]{6}))$/;
 const numRule = /^\d+$/;
@@ -12,7 +12,7 @@ export default class ToString extends Mockit<string> {
   }
   public init() {
     // Count Rule
-    this.addRule('Count', function (Count: TObject) {
+    this.addRule('Count', function (Count: TObj) {
       if (!Count) {
         return;
       }

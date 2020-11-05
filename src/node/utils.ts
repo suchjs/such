@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
-import { TObject } from 'reregexp';
+import { TObj } from 'reregexp';
 import { makeRandom, typeOf } from '../helpers/utils';
 import store from '../store';
 import { ParamsPathItem } from '../types';
@@ -156,7 +156,7 @@ export const getRealPath = (item: ParamsPathItem): string => {
   return fullpath;
 };
 // default cascader handle
-export const getCascaderValue = (data: TObject, values: any[]) => {
+export const getCascaderValue = (data: TObj, values: any[]) => {
   const len = values.length;
   let i = 0;
   while (i < len) {

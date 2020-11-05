@@ -1,5 +1,5 @@
 import RegexpParser, { regexpRule } from 'reregexp';
-import { TObject, ParamsRegexp } from '../types';
+import { TObj, ParamsRegexp } from '../types';
 import Mockit from './namespace';
 export default class ToRegexp extends Mockit<string> {
   private instance: RegexpParser;
@@ -18,11 +18,11 @@ export default class ToRegexp extends Mockit<string> {
       }
     });
     // config rule
-    this.addRule('Config', function (Config: TObject) {
+    this.addRule('Config', function (Config: TObj) {
       if (!Config) {
         return;
       }
-      const result: TObject = {};
+      const result: TObj = {};
       const rule = /(.?)\|/g;
       Object.keys(Config).forEach((key) => {
         const value = Config[key];

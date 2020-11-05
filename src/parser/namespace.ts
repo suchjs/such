@@ -1,28 +1,29 @@
+import { IParserConfig } from '../types/parser';
 import { encodeSplitor, splitor as confSplitor } from '../config';
 import { encodeRegexpChars, typeOf } from '../helpers/utils';
-import { TObject, ParserConfig } from '../types';
+import { TObj, TStrList } from '../types/common';
 export interface Tags {
   start: string;
   end: string;
 }
-export interface ParserConstructor extends ParserConfig {
+export interface IParserConstructor extends IParserConfig {
   readonly splitor?: string;
-  new (): ParserInterface;
+  new (): AParser;
 }
 /**
  * 定义解析器抽象类
  *
- * @interface ParserInterface
+ * @interface AParser
  */
-export abstract class ParserInterface {
-  protected params: string[];
+export abstract class AParser {
+  protected params: TStrList;
   protected patterns: any[][] = [];
   protected tags: Tags;
   protected code = '';
-  protected setting: TObject = {
+  protected setting: TObj = {
     frozen: true,
   };
-  protected defaults: TObject = {
+  protected defaults: TObj = {
     params: [],
     patterns: [],
     code: '',
@@ -32,19 +33,19 @@ export abstract class ParserInterface {
     },
   };
   // constructor
-  constructor() {
+  protected constructor() {
     this.init();
   }
   /**
    *
    *
    * @returns
-   * @memberof ParserInterface
+   * @memberof AParser
    */
   public init() {
     const { defaults } = this;
     Object.keys(defaults).forEach((key) => {
-      (this as TObject)[key] = defaults[key];
+      this[key] = defaults[key];
     });
     return this;
   }
@@ -52,7 +53,7 @@ export abstract class ParserInterface {
    *
    *
    * @returns
-   * @memberof ParserInterface
+   * @memberof AParser
    */
   public info() {
     const { tags, params, code, patterns } = this;
@@ -68,13 +69,13 @@ export abstract class ParserInterface {
    *
    * @param {string} code
    * @param {Tags} tags
-   * @memberof ParserInterface
+   * @memberof AParser
    */
-  public parseCode(code: string, tags: Tags) {
+  public parseCode(code: string, tags: Tags): void {
     this.code = code;
     this.tags = tags;
     const { start, end } = tags;
-    const constr = this.constructor as ParserConstructor;
+    const constr = this.constructor as IParserConstructor;
     const { separator, pattern } = constr;
     if (!separator && !end) {
       this.params = [code];
@@ -137,7 +138,7 @@ export abstract class ParserInterface {
    *
    * @abstract
    * @returns {Object|never}
-   * @memberof ParserInterface
+   * @memberof AParser
    */
   public abstract parse(): object | never;
   /**
@@ -146,7 +147,7 @@ export abstract class ParserInterface {
    * @protected
    * @param {string} err
    * @returns {never}
-   * @memberof ParserInterface
+   * @memberof AParser
    */
   protected halt(err: string): never {
     throw new Error(err);
@@ -154,11 +155,11 @@ export abstract class ParserInterface {
 }
 //
 export interface ParserList {
-  [index: string]: ParserConstructor;
+  [index: string]: IParserConstructor;
 }
 //
 export interface ParserInstances {
-  [index: string]: ParserInterface;
+  [index: string]: AParser;
 }
 /**
  * 所有Parser的入口，分配器
@@ -171,7 +172,7 @@ export interface ParserInstances {
 export class Dispatcher {
   protected parsers: ParserList = {};
   protected tagPairs: string[] = [];
-  protected pairHash: TObject = {};
+  protected pairHash: TObj = {};
   protected readonly splitor: string = confSplitor;
   protected instances: ParserInstances = {};
   /**
@@ -185,9 +186,9 @@ export class Dispatcher {
    */
   public addParser(
     name: string,
-    config: ParserConfig,
+    config: IParserConfig,
     parse: () => void,
-    setting?: TObject,
+    setting?: TObj,
   ): never | void {
     const { startTag, endTag, separator, pattern } = config;
     const { splitor } = this;
@@ -265,7 +266,7 @@ export class Dispatcher {
       return a.length - b.length;
     });
     // tslint:disable-next-line:max-classes-per-file
-    this.parsers[name] = class extends ParserInterface {
+    this.parsers[name] = class extends AParser {
       public static readonly startTag: any[] = startTag;
       public static readonly endTag: any[] = endTag;
       public static readonly separator: string = separator || '';
@@ -289,16 +290,16 @@ export class Dispatcher {
    * @param {string} code
    * @memberof Dispatcher
    */
-  public parse(code: string): TObject | never {
+  public parse(code: string): TObj | never {
     const len = code.length;
     const { splitor } = this;
     let index = 0;
     let curCode = code;
-    const exists: TObject = {};
-    const result: TObject = {};
+    const exists: TObj = {};
+    const result: TObj = {};
     while (index < len) {
-      const res: TObject | never = this.parseUntilFind(curCode);
-      const { data, total } = res as TObject;
+      const res: TObj | never = this.parseUntilFind(curCode);
+      const { data, total } = res as TObj;
       index += total;
       if (index < len && splitor !== code.charAt(index)) {
         throw new Error(
@@ -362,7 +363,7 @@ export class Dispatcher {
     let allMatched: string[] = [];
     let startIndex = 0;
     let sub = '';
-    let result: null | TObject = null;
+    let result: null | TObj = null;
     do {
       const cur = context.charAt(startIndex++);
       sub += cur;
@@ -390,7 +391,7 @@ export class Dispatcher {
     } while (allMatched.length);
     let len = exactMatched.length;
     if (len) {
-      const everTested: TObject = {};
+      const everTested: TObj = {};
       const tryTypes: string[] = [];
       while (len--) {
         const pair = exactMatched[len];

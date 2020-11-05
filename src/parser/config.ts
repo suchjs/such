@@ -1,6 +1,6 @@
 import { regexpRule } from 'reregexp';
 import { decodeTrans, getExp } from '../helpers/utils';
-import { TObject, ParamsConfig, ParserInstance } from '../types';
+import { TObj, ParamsConfig, ParserInstance } from '../types';
 
 const parser: ParserInstance = {
   config: {
@@ -10,7 +10,7 @@ const parser: ParserInstance = {
   },
   parse(): ParamsConfig | never {
     const { params } = this.info();
-    const config: TObject = {};
+    const config: TObj = {};
     if (params.length) {
       const rule = /^\s*([$\w]+)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|(.+))\s*)?$/;
       const nativeValues = ['true', 'false', 'null', 'undefined'];

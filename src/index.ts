@@ -1,16 +1,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { deepCopy, typeOf } from './helpers/utils';
+import { deepCopy } from './helpers/utils';
 import ToCascader from './node/mockit/cascader';
 import ToDict from './node/mockit/dict';
 import { getAllFiles, loadAllData, loadTemplate } from './node/utils';
 import store from './store';
-import Such, { ISuchConfig } from './such';
-import { TObject } from './types';
+import Such, { IAsOptions } from './such';
+import { TObj } from './types';
 const { config, fileCache } = store;
 // load config files
 const builtRule = /such:([a-zA-Z]+)/;
-const loadConf = (name: string | string[]): TObject | TObject[] => {
+const loadConf = (name: string | string[]): TObj | TObj[] => {
   if (typeof name === 'string') {
     const isBuilt = builtRule.test(name);
     const file = isBuilt ? `./config/${RegExp.$1}` : name;
@@ -24,11 +24,11 @@ const loadConf = (name: string | string[]): TObject | TObject[] => {
     }
   } else {
     return name.map((cur: string) => {
-      return loadConf(cur);
+      return loadConf(cur) as TObj;
     });
   }
 };
-(Such as TObject).loadConf = loadConf;
+Such.loadConf = loadConf;
 // find static paths
 const tryConfigFile = (...files: string[]) => {
   for (let i = 0, j = files.length; i < j; i++) {
@@ -51,7 +51,7 @@ const lastConfFile = tryConfigFile(
 config.rootDir = lastConfFile ? path.dirname(lastConfFile) : rootDir;
 // open api for reload data and clear cache
 ['reloadData', 'clearCache'].map((name: string) => {
-  (Such as TObject)[name] = function () {
+  Such[name] = function () {
     return Promise.resolve();
   };
 });
@@ -70,7 +70,7 @@ if (lastConfFile) {
     const { preload, dataDir } = config;
     if (dataDir) {
       // redefine reloadData
-      (Such as TObject).reloadData = () => {
+      Such.reloadData = () => {
         store.fileCache = {};
         return getAllFiles(dataDir).then((files) => {
           return loadAllData(files);
@@ -80,7 +80,7 @@ if (lastConfFile) {
     if (preload && dataDir) {
       (async () => {
         let allFiles: string[];
-        if (typeOf(preload) === 'Array') {
+        if (Array.isArray(preload)) {
           allFiles = preload.map((cur: string) => {
             return path.resolve(dataDir, cur);
           });
@@ -88,7 +88,7 @@ if (lastConfFile) {
           allFiles = await getAllFiles(dataDir);
         }
         await loadAllData(allFiles);
-        (Such as TObject).clearCache = () => {
+        Such.clearCache = () => {
           allFiles.map((key: string) => {
             delete fileCache[key];
           });
@@ -104,7 +104,7 @@ Such.define('dict', ToDict);
 Such.define('cascader', ToCascader);
 // redefine such.as,support .json file
 const origSuchas = Such.as;
-Such.as = function (target: unknown, options?: ISuchConfig) {
+Such.as = function (target: unknown, options?: IAsOptions) {
   if (typeof target === 'string' && path.extname(target) === '.json') {
     const lastPath = path.resolve(config.suchDir || config.rootDir, target);
     if (fs.existsSync(lastPath)) {

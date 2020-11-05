@@ -1,7 +1,7 @@
 import PathMap, { Path } from './helpers/pathmap';
-export interface TObject<T = unknown> {
-  [index: string]: T;
-}
+export type TObj<T = unknown> = {
+  [index:string]: T
+};
 export type ValueOf<T> = T[keyof T];
 export type PrototypeMethodNames<T> = {
   [K in keyof T]: T[K] extends () => void ? K : never;
@@ -102,8 +102,8 @@ export interface ParserConfig {
 }
 export interface ParserInstance {
   config: ParserConfig;
-  setting?: TObject;
-  parse(): TObject | never;
+  setting?: TObj;
+  parse(): TObj | never;
 }
 // such config
 /**
@@ -113,7 +113,7 @@ export interface ParserInstance {
  */
 export interface MockitOptions {
   param?: string;
-  configOptions?: TObject;
+  configOptions?: TObj;
   init?: () => void;
   generate: () => unknown;
   generateFn?: () => void;
@@ -123,7 +123,7 @@ export interface FnList {
   [index: string]: NormalFn;
 }
 export interface SuchConfGlobal {
-  vars?: TObject;
+  vars?: TObj;
   fns?: FnList;
 }
 export interface SuchConfTypes {
@@ -150,15 +150,15 @@ export interface SuchConfFile {
   alias?: { [index: string]: string };
 }
 //
-export interface SuchInstance {
-  [index: string]: unknown;
+export interface SuchInstance<T = unknown> {
+  [index: string]: T;
 }
 //
 export interface SuchOptions {
   datas: PathMap<unknown>;
   dpath: Path;
   such: SuchInstance;
-  mocker: TObject;
+  mocker: TObj;
 }
 //
 
@@ -176,3 +176,7 @@ export type MockitConfigItem<T> =
 export interface MockitConfig {
   [index: string]: MockitConfigItem<unknown>;
 }
+
+export type TFunc = (...args: unknown[]) => unknown;
+export type TPath = string;
+export type TStrList = string[];
