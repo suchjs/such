@@ -1,8 +1,11 @@
+import { TResult, TStrList } from '../types/common';
+import { IPPConfig, IPPFunc, IPPFuncOptions } from '../types/parser';
 import {
   deepCopy,
   getExpValue,
   isFn,
   isNoEmptyObject,
+  isObject,
   isPromise,
   typeOf,
   withPromise,
@@ -17,41 +20,50 @@ import {
   SuchOptions,
   TypeConstructor,
 } from '../types';
-const { fns: globalFns, vars: globalVars, mockits } = store;
+import { TMModifierFn, TMRuleFn } from 'src/types/mockit';
+const { fns: globalFns, vars: globalVars, mockitsCache } = store;
 //
-export type Result<T> = T | never;
-export type ModifierFn<T> = (res: T) => T | string | never;
-export type RuleFn = (cur: TObj) => void | TObj;
 
+/**
+ * abstrct class Mockit
+ * mockit抽象类：所有模拟的数据类型继承自该类
+ * @export
+ * @abstract
+ * @class Mockit
+ * @template T
+ */
 export default abstract class Mockit<T = unknown> {
   protected configOptions: MockitConfig = {};
   protected params: TObj = {};
   protected origParams: TObj = {};
-  protected generateFn: undefined | ((options: SuchOptions) => Result<T>);
+  protected generateFn: undefined | ((options: SuchOptions) => TResult<T>);
   protected isValidOk = false;
   protected hasValid = false;
-  protected invalidKeys: string[] = [];
+  protected invalidKeys: TStrList = [];
   /**
-   * Creates an instance of Mockit.
+   * create an instance of Mockit.
+   * 构造函数
    * @memberof Mockit
    */
   constructor(protected readonly constructorName: string) {
     const constrName = constructorName || this.constructor.name;
-    if (mockits[constrName]) {
-      const { define } = mockits[constrName];
-      if (typeOf(define) === 'Object') {
+    if (mockitsCache[constrName]) {
+      const { define } = mockitsCache[constrName];
+      if (isObject(define)) {
         Object.keys(define).map((key) => {
           const value = define[key];
+          // force to add defines
+          const self = (this as unknown) as TObj;
           if (typeOf(value) === 'Object') {
-            (this as TObj)[key] = deepCopy({}, value);
+            self[key] = deepCopy({}, value);
           } else {
-            (this as TObj)[key] = value;
+            self[key] = value;
           }
         });
       }
       return;
     }
-    mockits[constrName] = {
+    mockitsCache[constrName] = {
       rules: [],
       ruleFns: {},
       modifiers: [],
@@ -59,27 +71,30 @@ export default abstract class Mockit<T = unknown> {
     };
     this.init();
     // all type support modifiers
-    this.addRule('Func', function (Func: ParamsFunc) {
+    this.addRule('Func', function (Func: IPPFunc) {
       if (!Func) {
         return;
       }
       const options = Func.options;
       for (let i = 0, j = options.length; i < j; i++) {
-        const item: ParamsFuncOptions = options[i];
+        const item: IPPFuncOptions = options[i];
         const { name, params } = item;
         params.map((param) => {
-          // if object,valid
+          // if object, valid
           if (param.variable) {
             try {
-              if (
-                param.value.indexOf('.') > -1 ||
-                param.value.indexOf('[') > -1
-              ) {
-                new Function('__CONFIG__', 'return __CONFIG__.' + param.value)(
-                  globalVars,
-                );
-              } else if (!globalVars.hasOwnProperty(param.value)) {
-                throw new Error(`"${param.value} is not assigned."`);
+              if (typeof param.value === 'string') {
+                if (
+                  param.value.indexOf('.') > -1 ||
+                  param.value.indexOf('[') > -1
+                ) {
+                  new Function(
+                    '__CONFIG__',
+                    'return __CONFIG__.' + param.value,
+                  )(globalVars);
+                } else if (!globalVars.hasOwnProperty(param.value)) {
+                  throw new Error(`"${param.value} is not assigned."`);
+                }
               }
             } catch (e) {
               throw new Error(
@@ -94,14 +109,14 @@ export default abstract class Mockit<T = unknown> {
     // if set configOptions,validate config
     if (isNoEmptyObject(configOptions)) {
       this.addRule('Config', function (Config: TObj) {
-        const last = deepCopy({}, Config || {});
+        const last = deepCopy({}, Config || {}) as IPPConfig;
         Object.keys(configOptions).map((key: string) => {
-          const cur: MockitConfigItem<any> = configOptions[key];
+          const cur: MockitConfigItem<unknown> = configOptions[key];
           let required = false;
-          let def: any;
+          let def: unknown;
           let type: TypeConstructor | TypeConstructor[];
           const typeNames: string[] = [];
-          let validator = (target: any) => {
+          let validator = (target: unknown) => {
             const targetType = typeOf(target);
             const allTypes = typeOf(type) === 'Array' ? type : [type];
             let flag = false;
@@ -115,11 +130,13 @@ export default abstract class Mockit<T = unknown> {
             return flag;
           };
           const hasKey = last.hasOwnProperty(key);
-          if (typeOf(cur) === 'Object') {
+          if (isObject(cur)) {
             required = !!cur.required;
             def = isFn(cur.default) ? cur.default() : cur.default;
             type = cur.type;
-            validator = isFn(cur.validator) ? cur.validator : validator;
+            validator = isFn<typeof validator>(cur.validator)
+              ? cur.validator
+              : validator;
           }
           if (required && !hasKey) {
             throw new Error(`${constrName} required set config "${key}"`);
@@ -141,6 +158,18 @@ export default abstract class Mockit<T = unknown> {
     }
   }
   /**
+   * get construct name
+   * 获取当前类名
+   * @readonly
+   * @protected
+   * @type {string}
+   * @memberof Mockit
+   */
+  protected get constrName(): string {
+    return this.constructorName || this.constructor.name;
+  }
+
+  /**
    *
    *
    * @abstract
@@ -151,24 +180,28 @@ export default abstract class Mockit<T = unknown> {
    *
    *
    * @param {string} name
-   * @param {ModifierFn<T>} fn
+   * @param {TMModifierFn<T>} fn
    * @param {string} [pos]
    * @returns
    * @memberof Mockit
    */
-  public addModifier(name: string, fn: ModifierFn<T>, pos?: string) {
+  public addModifier(
+    name: string,
+    fn: TMModifierFn<T>,
+    pos?: string,
+  ): void | never {
     return this.add('modifier', name, fn, pos);
   }
   /**
    *
    *
    * @param {string} name
-   * @param {RuleFn} fn
+   * @param {TMRuleFn} fn
    * @param {string} [pos]
    * @returns
    * @memberof Mockit
    */
-  public addRule(name: string, fn: RuleFn, pos?: string) {
+  public addRule(name: string, fn: TMRuleFn, pos?: string): void | never {
     return this.add('rule', name, fn, pos);
   }
   /**
@@ -204,7 +237,7 @@ export default abstract class Mockit<T = unknown> {
     // frozen params for extend type.
     const constrName = this.constructorName || this.constructor.name;
     const { params, origParams, generateFn, configOptions } = this;
-    mockits[constrName].define = deepCopy(
+    mockitsCache[constrName].define = deepCopy(
       {},
       {
         params,
@@ -218,20 +251,20 @@ export default abstract class Mockit<T = unknown> {
   /**
    *
    *
-   * @param {() => Result<T>} [fn]
+   * @param {() => TResult<T>} [fn]
    * @memberof Mockit
    */
-  public reGenerate(fn?: (options: SuchOptions) => Result<T>) {
+  public reGenerate(fn?: (options: SuchOptions) => TResult<T>): void {
     this.generateFn = fn;
   }
   /**
    *
    *
    * @param {TObj} [Such]
-   * @returns {Result<T>}
+   * @returns {TResult<T>}
    * @memberof Mockit
    */
-  public make(options: SuchOptions): Result<T> {
+  public make(options: SuchOptions): TResult<T> {
     this.validate();
     // tslint:disable-next-line:max-line-length
     let result =
@@ -257,10 +290,10 @@ export default abstract class Mockit<T = unknown> {
    *
    *
    * @abstract
-   * @returns {Result<T>}
+   * @returns {TResult<T>}
    * @memberof Mockit
    */
-  public abstract generate(options: SuchOptions): Result<T>;
+  public abstract generate(options: SuchOptions): TResult<T>;
   /**
    *
    *
@@ -276,7 +309,7 @@ export default abstract class Mockit<T = unknown> {
    * @private
    * @param {("rule"|"modifier")} type
    * @param {string} name
-   * @param {(RuleFn|ModifierFn<T>)} fn
+   * @param {(TMRuleFn|TMModifierFn<T>)} fn
    * @param {string} [pos]
    * @returns {(never|void)}
    * @memberof Mockit
@@ -284,11 +317,11 @@ export default abstract class Mockit<T = unknown> {
   private add(
     type: 'rule' | 'modifier',
     name: string,
-    fn: RuleFn | ModifierFn<T>,
+    fn: TMRuleFn | TMModifierFn<T>,
     pos?: string,
   ): never | void {
     const curName = this.constructorName || this.constructor.name;
-    const { rules, ruleFns, modifiers, modifierFns } = mockits[curName];
+    const { rules, ruleFns, modifiers, modifierFns } = mockitsCache[curName];
     let target;
     let fns;
     if (type === 'rule') {
@@ -331,7 +364,7 @@ export default abstract class Mockit<T = unknown> {
    */
   private validParams(): boolean {
     const params = this.origParams;
-    const { rules, ruleFns } = mockits[
+    const { rules, ruleFns } = mockitsCache[
       this.constructorName || this.constructor.name
     ];
     const keys = Object.keys(params);
@@ -357,7 +390,7 @@ export default abstract class Mockit<T = unknown> {
    * @private
    * @memberof Mockit
    */
-  private validate() {
+  private validate(): void | never {
     const { invalidKeys } = this;
     if (!this.hasValid) {
       this.isValidOk = this.validParams();
@@ -373,7 +406,7 @@ export default abstract class Mockit<T = unknown> {
    * @private
    * @memberof Mockit
    */
-  private resetValidInfo() {
+  private resetValidInfo(): void {
     this.isValidOk = false;
     this.hasValid = false;
     this.invalidKeys = [];
@@ -387,9 +420,9 @@ export default abstract class Mockit<T = unknown> {
    * @returns
    * @memberof Mockit
    */
-  private runModifiers(result: any, options: SuchOptions) {
+  private runModifiers(result: unknown, options: SuchOptions): unknown {
     const { params } = this;
-    const { modifiers, modifierFns } = mockits[
+    const { modifiers, modifierFns } = mockitsCache[
       this.constructorName || this.constructor.name
     ];
     for (let i = 0, j = modifiers.length; i < j; i++) {
@@ -411,19 +444,20 @@ export default abstract class Mockit<T = unknown> {
    * @returns
    * @memberof Mockit
    */
-  private runFuncs(result: any, options: SuchOptions) {
+  private runFuncs(result: unknown, options: SuchOptions): unknown {
     const { Config, Func } = this.params;
     if (Func) {
-      const { queue, params: fnsParams, fns } = Func;
+      const { queue, params: fnsParams, fns } = Func as IPPFunc;
       for (let i = 0, j = queue.length; i < j; i++) {
         const name = queue[i];
         const fn = fns[i];
-        // tslint:disable-next-line:max-line-length
-        const args = (globalFns[name] ? [globalFns[name]] : []).concat([
+        const args: unknown[] = ((globalFns[name]
+          ? [globalFns[name]]
+          : []) as unknown[]).concat([
           fnsParams[i],
           globalVars,
           result,
-          Config || {},
+          (Config as IPPConfig) || {},
           getExpValue,
         ]);
         result = fn.apply(options, args);

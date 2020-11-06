@@ -1,6 +1,6 @@
 import PathMap, { Path } from './helpers/pathmap';
 export type TObj<T = unknown> = {
-  [index:string]: T
+  [index: string]: T;
 };
 export type ValueOf<T> = T[keyof T];
 export type PrototypeMethodNames<T> = {

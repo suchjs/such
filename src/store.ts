@@ -1,10 +1,19 @@
 import Mockit from './mockit/namespace';
 import { TObj, TFunc, TStrList } from './types';
+import { TMModifierFn, TMRuleFn } from './types/mockit';
+type MockitsCache<T> = TObj<{
+  rules: TStrList;
+  ruleFns: TObj<TMRuleFn>;
+  modifiers: TStrList;
+  modifierFns: TObj<TMModifierFn<T>>;
+  define?: TObj;
+}>;
 export interface Store {
   (name: string, value: unknown, alwaysVar: boolean): void;
   vars: TObj;
   fns: TObj<TFunc>;
-  mockits: TObj<Mockit>;
+  mockits: TObj<Mockit | unknown>;
+  mockitsCache: MockitsCache<unknown>;
   alias: TObj<string>;
   aliasTypes: TStrList;
   fileCache: {
@@ -25,6 +34,7 @@ const store: Store = (() => {
   fn.fns = fns;
   fn.vars = vars;
   fn.mockits = {};
+  fn.mockitsCache = {};
   fn.alias = {};
   fn.aliasTypes = [];
   fn.fileCache = {};

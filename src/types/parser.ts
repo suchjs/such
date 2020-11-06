@@ -1,30 +1,63 @@
-import { TFunc, TObj } from 'src/types';
+import { TStrList, TFunc, TObj } from './common';
 
 /**
- * types for parser
+ * IParserConfig
+ * 解析器配置
+ * @export
+ * @interface IParserConfig
+ */
+export interface IParserConfig {
+  startTag: TStrList;
+  endTag: TStrList;
+  separator?: string;
+  rule?: RegExp;
+  pattern?: RegExp;
+}
+
+/**
+ * IParserFactory
+ * 属性解析器实例
+ * @export
+ * @interface IParserFactory
+ */
+export interface IParserFactory {
+  config: IParserConfig;
+  setting?: TObj;
+  parse(): unknown | never;
+}
+
+/**
+ * IPP is short for 'Interface Parser Property'
  * 解析属性用到的类型
  */
 export interface IPPWrapper {
   prefix: string;
   suffix: string;
 }
+
 /**
- * interface parser <params|property> length
+ * property: length
  * 长度属性
+ * @export
+ * @interface IPPLength
  */
 export interface IPPLength {
   least: number;
   most: number;
 }
 /**
- *
- * @interface IPPCount
+ * property: size
+ * 大小属性
+ * @export
+ * @interface IPPSize
  */
-export interface IPPCount {
-  range: Array<string | number>;
+export interface IPPSize<T = number | string> {
+  range: Array<T>;
 }
 /**
- *
+ * property: format
+ * 格式化
+ * @export
  * @interface IPPFormat
  */
 export interface IPPFormat {
@@ -37,17 +70,27 @@ export interface IPPFormat {
  */
 export interface IPPFuncOptions {
   name: string;
-  params?: unknown[];
+  params?: IPPFuncParam[];
+}
+/**
+ * property: func
+ * 方法函数
+ * @export
+ * @interface IPPFunc
+ */
+export interface IPPFuncParam {
+  value?: unknown;
+  variable?: boolean;
 }
 export interface IPPFunc {
-  queue: string[];
-  params: unknown[][];
+  queue: TStrList;
+  params: IPPFuncParam[][];
   fns: TFunc[];
   options: IPPFuncOptions[];
 }
 /**
- *
- *
+ * property: regexp
+ * 正则表达式
  * @export
  * @interface IPPRegexp
  */
@@ -55,8 +98,8 @@ export interface IPPRegexp {
   rule: string;
 }
 /**
- *
- *
+ * property: path
+ * 路径
  * @export
  * @interface IPPPathItem
  */
@@ -69,13 +112,13 @@ export interface IPPPathItem {
 }
 export type IPPPath = IPPPathItem[];
 /**
- *
- *
+ * property: config
+ * 配置项解析
  * @export
  * @interface IPPConfig
  */
 export interface IPPConfig {
-  [index: string]: string;
+  [index: string]: unknown;
 }
 /**
  *
@@ -83,19 +126,6 @@ export interface IPPConfig {
  * @interface Options
  */
 export interface Options {
-  Number: IPPCount & IPPFormat;
+  Number: IPPSize & IPPFormat;
   String: IPPLength & IPPWrapper;
-}
-// parser
-export interface IParserConfig {
-  startTag: string[];
-  endTag: string[];
-  separator?: string;
-  rule?: RegExp;
-  pattern?: RegExp;
-}
-export interface IParserInstance {
-  config: IParserConfig;
-  setting?: TObj;
-  parse(): TObj | never;
 }

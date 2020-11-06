@@ -1,4 +1,5 @@
 import printf, { rule as formatRule } from 'nprintf';
+import { IPPConfig, IPPSize } from 'src/types/parser';
 import { isOptional } from '../helpers/utils';
 import { TObj } from '../types';
 import Mockit, { ModifierFn } from './namespace';
@@ -28,19 +29,19 @@ export default class ToNumber extends Mockit<number> {
         type: Number,
       },
     };
-    // Count Rule
-    this.addRule('Count', function (Count: TObj) {
-      if (!Count) {
+    // Size Rule
+    this.addRule('Size', function (Size: TObj) {
+      if (!Size) {
         return;
       }
-      const { range } = Count;
+      const { range } = Size;
       const size = range.length;
       if (size !== 2) {
         // tslint:disable-next-line:max-line-length
         throw new Error(
           size < 2
-            ? `the count param must have the min and the max params`
-            : `the count param length should be 2,but got ${size}`,
+            ? `the Size param must have the min and the max params`
+            : `the Size param length should be 2,but got ${size}`,
         );
       }
       let [min, max] = range;
@@ -87,11 +88,13 @@ export default class ToNumber extends Mockit<number> {
       return printf(Format.format, result);
     } as ModifierFn<number>);
   }
-  public generate() {
-    const { Count, Config } = this.params;
+  public generate(): number {
+    const { params } = this;
+    const Size = params.Size as IPPSize;
+    const Config = params.Config as IPPConfig;
     let result: number;
-    if (Count) {
-      const { range } = Count;
+    if (Size) {
+      const { range } = Size;
       const step = Config && Config.step;
       const [min, max] = range;
       if (step) {

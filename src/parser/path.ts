@@ -1,20 +1,20 @@
-import { ParamsPath, ParamsPathItem, ParserInstance } from '../types';
-const parser: ParserInstance = {
+import { IParserFactory, IPPPath, IPPPathItem } from '../types/parser';
+import { AParser } from './namespace';
+const parser: IParserFactory = {
   config: {
     startTag: ['&'],
     endTag: [],
     separator: ',',
     pattern: /^(\.{1,2}(?:\/\.\.)*|<\w+?>)?((?:\/(?:[^.\/\\<>*?:,]|\.(?![.\/,]|$))+)+)/,
-    // tslint:disable-next-line:max-line-length
     rule: /^&(?:(?:\.{1,2}(?:\/\.\.)*|<\w+?>)?(?:\/(?:[^.\/\\<>*?:,]|\.(?![.\/,]|$))+)+(?=(,)|:|$)\1?)+/,
   },
-  parse(): ParamsPath | never {
+  parse(this: AParser): IPPPath | never {
     const { patterns, code } = this.info();
     if (!patterns.length) {
       this.halt(`no path params found:${code}`);
     }
-    const result: ParamsPath = [];
-    patterns.forEach((match: any[]) => {
+    const result: IPPPath = [];
+    patterns.forEach((match) => {
       const [fullpath, prefix, curPath] = match;
       const relative = !!prefix;
       const variable =
@@ -24,7 +24,7 @@ const parser: ParserInstance = {
         const segs = prefix.split('/');
         depth = segs.length - (segs[0] === '.' ? 1 : 0);
       }
-      const cur: ParamsPathItem = {
+      const cur: IPPPathItem = {
         relative,
         path: curPath.split('/').slice(1),
         depth,

@@ -1,12 +1,13 @@
 import { parserRule } from 'reregexp';
-import { ParamsRegexp, ParserInstance } from '../types';
-const parser: ParserInstance = {
+import { IParserFactory, IPPRegexp } from '../types/parser';
+import { AParser } from './namespace';
+const parser: IParserFactory = {
   config: {
     startTag: ['/'],
     endTag: [],
     rule: parserRule,
   },
-  parse(): ParamsRegexp | never {
+  parse(this: AParser): IPPRegexp | never {
     const { params } = this.info();
     if (params.length !== 1) {
       return this.halt(`invalid regexp rule:${params.join('')}`);

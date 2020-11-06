@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
-import { TObj } from 'reregexp';
 import { makeRandom, typeOf } from '../helpers/utils';
 import store from '../store';
 import { ParamsPathItem } from '../types';

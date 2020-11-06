@@ -1,13 +1,15 @@
+import { TFunc } from 'src/types/common';
 import { Mocker } from '../such';
 import { TObj, ParamsPathItem } from '../types';
-import PathMap, { Path } from './pathmap';
-export const encodeRegexpChars = (chars: string) => {
+import { Path } from './pathmap';
+export const encodeRegexpChars = (chars: string): string => {
   return chars.replace(/([()\[{^$.*+?\/\-])/g, '\\$1');
 };
-export const typeOf = (target: any): string => {
+export const typeOf = (target: unknown): string => {
   return Object.prototype.toString.call(target).slice(8, -1);
 };
-export const isFn = (target: any): boolean => typeof target === 'function';
+export const isFn = <T = TFunc>(target: unknown): target is T =>
+  typeof target === 'function';
 export const map = (
   target: any[] | TObj | string,
   fn: (item: any, index: number | string) => void,
@@ -79,7 +81,7 @@ export const capitalize = (target: string): string => {
 export const decodeTrans = (target: string): string => {
   return target.replace(/\\(.)/g, '$1');
 };
-export const getExp = (exp: string): any | never => {
+export const getExp = (exp: string): unknown | never => {
   const fn = new Function('', `return ${exp}`);
   try {
     return fn();
@@ -87,7 +89,7 @@ export const getExp = (exp: string): any | never => {
     throw new Error(`wrong expression of "${exp}".reason:${e}`);
   }
 };
-export const getExpValue = (...args: any[]): any | never => {
+export const getExpValue = (...args: unknown[]): unknown | never => {
   const param = '__$__';
   const value = args.pop();
   let cur;
@@ -99,14 +101,13 @@ export const getExpValue = (...args: any[]): any | never => {
     }
   }
 };
-export const range = (start: number, end: number, step = 1) => {
-  return Array.apply(null, new Array(end - start + 1)).map(
-    (_: undefined, index: number) => {
-      return start + index * step;
-    },
-  );
+export const range = (start: number, end: number, step = 1): number[] => {
+  const count = Math.floor((end - start) / step) + 1;
+  return Array.from(new Array(count), (_: undefined, index: number) => {
+    return start + index * step;
+  });
 };
-export const deepCopy = (target: any, ...args: any[]) => {
+export const deepCopy = <T = unknown>(target: T, ...args: unknown[]): T => {
   const type = typeOf(target);
   if (type === 'Object' || type === 'Array') {
     for (let i = 0, j = args.length; i < j; i++) {
@@ -116,7 +117,7 @@ export const deepCopy = (target: any, ...args: any[]) => {
       }
       const keys =
         type === 'Object' ? Object.keys(copy) : range(0, copy.length - 1);
-      keys.map((key: number | string) => {
+      keys.forEach((key: string | number) => {
         const from = copy[key];
         const to = target[key];
         const fromType = typeOf(from);
@@ -133,11 +134,14 @@ export const deepCopy = (target: any, ...args: any[]) => {
   }
   return target;
 };
-export const isNoEmptyObject = (target: any) => {
+export const isNoEmptyObject = (target: unknown): boolean => {
   return typeOf(target) === 'Object' && Object.keys(target).length > 0;
 };
-export const isPromise = (target: any) => {
-  return typeOf(target) === 'Promise' || (target && isFn(target.then));
+export const isPromise = (target: unknown): boolean => {
+  return (
+    typeOf(target) === 'Promise' ||
+    (typeOf(target) === 'Object' && isFn((target as TObj).then))
+  );
 };
 export const shifTObj = (obj: TObj, keys: string[]) => {
   const res: TObj = {};
@@ -212,7 +216,6 @@ export const getRefMocker = (item: ParamsPathItem, mocker: Mocker) => {
       return refMocker;
     }
   } else {
-    // tslint:disable-next-line:max-line-length
     throw new Error(
       `the path of "${
         lastPath ? '/' + lastPath.join('/') : item.fullpath
@@ -220,3 +223,5 @@ export const getRefMocker = (item: ParamsPathItem, mocker: Mocker) => {
     );
   }
 };
+export const isObject = (target: unknown): target is TObj =>
+  typeOf(target) === 'Object';

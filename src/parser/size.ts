@@ -1,11 +1,12 @@
-import { ParamsCount, ParserInstance } from '../types';
-const parser: ParserInstance = {
+import { IParserFactory, IPPSize } from '../types/parser';
+import { AParser } from './namespace';
+const parser: IParserFactory = {
   config: {
     startTag: ['['],
     endTag: [']'],
     separator: ',',
   },
-  parse(): ParamsCount | never {
+  parse(this: AParser): IPPSize | never {
     const { params } = this.info();
     return {
       range: params,

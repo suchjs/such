@@ -1,16 +1,17 @@
 import { regexpRule } from 'reregexp';
+import { IParserFactory, IPPConfig } from '../types/parser';
 import { decodeTrans, getExp } from '../helpers/utils';
-import { TObj, ParamsConfig, ParserInstance } from '../types';
+import { AParser } from './namespace';
 
-const parser: ParserInstance = {
+const parser: IParserFactory = {
   config: {
     startTag: ['#['],
     endTag: [']'],
     separator: ',',
   },
-  parse(): ParamsConfig | never {
+  parse(this: AParser): IPPConfig | never {
     const { params } = this.info();
-    const config: TObj = {};
+    const config: IPPConfig = {};
     if (params.length) {
       const rule = /^\s*([$\w]+)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|(.+))\s*)?$/;
       const nativeValues = ['true', 'false', 'null', 'undefined'];

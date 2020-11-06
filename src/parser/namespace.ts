@@ -1,7 +1,7 @@
 import { IParserConfig } from '../types/parser';
 import { encodeSplitor, splitor as confSplitor } from '../config';
-import { encodeRegexpChars, typeOf } from '../helpers/utils';
-import { TObj, TStrList } from '../types/common';
+import { encodeRegexpChars } from '../helpers/utils';
+import { TMatchResult, TObj, TStrList } from '../types/common';
 export interface Tags {
   start: string;
   end: string;
@@ -11,26 +11,17 @@ export interface IParserConstructor extends IParserConfig {
   new (): AParser;
 }
 /**
- * 定义解析器抽象类
- *
+ * Abstract Property Parser
+ * 属性解析器抽象类
  * @interface AParser
  */
 export abstract class AParser {
-  protected params: TStrList;
-  protected patterns: any[][] = [];
-  protected tags: Tags;
-  protected code = '';
-  protected setting: TObj = {
+  public params: TStrList;
+  public patterns: TMatchResult[] = [];
+  public tags: Tags;
+  public code = '';
+  public setting: TObj = {
     frozen: true,
-  };
-  protected defaults: TObj = {
-    params: [],
-    patterns: [],
-    code: '',
-    tags: {
-      start: '',
-      end: '',
-    },
   };
   // constructor
   protected constructor() {
@@ -42,11 +33,7 @@ export abstract class AParser {
    * @returns
    * @memberof AParser
    */
-  public init() {
-    const { defaults } = this;
-    Object.keys(defaults).forEach((key) => {
-      this[key] = defaults[key];
-    });
+  public init(): AParser {
     return this;
   }
   /**
@@ -55,7 +42,7 @@ export abstract class AParser {
    * @returns
    * @memberof AParser
    */
-  public info() {
+  public info(): Pick<AParser, 'tags' | 'params' | 'code' | 'patterns'> {
     const { tags, params, code, patterns } = this;
     return {
       tags,
@@ -102,7 +89,7 @@ export abstract class AParser {
           params.push(seg);
         }
       } else {
-        let match: any[] | null = null;
+        let match: (string | undefined)[] | null = null;
         let curCode: string = res;
         let len = 0;
         const total = res.length;
@@ -140,7 +127,7 @@ export abstract class AParser {
    * @returns {Object|never}
    * @memberof AParser
    */
-  public abstract parse(): object | never;
+  public abstract parse(): unknown | never;
   /**
    *
    *
@@ -154,29 +141,36 @@ export abstract class AParser {
   }
 }
 //
-export interface ParserList {
+export interface IParserList {
   [index: string]: IParserConstructor;
 }
 //
-export interface ParserInstances {
+export interface IParserInstances {
   [index: string]: AParser;
 }
+// parse until result
+type TParseUntilResult = {
+  data: {
+    type: string;
+    instance: AParser;
+  };
+  total: number;
+};
 /**
- * 所有Parser的入口，分配器
- *
+ * dispatcher: design which parser should use when meat the character.
+ * 调配器：当遇到代码片段时，决定使用哪个解析器来解析
  * @export
  * @abstract
  * @class Dispatcher
  */
-// tslint:disable-next-line:max-classes-per-file
 export class Dispatcher {
-  protected parsers: ParserList = {};
-  protected tagPairs: string[] = [];
-  protected pairHash: TObj = {};
+  protected parsers: IParserList = {};
+  protected tagPairs: TStrList = [];
+  protected pairHash: TObj<string> = {};
   protected readonly splitor: string = confSplitor;
-  protected instances: ParserInstances = {};
+  protected instances: IParserInstances = {};
   /**
-   *
+   * add
    *
    * @param {string} name
    * @param {ParserConfig} config
@@ -192,34 +186,38 @@ export class Dispatcher {
   ): never | void {
     const { startTag, endTag, separator, pattern } = config;
     const { splitor } = this;
+    // the parses's separator can't equal to the root parser's splitor
     if (separator === splitor) {
       return this.halt(
         `the parser of "${name}" can not set '${splitor}' as separator.`,
       );
     }
+    // the parser'name is repeated
     if (this.parsers.hasOwnProperty(name)) {
       return this.halt(`the parser of "${name}" has existed.`);
     }
+    // no start tag,can't go on the parsing.
     if (startTag.length === 0) {
       return this.halt(`the parser of "${name}"'s startTag can not be empty. `);
     }
+    // the start tag or end tag contains special character
     if (/(\\|:|\s)/.test(startTag.concat(endTag).join(''))) {
       const char = RegExp.$1;
       return this.halt(
         `the parser of "${name}" contains special char (${char})`,
       );
     }
-    //
+    // use the rule, make the pair
     let rule = config.rule;
-    const pairs: string[] = [];
+    const pairs: TStrList = [];
     const hasRule = endTag.length === 0 && rule instanceof RegExp;
     if (!hasRule) {
       const sortFn = (a: string, b: string) => (b.length > a.length ? 1 : -1);
       startTag.sort(sortFn);
       endTag.sort(sortFn);
     }
-    const startRuleSegs: string[] = [];
-    const endRuleSegs: string[] = [];
+    const startRuleSegs: TStrList = [];
+    const endRuleSegs: TStrList = [];
     startTag.map((start) => {
       if (!hasRule) {
         startRuleSegs.push(encodeRegexpChars(start));
@@ -235,7 +233,7 @@ export class Dispatcher {
         pairs.push(start);
       }
     });
-    // check if exists
+    // check if the pair exists
     for (let i = 0, j = pairs.length; i < j; i++) {
       const cur = pairs[i];
       if (this.tagPairs.indexOf(cur) > -1) {
@@ -261,14 +259,14 @@ export class Dispatcher {
       }
       rule = new RegExp(context);
     }
-    // make sure startTag and endTag combine is unique, sort for max match.
+    // make sure startTag and endTag combine is unique, and the pair matched max is in the start.
     this.tagPairs = this.tagPairs.concat(pairs).sort((a, b) => {
       return a.length - b.length;
     });
-    // tslint:disable-next-line:max-classes-per-file
+    // create a new parser
     this.parsers[name] = class extends AParser {
-      public static readonly startTag: any[] = startTag;
-      public static readonly endTag: any[] = endTag;
+      public static readonly startTag: TStrList = startTag;
+      public static readonly endTag: TStrList = endTag;
       public static readonly separator: string = separator || '';
       public static readonly splitor: string = splitor;
       public static readonly rule: RegExp = rule;
@@ -285,21 +283,21 @@ export class Dispatcher {
     };
   }
   /**
-   *
-   *
+   * dispatcher parse all the code
+   * 调配器调用parse方法来解析所有的字符串，内部通过调用parser的parse方法来实现
    * @param {string} code
    * @memberof Dispatcher
    */
-  public parse(code: string): TObj | never {
+  public parse(code: string): TObj<TObj> | never {
     const len = code.length;
     const { splitor } = this;
     let index = 0;
     let curCode = code;
     const exists: TObj = {};
-    const result: TObj = {};
+    const result: TObj<TObj> = {};
     while (index < len) {
-      const res: TObj | never = this.parseUntilFind(curCode);
-      const { data, total } = res as TObj;
+      const res = this.parseUntilFind(curCode);
+      const { data, total } = res;
       index += total;
       if (index < len && splitor !== code.charAt(index)) {
         throw new Error(
@@ -317,14 +315,14 @@ export class Dispatcher {
           `the config of "${type}" (${instance.code}) can not be set again.`,
         );
       } else {
-        const curResult = instance.parse();
-        if (typeOf(curResult) !== 'Array') {
+        const curResult = instance.parse() as TObj;
+        if (Array.isArray(curResult)) {
+          result[type] = curResult;
+        } else if (typeof curResult === 'object') {
           result[type] = {
             ...(result[type] || {}),
             ...curResult,
           };
-        } else {
-          result[type] = curResult;
         }
         exists[type] = true;
       }
@@ -332,14 +330,14 @@ export class Dispatcher {
     return result;
   }
   /**
-   *
-   *
+   * get a parser's instance by name
+   * 获取某个名称的parser实例
    * @protected
    * @param {string} name
    * @returns
    * @memberof Dispatcher
    */
-  protected getInstance(name: string) {
+  protected getInstance(name: string): AParser {
     // if (this.instances[name]) {
     //   return this.instances[name].init();
     // }
@@ -353,17 +351,17 @@ export class Dispatcher {
    * @returns
    * @memberof Dispatcher
    */
-  protected parseUntilFind(context: string) {
+  protected parseUntilFind(context: string): TParseUntilResult | never {
     if (context === '') {
       throw new Error('the context is empty');
     }
     const { tagPairs, pairHash, splitor, parsers } = this;
-    const exactMatched: string[] = [];
+    const exactMatched: TStrList = [];
     const error = `can not parse context "${context}",no parser matched.`;
-    let allMatched: string[] = [];
+    let allMatched: TStrList = [];
     let startIndex = 0;
     let sub = '';
-    let result: null | TObj = null;
+    let result;
     do {
       const cur = context.charAt(startIndex++);
       sub += cur;
@@ -391,8 +389,8 @@ export class Dispatcher {
     } while (allMatched.length);
     let len = exactMatched.length;
     if (len) {
-      const everTested: TObj = {};
-      const tryTypes: string[] = [];
+      const everTested: TObj<boolean> = {};
+      const tryTypes: TStrList = [];
       while (len--) {
         const pair = exactMatched[len];
         const type = pairHash[pair];

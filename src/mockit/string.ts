@@ -1,3 +1,4 @@
+import { IPPLength, IPPSize } from 'src/types/parser';
 import { makeRandom } from '../helpers/utils';
 import { TObj } from '../types';
 import Mockit from './namespace';
@@ -112,8 +113,10 @@ export default class ToString extends Mockit<string> {
   public generate() {
     const { params } = this;
     const { Length } = params;
-    const { least, most } = Length || { least: 1, most: 100 };
-    const { range } = params.Count || { range: [[32, 126]] };
+    const { least, most } = (Length as IPPLength) || { least: 1, most: 100 };
+    const { range } = (params.Size as IPPSize<number>) || {
+      range: [[32, 126]],
+    };
     const index = range.length - 1;
     const total = makeRandom(Number(least), Number(most));
     let result = '';

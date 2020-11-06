@@ -1,4 +1,4 @@
-export { default as Count } from './count';
+export { default as Size } from './size';
 export { default as Length } from './length';
 export { default as Format } from './format';
 export { default as Config } from './config';

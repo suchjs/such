@@ -1,15 +1,16 @@
+import { TFunc, TMatchResult } from '../types/common';
+import {
+  IParserFactory,
+  IPPFunc,
+  IPPFuncOptions,
+  IPPFuncParam,
+} from '../types/parser';
 import { encodeSplitor } from '../config';
 import { getExp } from '../helpers/utils';
 import store from '../store';
-import {
-  NormalFn,
-  TObj,
-  ParamsFunc,
-  ParamsFuncOptions,
-  ParserInstance,
-} from '../types';
+import { AParser } from './namespace';
 const { fns: globalFns } = store;
-const parseFuncParams = (options: ParamsFuncOptions) => {
+const parseFuncParams = (options: IPPFuncOptions) => {
   const { name, params } = options;
   const isUserDefined = globalFns.hasOwnProperty(name);
   const confName = '__CONFIG__';
@@ -20,13 +21,15 @@ const parseFuncParams = (options: ParamsFuncOptions) => {
   const fnName = isUserDefined ? '__FN__' : `${resName}.${name}`;
   const useFnParam = isUserDefined ? [fnName] : [];
   const lastParams: string[] = isUserDefined ? [resName] : [];
-  const paramValues: any[] = [];
+  const paramValues: unknown[] = [];
   let index = 0;
-  params.forEach((param: any) => {
+  params.forEach((param) => {
     const { value, variable } = param;
     if (variable) {
-      const isObjChain = value.indexOf('.') > -1 || value.indexOf('[') > -1;
-      // tslint:disable-next-line:max-line-length
+      const isObjChain =
+        typeof value === 'string'
+          ? value.includes('.') || value.includes('[')
+          : false;
       lastParams.push(
         isObjChain
           ? `${expName}(${confName},"${value}")`
@@ -37,9 +40,7 @@ const parseFuncParams = (options: ParamsFuncOptions) => {
       lastParams.push(`${argName}[${index++}]`);
     }
   });
-  // tslint:disable-next-line:max-line-length
   return {
-    // tslint:disable-next-line:max-line-length
     fn: new Function(
       useFnParam.concat(argName, varName, resName, confName, expName).join(','),
       isUserDefined
@@ -49,21 +50,19 @@ const parseFuncParams = (options: ParamsFuncOptions) => {
     param: paramValues,
   };
 };
-const parser: ParserInstance = {
+const parser: IParserFactory = {
   config: {
     startTag: ['@'],
     endTag: [],
     separator: '|',
-    // tslint:disable-next-line:max-line-length
     pattern: /^([a-z][\w$]*)(?:\(((?:(?:(['"])(?:(?!\3)[^\\]|\\.)*\3|[\w$]+(?:\.[\w$]+|\[(?:(['"])(?:(?!\4)[^\\]|\\.)*\4|\d+)\])*)\s*(?:,(?!\s*\))|(?=\s*\)))\s*)*)\)|)/,
-    // tslint:disable-next-line:max-line-length
     rule: new RegExp(
       `^@(?:[a-z][\\w$]*(?:\\((?:(?:(['"])(?:(?!\\1)[^\\\\]|\\\\.)*\\1|[\\w$]+(?:\\.[\\w$]+|\\[(?:(['"])(?:(?!\\2)[^\\\\]|\\.)*\\2|\\d+)\\])*)\\s*(?:,(?!\\s*\\))|(?=\\s*\\)))\\s*)*\\)|)(?:\\|(?!$|${encodeSplitor})|(?=\\s*$|${encodeSplitor})))*`,
     ),
   },
-  parse(): ParamsFunc | never {
+  parse(this: AParser): IPPFunc | never {
     const { patterns, code } = this.info();
-    const result: ParamsFunc = {
+    const result: IPPFunc = {
       queue: [],
       fns: [],
       params: [],
@@ -74,16 +73,19 @@ const parser: ParserInstance = {
     } else {
       const rule = /(['"])((?:(?!\1)[^\\]|\\.)*)\1|([\w$]+(?:\.[\w$]+|\[(?:(['"])(?:(?!\4)[^\\]|\\.)*\4|\d+)\])*)/g;
       const nativeValues = ['true', 'false', 'undefined', 'null', 'NaN'];
-      patterns.forEach((match: any[]) => {
-        const [_, name, args] = match;
-        const params = [];
+      (patterns as TMatchResult[]).forEach((match) => {
+        const [, name, args] = match;
+        const params: IPPFuncParam[] = [];
         if (args) {
-          let segs: any[] | null = null;
+          let segs: TMatchResult | null = null;
           while ((segs = rule.exec(args)) !== null) {
             const plainValue = segs[3];
-            const cur: TObj = {};
+            const cur: IPPFuncParam = {};
             if (plainValue) {
-              if (nativeValues.indexOf(plainValue) > -1 || !isNaN(plainValue)) {
+              if (
+                nativeValues.indexOf(plainValue) > -1 ||
+                !isNaN(Number(plainValue))
+              ) {
                 cur.value = getExp(plainValue);
               } else {
                 cur.value = plainValue;
@@ -102,7 +104,7 @@ const parser: ParserInstance = {
         };
         result.options.push(options);
         const { fn, param } = parseFuncParams(options);
-        result.fns.push(fn as NormalFn);
+        result.fns.push(fn as TFunc);
         result.params.push(param);
       });
       return result;
