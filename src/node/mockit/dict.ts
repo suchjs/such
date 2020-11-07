@@ -1,9 +1,10 @@
+import { TStrList } from 'src/types/common';
 import { makeRandom } from '../../helpers/utils';
 import store from '../../store';
 import { ParamsPath, ParamsPathItem } from '../../types';
 import { getRealPath, loadDict } from '../utils';
 const { config, fileCache } = store;
-type TString = string | string[];
+type TMultiStr = string | TStrList;
 export default {
   init(): void {
     this.addRule('Path', function (Path: ParamsPath) {
@@ -21,9 +22,9 @@ export default {
       }
     });
   },
-  generate(): TString | Promise<TString> {
+  generate(): TMultiStr | Promise<TMultiStr> {
     const { Path, Length } = this.params;
-    const preload = config.preload as boolean | string[];
+    const preload = config.preload as boolean | TStrList;
     let isSync = false;
     if (typeof preload === 'boolean') {
       isSync = preload === true;
@@ -32,14 +33,14 @@ export default {
         preload.includes(item.fullpath),
       );
     }
-    const makeOne = (result: string[][]): string => {
+    const makeOne = (result: TStrList[]): string => {
       const dict = result[makeRandom(0, result.length - 1)];
       return dict[makeRandom(0, dict.length - 1)];
     };
-    const makeAll = (result: string[][]): TString => {
+    const makeAll = (result: TStrList[]): TMultiStr => {
       let count = Length ? makeRandom(Length.least, Length.most) : 1;
       const one = count === 1;
-      const last: string[] = [];
+      const last: TStrList = [];
       while (count--) {
         last.push(makeOne(result));
       }
@@ -49,14 +50,14 @@ export default {
       return getRealPath(item);
     });
     if (isSync) {
-      const queues: string[][] = [];
+      const queues: TStrList[] = [];
       lastPaths.map((filePath: string) => {
         queues.push(fileCache[filePath]);
       });
       return makeAll(queues);
     } else {
       return loadDict(lastPaths).then((result) => {
-        return makeAll(result as string[][]);
+        return makeAll(result as TStrList[]);
       });
     }
   },

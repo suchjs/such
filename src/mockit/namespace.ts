@@ -1,4 +1,4 @@
-import { TResult, TStrList } from '../types/common';
+import { TConstructor, TResult, TStrList, TObj } from '../types/common';
 import { IPPConfig, IPPFunc, IPPFuncOptions } from '../types/parser';
 import {
   deepCopy,
@@ -11,16 +11,14 @@ import {
   withPromise,
 } from '../helpers/utils';
 import store from '../store';
+import { SuchOptions } from '../types';
 import {
-  MockitConfig,
-  MockitConfigItem,
-  TObj,
-  ParamsFunc,
-  ParamsFuncOptions,
-  SuchOptions,
-  TypeConstructor,
-} from '../types';
-import { TMModifierFn, TMRuleFn } from 'src/types/mockit';
+  TMConfig,
+  TMConfigRule,
+  TMModifierFn,
+  TMParams,
+  TMRuleFn,
+} from 'src/types/mockit';
 const { fns: globalFns, vars: globalVars, mockitsCache } = store;
 //
 
@@ -33,9 +31,9 @@ const { fns: globalFns, vars: globalVars, mockitsCache } = store;
  * @template T
  */
 export default abstract class Mockit<T = unknown> {
-  protected configOptions: MockitConfig = {};
-  protected params: TObj = {};
-  protected origParams: TObj = {};
+  protected configOptions: TMConfig = {};
+  protected params: TMParams = {};
+  protected origParams: TMParams = {};
   protected generateFn: undefined | ((options: SuchOptions) => TResult<T>);
   protected isValidOk = false;
   protected hasValid = false;
@@ -108,19 +106,19 @@ export default abstract class Mockit<T = unknown> {
     const { configOptions } = this;
     // if set configOptions,validate config
     if (isNoEmptyObject(configOptions)) {
-      this.addRule('Config', function (Config: TObj) {
-        const last = deepCopy({}, Config || {}) as IPPConfig;
+      this.addRule('Config', function (Config: IPPConfig = {}) {
+        const last = deepCopy({}, Config) as IPPConfig;
         Object.keys(configOptions).map((key: string) => {
-          const cur: MockitConfigItem<unknown> = configOptions[key];
+          const cur: TMConfigRule = configOptions[key];
           let required = false;
           let def: unknown;
-          let type: TypeConstructor | TypeConstructor[];
-          const typeNames: string[] = [];
+          let type: TConstructor | TConstructor[];
+          const typeNames: TStrList = [];
           let validator = (target: unknown) => {
             const targetType = typeOf(target);
-            const allTypes = typeOf(type) === 'Array' ? type : [type];
+            const allTypes = Array.isArray(type) ? type : [type];
             let flag = false;
-            (allTypes as TypeConstructor[]).map((Cur) => {
+            allTypes.map((Cur) => {
               const curName = Cur.name;
               typeNames.push(curName);
               if (!flag) {
@@ -141,7 +139,6 @@ export default abstract class Mockit<T = unknown> {
           if (required && !hasKey) {
             throw new Error(`${constrName} required set config "${key}"`);
           } else if (hasKey && !validator.call(null, last[key])) {
-            // tslint:disable-next-line:max-line-length
             throw new Error(
               `the config of "${key}"'s value ${
                 last[key]
@@ -266,7 +263,6 @@ export default abstract class Mockit<T = unknown> {
    */
   public make(options: SuchOptions): TResult<T> {
     this.validate();
-    // tslint:disable-next-line:max-line-length
     let result =
       typeof this.generateFn === 'function'
         ? this.generateFn.call(this, options)
@@ -281,7 +277,7 @@ export default abstract class Mockit<T = unknown> {
     }
     // judge if promise
     return isPromRes
-      ? result.then((res: any) => {
+      ? result.then((res: unknown) => {
           return this.runAll(res, options);
         })
       : this.runAll(result, options);

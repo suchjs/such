@@ -1,14 +1,15 @@
-import RegexpParser, { regexpRule } from 'reregexp';
-import { TObj, ParamsRegexp } from '../types';
+import RegexpParser, { NamedGroupConf, regexpRule } from 'reregexp';
+import { TMatchResult, TObj } from '../types/common';
+import { IPPRegexp } from '../types/parser';
 import Mockit from './namespace';
 export default class ToRegexp extends Mockit<string> {
   private instance: RegexpParser;
   constructor(constructName: string) {
     super(constructName);
   }
-  public init() {
+  public init(): void {
     // regexp rule
-    this.addRule('Regexp', function (Regexp: ParamsRegexp) {
+    this.addRule('Regexp', function (Regexp: IPPRegexp) {
       if (!Regexp) {
         throw new Error(`the regexp type must has a regexp rule.`);
       }
@@ -27,7 +28,7 @@ export default class ToRegexp extends Mockit<string> {
       Object.keys(Config).forEach((key) => {
         const value = Config[key];
         if (typeof value === 'string') {
-          let match: null | any[];
+          let match: TMatchResult | null = null;
           let segs: string[] = [];
           const groups: string[] = [];
           let lastIndex = 0;
@@ -53,17 +54,17 @@ export default class ToRegexp extends Mockit<string> {
       return result;
     });
   }
-  public generate() {
+  public generate(): string {
     let { instance } = this;
     const { Config, Regexp } = this.params;
     if (!instance) {
       instance = this.instance = new RegexpParser(Regexp.rule, {
-        namedGroupConf: Config || {},
+        namedGroupConf: (Config as NamedGroupConf) || {},
       });
     }
     return instance.build();
   }
-  public test() {
+  public test(): boolean {
     return true;
   }
 }

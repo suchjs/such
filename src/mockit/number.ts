@@ -1,8 +1,8 @@
 import printf, { rule as formatRule } from 'nprintf';
-import { IPPConfig, IPPSize } from 'src/types/parser';
+import { TMModifierFn } from '../types/mockit';
+import { IPPFormat, IPPSize } from '../types/parser';
 import { isOptional } from '../helpers/utils';
-import { TObj } from '../types';
-import Mockit, { ModifierFn } from './namespace';
+import Mockit from './namespace';
 
 const factor = (type: number) => {
   const epsilon = Number.EPSILON || Math.pow(2, -52);
@@ -22,22 +22,21 @@ export default class ToNumber extends Mockit<number> {
   constructor(constructName: string) {
     super(constructName);
   }
-  //
-  public init() {
+  // init
+  public init(): void {
     this.configOptions = {
       step: {
         type: Number,
       },
     };
     // Size Rule
-    this.addRule('Size', function (Size: TObj) {
+    this.addRule('Size', function (Size: IPPSize) {
       if (!Size) {
         return;
       }
       const { range } = Size;
       const size = range.length;
       if (size !== 2) {
-        // tslint:disable-next-line:max-line-length
         throw new Error(
           size < 2
             ? `the Size param must have the min and the max params`
@@ -45,8 +44,8 @@ export default class ToNumber extends Mockit<number> {
         );
       }
       let [min, max] = range;
-      min = min.trim();
-      max = max.trim();
+      min = (min as string).trim();
+      max = (max as string).trim();
       if (min === '' && max === '') {
         throw new Error(`the min param and max param can not both undefined`);
       }
@@ -56,10 +55,10 @@ export default class ToNumber extends Mockit<number> {
       if (max === '') {
         max = Number.MAX_SAFE_INTEGER || Number.MAX_VALUE;
       }
-      if (isNaN(min)) {
+      if (isNaN(min as number)) {
         throw new Error(`the min param expect a number,but got ${min}`);
       }
-      if (isNaN(max)) {
+      if (isNaN(max as number)) {
         throw new Error(`the max param expect a number,but got ${max}`);
       }
       const lastMin = Number(min);
@@ -74,7 +73,7 @@ export default class ToNumber extends Mockit<number> {
       };
     });
     // Format rule
-    this.addRule('Format', function (Format: TObj) {
+    this.addRule('Format', function (Format: IPPFormat) {
       if (!Format) {
         return;
       }
@@ -84,19 +83,17 @@ export default class ToNumber extends Mockit<number> {
       }
     });
     // Format Modifier
-    this.addModifier('Format', function (result: number, Format: TObj) {
+    this.addModifier('Format', function (result: number, Format: IPPFormat) {
       return printf(Format.format, result);
-    } as ModifierFn<number>);
+    } as TMModifierFn<number>);
   }
   public generate(): number {
-    const { params } = this;
-    const Size = params.Size as IPPSize;
-    const Config = params.Config as IPPConfig;
+    const { Size, Config } = this.params;
     let result: number;
     if (Size) {
       const { range } = Size;
-      const step = Config && Config.step;
-      const [min, max] = range;
+      const step = Config && (Config.step as number);
+      const [min, max] = range as number[];
       if (step) {
         const minPlus = 0;
         const maxPlus = Math.floor((max - min) / step);

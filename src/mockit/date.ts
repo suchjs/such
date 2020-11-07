@@ -1,8 +1,9 @@
+import { TMModifierFn } from '../types/mockit';
+import { IPPFormat, IPPSize } from '../types/parser';
 import { strRule } from '../config';
 import { dateformat, strtotime } from '../helpers/dateformat';
 import { decodeTrans, makeRandom } from '../helpers/utils';
-import { ParamsCount, ParamsFormat, SuchOptions } from '../types';
-import Mockit, { ModifierFn } from './namespace';
+import Mockit from './namespace';
 const makeDate = (param: string | number): Date | never => {
   let date: Date;
   if (!isNaN(param as number)) {
@@ -18,13 +19,13 @@ export default class ToDate extends Mockit<string | Date> {
   constructor(constructName: string) {
     super(constructName);
   }
-  public init() {
+  public init(): void {
     // range
-    this.addRule('Count', function (Count: ParamsCount) {
-      if (!Count) {
+    this.addRule('Size', function (Size: IPPSize) {
+      if (!Size) {
         return;
       }
-      const { range } = Count;
+      const { range } = Size;
       if (range.length !== 2) {
         throw new Error(
           `the time range should supply 2 arguments,but got ${range.length}`,
@@ -47,7 +48,7 @@ export default class ToDate extends Mockit<string | Date> {
       }
     });
     // Format rule
-    this.addRule('Format', function (Format: ParamsFormat) {
+    this.addRule('Format', function (Format: IPPFormat) {
       if (!Format) {
         return {
           format: 'yyyy-mm-dd',
@@ -61,18 +62,18 @@ export default class ToDate extends Mockit<string | Date> {
       };
     });
     // modifier
-    this.addModifier('Format', function (result: any, Format: ParamsFormat) {
+    this.addModifier('Format', function (result: unknown, Format: IPPFormat) {
       const { format } = Format;
       return dateformat(format, result as Date);
-    } as ModifierFn<string>);
+    } as TMModifierFn<string>);
   }
-  public generate() {
-    const { Count } = this.params;
-    const { range } = Count;
+  public generate(): Date {
+    const { Size } = this.params;
+    const range = Size.range as number[];
     const time = makeRandom(range[0], range[1]);
     return new Date(time);
   }
-  public test() {
+  public test(): boolean {
     return true;
   }
 }

@@ -2,11 +2,11 @@ import { getRefMocker, withPromise } from '../helpers/utils';
 import { Mocker } from '../such';
 import { ParamsPath, ParamsPathItem, SuchOptions } from '../types';
 import Mockit from './namespace';
-export default class ToRef extends Mockit<any> {
+export default class ToRef extends Mockit<unknown> {
   constructor(constructName: string) {
     super(constructName);
   }
-  public init() {
+  public init(): void {
     // path
     this.addRule('Path', function (Path: ParamsPath) {
       if (!Path) {
@@ -14,17 +14,17 @@ export default class ToRef extends Mockit<any> {
       }
     });
   }
-  public generate(options: SuchOptions) {
+  public generate(options: SuchOptions): unknown {
     const { mocker } = options;
     const { Path } = this.params;
-    const result: any[] = [];
+    const result: unknown[] = [];
     Path.map((item: ParamsPathItem) => {
       const refMocker = getRefMocker(item, mocker as Mocker);
       result.push(refMocker.result);
     });
     return Path.length === 1 ? result[0] : withPromise(result);
   }
-  public test() {
+  public test(): boolean {
     return true;
   }
 }

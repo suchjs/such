@@ -30,12 +30,12 @@ export default {
       }
     });
   },
-  generate(options: SuchOptions): TStrList {
+  generate(options: SuchOptions): TStrList | Promise<TStrList> {
     const { mocker } = options;
     let { Path, Config } = this.params;
     let lastPath = Path[0];
     let handle = Config.handle;
-    const values: any[] = [];
+    const values: unknown[] = [];
     let loop = 1;
     while (!Config.root && loop++ < 10) {
       const refMocker = getRefMocker(lastPath, mocker as Mocker);
@@ -63,7 +63,7 @@ export default {
       return handle(data, values);
     } else {
       return loadJson(realPath).then((data: TObj) => {
-        return Promise.all(withPromise(values)).then((last: any[]) => {
+        return Promise.all(withPromise(values)).then((last: unknown[]) => {
           const cur = handle(data, last);
           return cur;
         });

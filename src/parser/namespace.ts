@@ -89,7 +89,7 @@ export abstract class AParser {
           params.push(seg);
         }
       } else {
-        let match: (string | undefined)[] | null = null;
+        let match: TMatchResult | null = null;
         let curCode: string = res;
         let len = 0;
         const total = res.length;
@@ -102,7 +102,6 @@ export abstract class AParser {
               `the pattern rule "${pattern.toString()}" match nothing to the string:${curCode}`,
             );
           } else if (len < total && sep !== separator) {
-            // tslint:disable-next-line:max-line-length
             throw new Error(
               `unexpected separator character "${sep}" in "${curCode.slice(
                 len,

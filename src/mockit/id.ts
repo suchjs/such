@@ -4,7 +4,8 @@ export default class ToId extends Mockit<number> {
   constructor(constructName: string) {
     super(constructName);
   }
-  public init() {
+  // init
+  public init(): void {
     this.configOptions = {
       step: {
         type: Number,
@@ -16,9 +17,12 @@ export default class ToId extends Mockit<number> {
       },
     };
   }
-  public generate(options: SuchOptions) {
+  public generate(options: SuchOptions): number {
     const { dpath } = options;
-    const config = this.params.Config || {};
+    const config = (this.params.Config || {}) as {
+      start?: number;
+      step?: number;
+    };
     const { start, step } = config;
     let len = dpath.length;
     while (len--) {
@@ -29,7 +33,7 @@ export default class ToId extends Mockit<number> {
     }
     return start;
   }
-  public test() {
+  public test(): boolean {
     return true;
   }
 }

@@ -1,31 +1,38 @@
-import { IPPLength, IPPSize } from 'src/types/parser';
+import { TMatchResult, TStrList } from '../types/common';
+import { IPPSize } from '../types/parser';
 import { makeRandom } from '../helpers/utils';
-import { TObj } from '../types';
 import Mockit from './namespace';
 const uniRule = /^\\u((?:[0-9a-fA-F]{4}|[0-9a-fA-F]{6}))$/;
 const numRule = /^\d+$/;
 const hex2num = (hex: string): number => {
   return Number('0x' + hex);
 };
+/**
+ * mock a string
+ * mock字符串
+ * @export
+ * @class ToString
+ * @extends {Mockit<string>}
+ */
 export default class ToString extends Mockit<string> {
   constructor(constructName: string) {
     super(constructName);
   }
-  public init() {
-    // Count Rule
-    this.addRule('Count', function (Count: TObj) {
-      if (!Count) {
+  public init(): void {
+    // Size Rule
+    this.addRule('Size', function (Size: IPPSize) {
+      if (!Size) {
         return;
       }
       // https://www.regular-expressions.info/unicode.html#prop
-      const { range } = Count;
+      const { range } = Size;
       if (range.length < 2) {
         throw new Error(
           `The count param should have 2 params,but got ${range.length}`,
         );
       }
       // validate code range
-      const [first, second] = range;
+      const [first, second] = range as TStrList;
       const isFirstUni = uniRule.test(first);
       const result: number[][] = [];
       const maxCodeNum = 0x10ffff;
@@ -33,7 +40,6 @@ export default class ToString extends Mockit<string> {
         let firstNum: number;
         let secondNum: number;
         if (range.length > 2) {
-          // tslint:disable-next-line:max-line-length
           throw new Error(
             `the count of range should have just 2 params,if you want support some specail point code,you can set the param like this,[${first}-${first},...]`,
           );
@@ -73,7 +79,7 @@ export default class ToString extends Mockit<string> {
         const uniRangeRule = /^\\u([0-9a-fA-F]{4}|[0-9a-fA-F]{6})\-\\u([0-9a-fA-F]{4}|[0-9A-Fa-f]{6})$/;
         const numRangeRule = /^(\d+)\-(\d+)$/;
         range.map((code: string, index: number) => {
-          let match: null | any[];
+          let match: TMatchResult | null = null;
           let firstNum: number;
           let secondNum: number;
           let isRange = true;
@@ -110,11 +116,11 @@ export default class ToString extends Mockit<string> {
       };
     });
   }
-  public generate() {
-    const { params } = this;
+  public generate(): string {
+    const params = this.params;
     const { Length } = params;
-    const { least, most } = (Length as IPPLength) || { least: 1, most: 100 };
-    const { range } = (params.Size as IPPSize<number>) || {
+    const { least, most } = Length || { least: 1, most: 100 };
+    const { range } = ((params.Size as unknown) as IPPSize<number[]>) || {
       range: [[32, 126]],
     };
     const index = range.length - 1;
@@ -128,7 +134,7 @@ export default class ToString extends Mockit<string> {
     }
     return result;
   }
-  public test() {
+  public test(): boolean {
     return true;
   }
 }
