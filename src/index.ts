@@ -7,6 +7,8 @@ import { getAllFiles, loadAllData, loadTemplate } from './node/utils';
 import store from './store';
 import Such, { IAsOptions } from './such';
 import { TObj } from './types';
+import { TNodeSuch } from './types/node';
+const NSuch = Such as typeof Such & TNodeSuch;
 const { config, fileCache } = store;
 // load config files
 const builtRule = /such:([a-zA-Z]+)/;
@@ -28,7 +30,7 @@ const loadConf = (name: string | string[]): TObj | TObj[] => {
     });
   }
 };
-Such.loadConf = loadConf;
+NSuch.loadConf = loadConf;
 // find static paths
 const tryConfigFile = (...files: string[]) => {
   for (let i = 0, j = files.length; i < j; i++) {
@@ -50,8 +52,8 @@ const lastConfFile = tryConfigFile(
 );
 config.rootDir = lastConfFile ? path.dirname(lastConfFile) : rootDir;
 // open api for reload data and clear cache
-['reloadData', 'clearCache'].map((name: string) => {
-  Such[name] = function () {
+(<const>['reloadData', 'clearCache']).map((name) => {
+  NSuch[name] = function () {
     return Promise.resolve();
   };
 });
@@ -62,7 +64,7 @@ if (lastConfFile) {
   if (conf.config) {
     // copy all
     deepCopy(config, conf.config);
-    ['suchDir', 'dataDir'].map((key: string) => {
+    (<const>['suchDir', 'dataDir']).map((key) => {
       if (config[key]) {
         config[key] = path.resolve(config.rootDir, config[key]);
       }
@@ -70,7 +72,7 @@ if (lastConfFile) {
     const { preload, dataDir } = config;
     if (dataDir) {
       // redefine reloadData
-      Such.reloadData = () => {
+      NSuch.reloadData = () => {
         store.fileCache = {};
         return getAllFiles(dataDir).then((files) => {
           return loadAllData(files);
@@ -88,7 +90,7 @@ if (lastConfFile) {
           allFiles = await getAllFiles(dataDir);
         }
         await loadAllData(allFiles);
-        Such.clearCache = () => {
+        NSuch.clearCache = () => {
           allFiles.map((key: string) => {
             delete fileCache[key];
           });
@@ -97,14 +99,14 @@ if (lastConfFile) {
       })();
     }
   }
-  Such.config(conf);
+  NSuch.config(conf);
 }
 // add node types
-Such.define('dict', ToDict);
-Such.define('cascader', ToCascader);
+NSuch.define('dict', ToDict);
+NSuch.define('cascader', ToCascader);
 // redefine such.as,support .json file
-const origSuchas = Such.as;
-Such.as = function (target: unknown, options?: IAsOptions) {
+const origSuchas = NSuch.as;
+NSuch.as = function (target: unknown, options?: IAsOptions) {
   if (typeof target === 'string' && path.extname(target) === '.json') {
     const lastPath = path.resolve(config.suchDir || config.rootDir, target);
     if (fs.existsSync(lastPath)) {
@@ -115,4 +117,4 @@ Such.as = function (target: unknown, options?: IAsOptions) {
   }
   return origSuchas(target, options);
 };
-export default Such;
+export default NSuch;

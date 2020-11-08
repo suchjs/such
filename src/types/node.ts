@@ -1,8 +1,12 @@
 import { TFunc, TObj, TStrList } from 'src/types';
+import { TPath } from './common';
+import { TMFactoryOptions } from './mockit';
+import { IParserFactory } from './parser';
 
 export interface TSSConfig {
-  suchDir?: string;
-  dataDir?: string;
+  rootDir?: TPath;
+  suchDir?: TPath;
+  dataDir?: TPath;
   preload?: boolean | TStrList;
 }
 export interface TSSGlobals {
@@ -12,18 +16,24 @@ export interface TSSGlobals {
 export interface TSSTypes {
   [index: string]:
     | TFunc
-    | MockitOptions
+    | TMFactoryOptions
     | [string, string]
-    | [string, MockitOptions];
+    | [string, TMFactoryOptions];
 }
-export interface SuchConfParser {
-  [index: string]: ParserInstance;
-}
+export type TSSParsers = {
+  [index: string]: IParserFactory;
+};
 export type TSuchSettings = {
   extends?: string | TStrList;
   config?: TSSConfig;
   globals?: TSSGlobals;
-  parsers?: SuchConfParser;
+  parsers?: TSSParsers;
   types?: TSSTypes;
   alias?: TObj<string>;
+};
+
+export type TNodeSuch = {
+  loadConf: (name: string | string[]) => TObj | TObj[];
+  reloadData: () => Promise<unknown>;
+  clearCache: () => Promise<unknown>;
 };

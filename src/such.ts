@@ -12,6 +12,7 @@ import {
   SuchConfFile,
   SuchOptions,
 } from './types';
+import { TMFactoryOptions } from './types/mockit';
 const {
   capitalize,
   isFn,
@@ -359,7 +360,7 @@ export class Mocker {
           }
         }
       }
-      this.mockFn = (dpath: Path) => target;
+      this.mockFn = (_dpath: Path) => target;
     }
   }
 
@@ -385,7 +386,7 @@ export class Mocker {
    * @returns
    * @memberof Mocker
    */
-  public mock(dpath: Path) {
+  public mock(dpath: Path): unknown {
     const { optional } = this.config;
     if (this.isRoot && optional && isOptional()) {
       return;
@@ -393,15 +394,15 @@ export class Mocker {
     const result = this.mockFn(dpath);
     if (this.isRoot) {
       if (this.promises.length) {
-        const queues: Array<Promise<any>> = [];
+        const queues: Array<Promise<unknown>> = [];
         const dpaths: Path[] = [];
         this.promises.map((item: PromiseResult) => {
           const { result: promise, dpath: curDPath } = item;
           queues.push(promise);
           dpaths.push(curDPath);
         });
-        return (this.result = Promise.all(queues).then((results: any[]) => {
-          results.map((res: any, i: number) => {
+        return (this.result = Promise.all(queues).then((results: unknown[]) => {
+          results.map((res: unknown, i: number) => {
             this.datas.set(dpaths[i], res);
           });
           return this.datas.get([]);
@@ -455,7 +456,7 @@ export default class Such {
    * @param {SuchConfFile} config
    * @memberof Such
    */
-  public static config(config: SuchConfFile) {
+  public static config(config: SuchConfFile): void {
     const { parsers, types, globals } = config;
     const fnHashs: TObj = {
       parsers: 'parser',
@@ -516,7 +517,7 @@ export default class Such {
    * @param {*} target
    * @memberof Such
    */
-  public static as(target: any, options?: IAsOptions) {
+  public static as(target: unknown, options?: IAsOptions): unknown {
     const ret = new Such(target, options);
     return options && options.instance ? ret : ret.a();
   }
@@ -528,7 +529,7 @@ export default class Such {
    * @param {*} value
    * @memberof Such
    */
-  public static assign(name: string, value: any, alwaysVar = false) {
+  public static assign(name: string, value: unknown, alwaysVar = false): void {
     store(name, value, alwaysVar);
   }
   /**
@@ -540,16 +541,16 @@ export default class Such {
    * @param {(string|MockitOptions)} options
    * @memberof Such
    */
-  public static define(type: string, ...args: any[]): void | never {
+  public static define(type: string, ...args: unknown[]): void | never {
     const argsNum = args.length;
     if (argsNum === 0 || argsNum > 2) {
       throw new Error(`the static "define" method's arguments is not right.`);
     }
     const opts = args.pop();
     // tslint:disable-next-line:max-line-length
-    const config: MockitOptions =
+    const config: Partial<TMFactoryOptions> =
       argsNum === 2 && typeof opts === 'string'
-        ? ({ param: opts } as MockitOptions)
+        ? { param: opts }
         : argsNum === 1 && typeof opts === 'function'
         ? { generate: opts }
         : opts;
@@ -560,13 +561,13 @@ export default class Such {
       let klass: Mockit;
       if (argsNum === 2) {
         const baseType = args[0];
-        const BaseClass = AllMockits[baseType as string] as (((...args:unknown[]) => unknown) extends Mockit);
+        const BaseClass = AllMockits[baseType as string];
         if (!BaseClass) {
           throw new Error(
             `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
           );
         }
-        klass = class extends BaseClass implements Mockit {
+        klass = class extends BaseClass {
           constructor() {
             super(constrName);
           }
@@ -625,16 +626,16 @@ export default class Such {
       throw new Error(`the type "${type}" has been defined yet.`);
     }
   }
-  public readonly target: any;
+  public readonly target: unknown;
   public readonly options: IAsOptions;
   public readonly mocker: Mocker;
   public readonly instances: PathMap<Mocker>;
   public readonly mockits: PathMap<TObj>;
-  public readonly datas: PathMap<any>;
+  public readonly datas: PathMap<unknown>;
   public readonly paths: PathMap<Path>;
   protected struct: TObj;
   private initail = false;
-  constructor(target: any, options?: IAsOptions) {
+  constructor(target: unknown, options?: IAsOptions) {
     this.target = target;
     this.instances = new PathMap(false);
     this.datas = new PathMap(true);

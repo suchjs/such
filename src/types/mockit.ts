@@ -30,3 +30,10 @@ export type TMParams = {
   Size?: IPPSize;
   Regexp?: IPPRegexp;
 };
+export type TMFactoryOptions = {
+  param?: string;
+  configOptions?: TObj;
+  init?: () => void;
+  generate: () => unknown;
+  generateFn?: () => void;
+};

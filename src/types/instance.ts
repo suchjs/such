@@ -1,9 +1,8 @@
 import { TObj } from 'src/types';
-
-export interface IMockitOptions {
-  param?: string;
-  configOptions?: TObj;
-  init?: () => void;
-  generate: () => unknown;
-  generateFn?: () => void;
+import PathMap, { Path } from 'src/helpers/pathmap';
+export interface TSuchInject<S = TObj, M = TObj> {
+  datas: PathMap<unknown>;
+  dpath: Path;
+  such: TObj<S>;
+  mocker: M;
 }

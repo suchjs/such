@@ -1,6 +1,7 @@
 import Mockit from './mockit/namespace';
 import { TObj, TFunc, TStrList } from './types';
 import { TMModifierFn, TMRuleFn } from './types/mockit';
+import { TSSConfig } from './types/node';
 type MockitsCache<T> = TObj<{
   rules: TStrList;
   ruleFns: TObj<TMRuleFn>;
@@ -19,7 +20,7 @@ export interface Store {
   fileCache: {
     [index: string]: TStrList;
   };
-  config: TObj;
+  config: TSSConfig;
 }
 const store: Store = (() => {
   const fns: TObj<TFunc> = {};
