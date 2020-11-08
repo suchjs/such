@@ -1,7 +1,7 @@
-import Mockit from './mockit/namespace';
-import { TObj, TFunc, TStrList } from './types';
-import { TMModifierFn, TMRuleFn } from './types/mockit';
-import { TSSConfig } from './types/node';
+import Mockit from '../mockit/namespace';
+import { TObj, TFunc, TStrList } from '../types/common';
+import { TMModifierFn, TMRuleFn } from '../types/mockit';
+import { TSSConfig } from '../types/node';
 type MockitsCache<T> = TObj<{
   rules: TStrList;
   ruleFns: TObj<TMRuleFn>;

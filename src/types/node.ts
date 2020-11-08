@@ -1,4 +1,4 @@
-import { TFunc, TObj, TStrList } from 'src/types';
+import { TFunc, TObj, TStrList } from './common';
 import { TPath } from './common';
 import { TMFactoryOptions } from './mockit';
 import { IParserFactory } from './parser';

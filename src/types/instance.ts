@@ -1,8 +1,8 @@
-import { TObj } from 'src/types';
-import PathMap, { Path } from 'src/helpers/pathmap';
-export interface TSuchInject<S = TObj, M = TObj> {
+import PathMap, { Path } from '../helpers/pathmap';
+import Such, { Mocker } from '../core/such';
+export interface TSuchInject {
   datas: PathMap<unknown>;
   dpath: Path;
-  such: TObj<S>;
-  mocker: M;
+  such: typeof Such;
+  mocker: Mocker;
 }

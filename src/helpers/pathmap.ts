@@ -1,4 +1,4 @@
-import { TObj } from '../types';
+import { TObj } from '../types/common';
 import { typeOf } from './utils';
 export type PathKey = string | number;
 export type Path = PathKey[];

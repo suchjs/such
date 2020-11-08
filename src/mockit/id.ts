@@ -1,4 +1,4 @@
-import { SuchOptions } from '../types';
+import { TSuchInject } from 'src/types/instance';
 import Mockit from './namespace';
 export default class ToId extends Mockit<number> {
   constructor(constructName: string) {
@@ -17,7 +17,7 @@ export default class ToId extends Mockit<number> {
       },
     };
   }
-  public generate(options: SuchOptions): number {
+  public generate(options: TSuchInject): number {
     const { dpath } = options;
     const config = (this.params.Config || {}) as {
       start?: number;

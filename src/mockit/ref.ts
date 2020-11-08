@@ -1,7 +1,7 @@
+import { TSuchInject } from 'src/types/instance';
 import { IPPPath, IPPPathItem } from 'src/types/parser';
 import { getRefMocker, withPromise } from '../helpers/utils';
-import { Mocker } from '../such';
-import { SuchOptions } from '../types';
+import { Mocker } from '../core/such';
 import Mockit from './namespace';
 export default class ToRef extends Mockit<unknown> {
   constructor(constructName: string) {
@@ -15,7 +15,7 @@ export default class ToRef extends Mockit<unknown> {
       }
     });
   }
-  public generate(options: SuchOptions): unknown {
+  public generate(options: TSuchInject): unknown {
     const { mocker } = options;
     const { Path } = this.params;
     const result: unknown[] = [];

@@ -1,17 +1,17 @@
 import { TStrList } from 'src/types/common';
+import { IPPPath, IPPPathItem } from 'src/types/parser';
 import { makeRandom } from '../../helpers/utils';
-import store from '../../store';
-import { ParamsPath, ParamsPathItem } from '../../types';
+import store from '../../data/store';
 import { getRealPath, loadDict } from '../utils';
 const { config, fileCache } = store;
 type TMultiStr = string | TStrList;
 export default {
   init(): void {
-    this.addRule('Path', function (Path: ParamsPath) {
+    this.addRule('Path', function (Path: IPPPath) {
       if (!Path) {
         throw new Error('the dict type must have a path param.');
       } else {
-        Path.every((item: ParamsPathItem) => {
+        Path.every((item: IPPPathItem) => {
           if (item.depth > 0) {
             throw new Error(
               `the dict type of path "${item.fullpath}" is not based on rootDir.`,
@@ -29,7 +29,7 @@ export default {
     if (typeof preload === 'boolean') {
       isSync = preload === true;
     } else if (Array.isArray(config.preload)) {
-      isSync = Path.every((item: ParamsPathItem) =>
+      isSync = Path.every((item: IPPPathItem) =>
         preload.includes(item.fullpath),
       );
     }
@@ -46,7 +46,7 @@ export default {
       }
       return one ? last[0] : last;
     };
-    const lastPaths = Path.map((item: ParamsPathItem) => {
+    const lastPaths = Path.map((item: IPPPathItem) => {
       return getRealPath(item);
     });
     if (isSync) {

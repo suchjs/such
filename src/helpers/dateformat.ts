@@ -1,4 +1,4 @@
-import { TObj, PrototypeMethodNames } from '../types';
+import { TObj, PrototypeMethodNames } from '../types/common';
 import { capitalize } from './utils';
 /*1.形如2016/06/01,2016-06-01,2016.06.01
 2.特殊日期
@@ -83,7 +83,6 @@ const strToDate = (
     'nov',
     'dec',
   ];
-  // tslint:disable-next-line:max-line-length
   const mL: string[] = [
     'january',
     'february',
@@ -102,7 +101,6 @@ const strToDate = (
   const r2 = /^(today|yesterday|tomorrow)$/;
   const r3 = /^(\d{4})(\d{1,2})(\d{1,2})$/;
   const r4 = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4})?)$/;
-  // tslint:disable-next-line:max-line-length
   const r5 = new RegExp(
     '^(' +
       mS.concat(mL).join('|') +
@@ -250,7 +248,6 @@ const dayNames = [
   'Friday',
   'Saturday',
 ];
-// tslint:disable-next-line:max-line-length
 const monthNames = [
   'January',
   'February',

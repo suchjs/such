@@ -1,12 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
+import { IPPPathItem } from 'src/types/parser';
 import { makeRandom, typeOf } from '../helpers/utils';
-import store from '../store';
-import { ParamsPathItem } from '../types';
+import store from '../data/store';
 const { fileCache, config } = store;
 
-// tslint:disable-next-line:max-line-length
 export const loadDict: (
   filePath: string | string[],
   useCache?: boolean,
@@ -144,7 +143,7 @@ export const loadTemplate = (file: string) => {
   });
 };
 // get real path
-export const getRealPath = (item: ParamsPathItem): string => {
+export const getRealPath = (item: IPPPathItem): string => {
   const { variable } = item;
   let { fullpath } = item;
   if (variable) {

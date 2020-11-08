@@ -1,7 +1,7 @@
-import { TFunc } from 'src/types/common';
-import { Mocker } from '../such';
-import { TObj, ParamsPathItem } from '../types';
+import { TFunc, TObj } from '../types/common';
 import { Path } from './pathmap';
+import { IPPPathItem } from 'src/types/parser';
+import { Mocker } from 'src/core/such';
 export const encodeRegexpChars = (chars: string): string => {
   return chars.replace(/([()\[{^$.*+?\/\-])/g, '\\$1');
 };
@@ -143,9 +143,12 @@ export const isPromise = (target: unknown): boolean => {
     (typeOf(target) === 'Object' && isFn((target as TObj).then))
   );
 };
-export const shifTObj = (obj: TObj, keys: string[]) => {
+export const shifTObj = <T = TObj>(
+  obj: T,
+  keys: Array<keyof T>,
+): T[keyof T] => {
   const res: TObj = {};
-  keys.map((key: string) => {
+  keys.map((key) => {
     res[key] = obj[key];
     delete obj[key];
   });
@@ -190,7 +193,10 @@ export const isRelativePath = (first: Path, second: Path): boolean => {
   }
   return i === len;
 };
-export const getRefMocker = (item: ParamsPathItem, mocker: Mocker) => {
+export const getRefMocker = (
+  item: IPPPathItem,
+  mocker: Mocker,
+): Mocker | never => {
   let isExists = true;
   let lastPath: Path;
   const { root, path } = mocker;

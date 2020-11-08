@@ -4,9 +4,9 @@ import { deepCopy } from './helpers/utils';
 import ToCascader from './node/mockit/cascader';
 import ToDict from './node/mockit/dict';
 import { getAllFiles, loadAllData, loadTemplate } from './node/utils';
-import store from './store';
-import Such, { IAsOptions } from './such';
-import { TObj } from './types';
+import store from './data/store';
+import Such, { IAsOptions } from './core/such';
+import { TObj } from './types/common';
 import { TNodeSuch } from './types/node';
 const NSuch = Such as typeof Such & TNodeSuch;
 const { config, fileCache } = store;
@@ -15,7 +15,7 @@ const builtRule = /such:([a-zA-Z]+)/;
 const loadConf = (name: string | string[]): TObj | TObj[] => {
   if (typeof name === 'string') {
     const isBuilt = builtRule.test(name);
-    const file = isBuilt ? `./config/${RegExp.$1}` : name;
+    const file = isBuilt ? `./extends/${RegExp.$1}` : name;
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const result = require(file);

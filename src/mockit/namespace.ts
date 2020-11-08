@@ -10,8 +10,7 @@ import {
   typeOf,
   withPromise,
 } from '../helpers/utils';
-import store from '../store';
-import { SuchOptions } from '../types';
+import store from '../data/store';
 import {
   TMConfig,
   TMConfigRule,
@@ -19,6 +18,7 @@ import {
   TMParams,
   TMRuleFn,
 } from 'src/types/mockit';
+import { TSuchInject } from 'src/types/instance';
 const { fns: globalFns, vars: globalVars, mockitsCache } = store;
 //
 
@@ -34,7 +34,7 @@ export default abstract class Mockit<T = unknown> {
   protected configOptions: TMConfig = {};
   protected params: TMParams = {};
   protected origParams: TMParams = {};
-  protected generateFn: undefined | ((options: SuchOptions) => TResult<T>);
+  protected generateFn: undefined | ((options: TSuchInject) => TResult<T>);
   protected isValidOk = false;
   protected hasValid = false;
   protected invalidKeys: TStrList = [];
@@ -251,7 +251,7 @@ export default abstract class Mockit<T = unknown> {
    * @param {() => TResult<T>} [fn]
    * @memberof Mockit
    */
-  public reGenerate(fn?: (options: SuchOptions) => TResult<T>): void {
+  public reGenerate(fn?: (options: TSuchInject) => TResult<T>): void {
     this.generateFn = fn;
   }
   /**
@@ -261,7 +261,7 @@ export default abstract class Mockit<T = unknown> {
    * @returns {TResult<T>}
    * @memberof Mockit
    */
-  public make(options: SuchOptions): TResult<T> {
+  public make(options: TSuchInject): TResult<T> {
     this.validate();
     let result =
       typeof this.generateFn === 'function'
@@ -289,7 +289,7 @@ export default abstract class Mockit<T = unknown> {
    * @returns {TResult<T>}
    * @memberof Mockit
    */
-  public abstract generate(options: SuchOptions): TResult<T>;
+  public abstract generate(options: TSuchInject): TResult<T>;
   /**
    *
    *
@@ -412,11 +412,11 @@ export default abstract class Mockit<T = unknown> {
    *
    * @private
    * @param {*} result
-   * @param {SuchOptions} options
+   * @param {TSuchInject} options
    * @returns
    * @memberof Mockit
    */
-  private runModifiers(result: unknown, options: SuchOptions): unknown {
+  private runModifiers(result: unknown, options: TSuchInject): unknown {
     const { params } = this;
     const { modifiers, modifierFns } = mockitsCache[
       this.constructorName || this.constructor.name
@@ -436,11 +436,11 @@ export default abstract class Mockit<T = unknown> {
    *
    * @private
    * @param {*} result
-   * @param {SuchOptions} options
+   * @param {TSuchInject} options
    * @returns
    * @memberof Mockit
    */
-  private runFuncs(result: unknown, options: SuchOptions): unknown {
+  private runFuncs(result: unknown, options: TSuchInject): unknown {
     const { Config, Func } = this.params;
     if (Func) {
       const { queue, params: fnsParams, fns } = Func as IPPFunc;
@@ -466,11 +466,11 @@ export default abstract class Mockit<T = unknown> {
    *
    * @private
    * @param {*} result
-   * @param {SuchOptions} options
+   * @param {TSuchInject} options
    * @returns
    * @memberof Mockit
    */
-  private runAll(result: unknown, options: SuchOptions) {
+  private runAll(result: unknown, options: TSuchInject) {
     result = this.runModifiers(result, options);
     return this.runFuncs(result, options);
   }

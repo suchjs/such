@@ -1,18 +1,15 @@
-import { suchRule } from './config';
-import PathMap, { Path } from './helpers/pathmap';
-import * as utils from './helpers/utils';
+import { suchRule } from '../data/config';
+import PathMap, { Path } from '../helpers/pathmap';
+import * as utils from '../helpers/utils';
 import { mockitList, TMockitList } from './mockit';
-import Mockit from './mockit/namespace';
+import Mockit from '../mockit/namespace';
 import Parser from './parser';
-import store from './store';
-import {
-  MockitOptions,
-  TObj,
-  ParserConfig,
-  SuchConfFile,
-  SuchOptions,
-} from './types';
-import { TMFactoryOptions } from './types/mockit';
+import store from '../data/store';
+import { TObj } from '../types/common';
+import { TMFactoryOptions } from '../types/mockit';
+import { TNodeSuch, TSuchSettings } from '../types/node';
+import { IParserConfig } from '../types/parser';
+import { TSuchInject } from '../types/instance';
 const {
   capitalize,
   isFn,
@@ -84,7 +81,6 @@ Object.keys(mockitList).map((key: string) => {
  *
  * @class Mocker
  */
-// tslint:disable-next-line:max-classes-per-file
 export class Mocker {
   /**
    *
@@ -425,7 +421,6 @@ export class Mocker {
  * @export
  * @class Such
  */
-// tslint:disable-next-line:max-classes-per-file
 export default class Such {
   public static readonly utils = utils;
   /**
@@ -453,23 +448,23 @@ export default class Such {
    *
    *
    * @static
-   * @param {SuchConfFile} config
+   * @param {TSuchSettings} config
    * @memberof Such
    */
-  public static config(config: SuchConfFile): void {
+  public static config(config: TSuchSettings): void {
     const { parsers, types, globals } = config;
     const fnHashs: TObj = {
       parsers: 'parser',
       types: 'define',
       globals: 'assign',
     };
-    const lastConf: SuchConfFile = {};
-    const such = Such;
+    const lastConf: TSuchSettings = {};
+    const such = Such as typeof Such & TNodeSuch;
     if (config.extends && typeof such.loadConf === 'function') {
       const confFiles =
         typeof config.extends === 'string' ? [config.extends] : config.extends;
       const confs = such.loadConf(confFiles);
-      confs.map((conf: SuchConfFile) => {
+      confs.map((conf: TSuchSettings) => {
         delete conf.extends;
         deepCopy(lastConf, conf);
       });
@@ -480,7 +475,7 @@ export default class Such {
       globals: globals || {},
     });
     Object.keys(lastConf).map((key: string) => {
-      const conf = lastConf[key as keyof SuchConfFile] as TObj;
+      const conf = lastConf[key as keyof TSuchSettings] as TObj;
       const fnName = fnHashs[key] || key;
       Object.keys(conf).map((name: string) => {
         const args = typeOf(conf[name]) === 'Array' ? conf[name] : [conf[name]];
@@ -502,7 +497,7 @@ export default class Such {
   public static parser(
     name: string,
     params: {
-      config: ParserConfig;
+      config: IParserConfig;
       parse: () => void;
       setting?: TObj;
     },
@@ -517,7 +512,7 @@ export default class Such {
    * @param {*} target
    * @memberof Such
    */
-  public static as(target: unknown, options?: IAsOptions): unknown {
+  public static as(target: unknown, options?: IAsOptions): Such | unknown {
     const ret = new Such(target, options);
     return options && options.instance ? ret : ret.a();
   }
@@ -538,7 +533,7 @@ export default class Such {
    * @static
    * @param {string} type
    * @param {string} fromType
-   * @param {(string|MockitOptions)} options
+   * @param {(string|TMFactoryOptions)} options
    * @memberof Such
    */
   public static define(type: string, ...args: unknown[]): void | never {
@@ -547,7 +542,6 @@ export default class Such {
       throw new Error(`the static "define" method's arguments is not right.`);
     }
     const opts = args.pop();
-    // tslint:disable-next-line:max-line-length
     const config: Partial<TMFactoryOptions> =
       argsNum === 2 && typeof opts === 'string'
         ? { param: opts }
@@ -613,7 +607,7 @@ export default class Such {
             }
             this.frozen();
           }
-          public generate(options: SuchOptions) {
+          public generate(options: TSuchInject) {
             return generate.call(this, options);
           }
           public test() {

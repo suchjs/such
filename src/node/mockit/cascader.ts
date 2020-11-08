@@ -1,14 +1,11 @@
+import { TObj, TStrList } from '../../types/common';
+import { IPPPath, IPPPathItem } from '../../types/parser';
 import { getRefMocker, withPromise } from '../../helpers/utils';
-import store from '../../store';
-import { Mocker } from '../../such';
-import {
-  TObj,
-  SuchOptions,
-  ParamsPath,
-  ParamsPathItem,
-  TStrList,
-} from '../../types';
+import store from '../../data/store';
+import { Mocker } from '../../core/such';
+
 import { getCascaderValue, getRealPath, loadJson } from '../utils';
+import { TSuchInject } from 'src/types/instance';
 const { config, fileCache } = store;
 
 export default {
@@ -22,7 +19,7 @@ export default {
     },
   },
   init(): void {
-    this.addRule('Path', (Path: ParamsPath) => {
+    this.addRule('Path', (Path: IPPPath) => {
       if (!Path) {
         throw new Error('the cascader type must have a path or ref.');
       } else if (Path.length !== 1) {
@@ -30,7 +27,7 @@ export default {
       }
     });
   },
-  generate(options: SuchOptions): TStrList | Promise<TStrList> {
+  generate(options: TSuchInject): TStrList | Promise<TStrList> {
     const { mocker } = options;
     let { Path, Config } = this.params;
     let lastPath = Path[0];
@@ -53,7 +50,7 @@ export default {
     if (typeof preload === 'boolean') {
       isSync = preload === true;
     } else if (Array.isArray(config.preload)) {
-      isSync = (Path as ParamsPath).every((item: ParamsPathItem) =>
+      isSync = (Path as IPPPath).every((item: IPPPathItem) =>
         preload.includes(item.fullpath),
       );
     }
