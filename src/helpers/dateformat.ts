@@ -1,4 +1,4 @@
-import { TObj, PrototypeMethodNames } from '../types/common';
+import { PrototypeMethodNames } from '../types/common';
 import { capitalize } from './utils';
 /*1.形如2016/06/01,2016-06-01,2016.06.01
 2.特殊日期
@@ -7,21 +7,21 @@ import { capitalize } from './utils';
 5.形如[June 1st] June 1st,2016,June.1,Jun 1st等
 6.形如+1 day,-1 week,1 week ago
 */
-interface SpecialDayAdd {
+interface ISpecialDayAdd {
   today: number;
   tomorrow: number;
   yesterday: number;
 }
-interface DateHashInterface<T> {
+interface IDateHashInterface<T> {
   year: T;
   month: T;
   day: T;
   week: T;
 }
-type DateHashInfo = DateHashInterface<string[]>;
-type DateHashInfoKey = keyof DateHashInfo;
-type DateMethods = PrototypeMethodNames<Date>;
-interface DateHashResult extends DateHashInterface<number> {
+type TDateHashInfo = IDateHashInterface<string[]>;
+type TDateHashInfoKey = keyof TDateHashInfo;
+type TDateMethods = PrototypeMethodNames<Date>;
+interface DateHashResult extends IDateHashInterface<number> {
   date: number;
   fullYear: number;
 }
@@ -117,12 +117,12 @@ const strToDate = (
   } else if ((match = dateStr.match(r1))) {
     return makeDate(match[1], match[3], match[4]);
   } else if ((match = dateStr.match(r2))) {
-    const addNum: SpecialDayAdd = {
+    const addNum: ISpecialDayAdd = {
       today: 0,
       tomorrow: 1,
       yesterday: -1,
     };
-    const key: keyof SpecialDayAdd = match[1] as keyof SpecialDayAdd;
+    const key: keyof ISpecialDayAdd = match[1] as keyof ISpecialDayAdd;
     if (baseDate) {
       baseDate = fixDate(baseDate);
       if (addNum[key]) {
@@ -141,7 +141,8 @@ const strToDate = (
       return makeDate(null, null, null);
     }
   } else if ((match = dateStr.match(r3))) {
-    return makeDate.apply(null, match.slice(1, 4));
+    const args = match.slice(1, 4) as Parameters<typeof makeDate>;
+    return makeDate(...args);
   } else if ((match = dateStr.match(r4))) {
     return makeDate(match[4], match[1], match[2]);
   } else if ((match = dateStr.match(r5))) {
@@ -159,7 +160,7 @@ const strToDate = (
   } else if ((match = dateStr.match(r6))) {
     const needReverse = match[5] ? '-' : '';
     let group = null;
-    const info: DateHashInfo = {
+    const info: TDateHashInfo = {
       year: [],
       month: [],
       day: [],
@@ -176,9 +177,9 @@ const strToDate = (
     while ((group = r6e.exec(dateStr)) !== null) {
       const type = group[2];
       const num = group[1];
-      info[type as DateHashInfoKey].push('(' + num + ')');
+      info[type as TDateHashInfoKey].push('(' + num + ')');
     }
-    Object.keys(info).map((key: DateHashInfoKey) => {
+    Object.keys(info).map((key: TDateHashInfoKey) => {
       const arr = info[key];
       if (arr.length) {
         result[key] = new Function(
@@ -202,9 +203,9 @@ const strToDate = (
       const num = result[key];
       const method = capitalize(key);
       if (num) {
-        const orig = lastDate[`get${method}` as DateMethods]() as number;
+        const orig = lastDate[`get${method}` as TDateMethods]() as number;
         try {
-          (lastDate[`set${method}` as DateMethods] as (num: number) => any)(
+          (lastDate[`set${method}` as TDateMethods] as (num: number) => number)(
             orig + num,
           );
         } catch (e) {
@@ -217,8 +218,8 @@ const strToDate = (
     throw new Error('can not parse the date!');
   }
 };
-export const strtotime = (date: any) => {
-  if (!isNaN(date)) {
+export const strtotime = (date: unknown): Date | never => {
+  if (!isNaN(date as number)) {
     return new Date(+date);
   } else if (typeof date === 'string') {
     let result: Date;
@@ -262,93 +263,121 @@ const monthNames = [
   'November',
   'December',
 ];
-const formatter: TObj = {
-  d() {
+const formatter: TFormatter & ThisType<Date> = {
+  d(): string {
     return this.getDate();
   },
-  dd() {
+  dd(): string {
     return zerofill('d', this);
   },
-  dddd() {
+  dddd(): string {
     return dayNames[this.getDay()];
   },
-  ddd() {
-    return formatter.dddd.call(this).slice(0, 3);
+  ddd(): string {
+    return formatter.dddd().slice(0, 3);
   },
-  m() {
+  m(): string {
     return this.getMonth() + 1;
   },
-  mm() {
+  mm(): string {
     return zerofill('m', this);
   },
-  mmmm() {
+  mmmm(): string {
     return monthNames[this.getMonth()];
   },
-  mmm() {
-    return formatter.mmmm.call(this).slice(0, 3);
+  mmm(): string {
+    return formatter.mmmm().slice(0, 3);
   },
-  yyyy() {
+  yyyy(): string {
     return this.getFullYear().toString().padStart(4, '0');
   },
-  yy() {
+  yy(): string {
     return this.getFullYear().toString().slice(-2).padStart(2, '0');
   },
-  h() {
-    return this.getHours() % 12;
+  h(): string {
+    return (this.getHours() % 12).toString();
   },
-  hh() {
+  hh(): string {
     return zerofill('h', this);
   },
-  H() {
-    return this.getHours();
+  H(): string {
+    return this.getHours().toString();
   },
-  HH() {
+  HH(): string {
     return zerofill('H', this);
   },
-  M() {
+  M(): string {
     return this.getMinutes();
   },
-  MM() {
+  MM(): string {
     return zerofill('M', this);
   },
-  s() {
-    return this.getSeconds();
+  s(): string {
+    return this.getSeconds().toString();
   },
-  ss() {
+  ss(): string {
     return zerofill('s', this);
   },
-  l() {
+  l(): string {
     return this.getMilliseconds().toString().padStart(3, '0');
   },
-  L() {
+  L(): string {
     return Math.round(this.getMilliseconds() / 10)
       .toString()
       .padStart(2, '0');
   },
-  tt() {
+  tt(): string {
     return this.getHours() >= 12 ? 'pm' : 'am';
   },
-  t() {
+  t(): string {
     return formatter.tt.call(this).charAt(0);
   },
-  TT() {
+  TT(): string {
     return this.getHours() >= 12 ? 'PM' : 'AM';
   },
-  T() {
+  T(): string {
     return formatter.TT.call(this).charAt(0);
   },
-  S() {
+  S(): string {
     return ['st', 'nd', 'rd'][(this.getDate() % 10) - 1] || 'th';
   },
-  N() {
-    return this.getDay() || 7;
+  N(): string {
+    return this.getDay().toString() || '7';
   },
 };
-const zerofill = function (fnName: string, date: Date) {
+type TFormatter = {
+  d(): string;
+  dd(): string;
+  dddd(): string;
+  ddd(): string;
+  m(): string;
+  mm(): string;
+  mmm(): string;
+  mmmm(): string;
+  yy(): string;
+  yyyy(): string;
+  h(): string;
+  hh(): string;
+  H(): string;
+  HH(): string;
+  s(): string;
+  ss(): string;
+  M(): string;
+  MM(): string;
+  t(): string;
+  tt(): string;
+  T(): string;
+  TT(): string;
+  l(): string;
+  L(): string;
+  S(): string;
+  N(): string;
+};
+const zerofill = (fnName: keyof TFormatter, date: Date): string => {
   return formatter[fnName].call(date).toString().padStart(2, '0');
 };
-export const dateformat = (fmt: string, date: Date) => {
-  return fmt.replace(/[A-Za-z]*/g, (type: string) => {
+export const dateformat = (fmt: string, date: Date): string => {
+  return fmt.replace(/[A-Za-z]*/g, (type: keyof TFormatter) => {
     if (formatter[type]) {
       return formatter[type].call(date);
     }

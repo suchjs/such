@@ -1,5 +1,5 @@
 import { TObj } from '../types/common';
-import { typeOf } from './utils';
+import { isObject, typeOf } from './utils';
 export type PathKey = string | number;
 export type Path = PathKey[];
 export type PathValue<T> = { [index: string]: T } | T[];
@@ -21,7 +21,7 @@ export default class PathMap<T> {
    * @returns
    * @memberof PathMap
    */
-  public set(keys: Path, value: T) {
+  public set(keys: Path, value: T): PathMap<T> {
     const valueType = typeOf(value);
     const len = keys.length;
     if (this.isPlain && (valueType === 'Array' || valueType === 'Object')) {
@@ -31,10 +31,10 @@ export default class PathMap<T> {
       this.result = typeof keys[0] === 'number' ? [] : {};
       this.initial = true;
     }
-    let data: TObj = this.result;
+    let data = this.result;
     let i = 0;
     for (; i < len - 1; i++) {
-      const key = keys[i];
+      const key = keys[i] as Path;
       const next = keys[i + 1];
       if (!data[key]) {
         data[key] = typeof next === 'number' ? [] : {};
@@ -56,19 +56,19 @@ export default class PathMap<T> {
     try {
       for (let i = 0, len = keys.length; i < len; i++) {
         const key = keys[i];
-        result = (result as TObj)[key as PathKey];
+        result = (result as TObj)[key];
       }
     } catch (e) {
       // not exists
     }
-    return result as any;
+    return result;
   }
   /**
    *
    *
    * @memberof PathMap
    */
-  public clear() {
+  public clear(): void {
     this.result = null;
     this.initial = false;
   }
@@ -83,15 +83,15 @@ export default class PathMap<T> {
     for (let i = 0, len = keys.length; i < len; i++) {
       const key = keys[i];
       if (typeof key === 'number') {
-        flag = typeOf(result) === 'Array' && (result as any[]).length > key;
+        flag = Array.isArray(result) && result.length > key;
+        result = (result as unknown[])[key] as PathValue<T>;
       } else {
-        flag =
-          typeOf(result) === 'Object' && (result as TObj).hasOwnProperty(key);
+        flag = isObject(result) && result.hasOwnProperty(key);
+        result = (result as TObj)[key] as PathValue<T>;
       }
       if (!flag) {
         break;
       }
-      result = (result as TObj)[key];
     }
     return flag;
   }
