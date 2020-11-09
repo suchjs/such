@@ -1,5 +1,5 @@
 import { IParserConfig } from '../types/parser';
-import { encodeSplitor, splitor as confSplitor } from '../config';
+import { encodeSplitor, splitor as confSplitor } from '../data/config';
 import { encodeRegexpChars } from '../helpers/utils';
 import { TMatchResult, TObj, TStrList } from '../types/common';
 export interface Tags {

@@ -6,13 +6,15 @@ import ToDict from './node/mockit/dict';
 import { getAllFiles, loadAllData, loadTemplate } from './node/utils';
 import store from './data/store';
 import Such, { IAsOptions } from './core/such';
-import { TObj } from './types/common';
-import { TNodeSuch } from './types/node';
+import { TNodeSuch, TSuchSettings } from './types/node';
 const NSuch = Such as typeof Such & TNodeSuch;
 const { config, fileCache } = store;
 // load config files
 const builtRule = /such:([a-zA-Z]+)/;
-const loadConf = (name: string | string[]): TObj | TObj[] => {
+// loadConf method
+function loadConf(name: string): TSuchSettings;
+function loadConf(name: string[]): TSuchSettings[];
+function loadConf(name: string | string[]): TSuchSettings | TSuchSettings[] {
   if (typeof name === 'string') {
     const isBuilt = builtRule.test(name);
     const file = isBuilt ? `./extends/${RegExp.$1}` : name;
@@ -26,10 +28,11 @@ const loadConf = (name: string | string[]): TObj | TObj[] => {
     }
   } else {
     return name.map((cur: string) => {
-      return loadConf(cur) as TObj;
+      return loadConf(cur) as TSuchSettings;
     });
   }
-};
+}
+export { loadConf };
 NSuch.loadConf = loadConf;
 // find static paths
 const tryConfigFile = (...files: string[]) => {

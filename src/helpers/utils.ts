@@ -10,39 +10,7 @@ export const typeOf = (target: unknown): string => {
 };
 export const isFn = <T = TFunc>(target: unknown): target is T =>
   typeof target === 'function';
-export const map = (
-  target: any[] | TObj | string,
-  fn: (item: any, index: number | string) => void,
-) => {
-  if (typeOf(target) === 'Array') {
-    return (target as any[]).map(fn);
-  } else if (typeOf(target) === 'Object') {
-    const ret: TObj = {};
-    target = target as TObj;
-    for (const key in target) {
-      if (target.hasOwnProperty(key)) {
-        ret[key] = fn(target[key], key);
-      }
-    }
-    return ret;
-  } else if (typeOf(target) === 'String') {
-    target = target as string;
-    for (let i = 0, j = target.length; i < j; i++) {
-      const code = target.charCodeAt(i);
-      if (code >= 0xd800 && code <= 0xdbff) {
-        const nextCode = target.charCodeAt(i + 1);
-        if (nextCode >= 0xdc00 && nextCode <= 0xdfff) {
-          fn(target.substr(i, 2), i);
-          i++;
-        } else {
-          throw new Error('wrong code point');
-        }
-      } else {
-        fn(target.charAt(i), i);
-      }
-    }
-  }
-};
+
 export const makeRandom = (min: number, max: number): number => {
   if (min === max) {
     return min;
@@ -107,29 +75,34 @@ export const range = (start: number, end: number, step = 1): number[] => {
     return start + index * step;
   });
 };
+
 export const deepCopy = <T = unknown>(target: T, ...args: unknown[]): T => {
-  const type = typeOf(target);
-  if (type === 'Object' || type === 'Array') {
+  let isObj = false;
+  let isArr = false;
+  if ((isObj = isObject(target)) || (isArr = Array.isArray(target))) {
     for (let i = 0, j = args.length; i < j; i++) {
       const copy = args[i];
-      if (typeOf(copy) !== type) {
-        continue;
-      }
-      const keys =
-        type === 'Object' ? Object.keys(copy) : range(0, copy.length - 1);
-      keys.forEach((key: string | number) => {
-        const from = copy[key];
-        const to = target[key];
-        const fromType = typeOf(from);
-        const toType = typeOf(to);
-        if (fromType === 'Object' || fromType === 'Array') {
-          target[key] =
-            toType === fromType ? target[key] : fromType === 'Object' ? {} : [];
-          deepCopy(target[key], from);
-        } else {
-          target[key] = from;
+      if ((isObj && isObject(copy)) || (isArr && Array.isArray(copy))) {
+        const curTarget = target as typeof copy;
+        const kvs = Object.entries(copy);
+        for (const [key, val] of kvs) {
+          const from = val;
+          const to = curTarget[key];
+          const fromType = typeOf(from);
+          const toType = typeOf(to);
+          if (fromType === 'Object' || fromType === 'Array') {
+            curTarget[key] =
+              toType === fromType
+                ? curTarget[key]
+                : fromType === 'Object'
+                ? {}
+                : [];
+            deepCopy(curTarget[key], from);
+          } else {
+            curTarget[key] = from;
+          }
         }
-      });
+      }
     }
   }
   return target;
@@ -146,18 +119,18 @@ export const isPromise = (target: unknown): boolean => {
 export const shifTObj = <T = TObj>(
   obj: T,
   keys: Array<keyof T>,
-): T[keyof T] => {
-  const res: TObj = {};
+): Partial<T> => {
+  const res: Partial<T> = {};
   keys.map((key) => {
     res[key] = obj[key];
     delete obj[key];
   });
   return res;
 };
-export const withPromise = (res: any[]) => {
-  let last: any[] = [];
+export const withPromise = <T = unknown>(res: T[]): Array<Promise<T> | T> => {
+  let last: Array<Promise<T> | T> = [];
   let hasPromise = false;
-  res.map((item: any) => {
+  res.map((item: T) => {
     const imPromise = isPromise(item);
     if (hasPromise) {
       if (imPromise) {

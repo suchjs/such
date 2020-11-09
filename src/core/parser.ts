@@ -1,8 +1,8 @@
-import { map } from '../helpers/utils';
 import * as ParserList from '../parser/index';
 import { Dispatcher } from '../parser/namespace';
 const dispatcher = new Dispatcher();
-map(ParserList, (item, key) => {
+Object.keys(ParserList).map((key: keyof typeof ParserList) => {
+  const item = ParserList[key];
   dispatcher.addParser(
     key as string,
     item.config,

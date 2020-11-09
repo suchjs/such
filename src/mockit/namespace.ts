@@ -31,8 +31,8 @@ const { fns: globalFns, vars: globalVars, mockitsCache } = store;
  * @template T
  */
 export default abstract class Mockit<T = unknown> {
+  public params: TMParams = {};
   protected configOptions: TMConfig = {};
-  protected params: TMParams = {};
   protected origParams: TMParams = {};
   protected generateFn: undefined | ((options: TSuchInject) => TResult<T>);
   protected isValidOk = false;
@@ -209,7 +209,7 @@ export default abstract class Mockit<T = unknown> {
    * @returns {(TObj|never)}
    * @memberof Mockit
    */
-  public setParams(params: TObj, value: undefined): TObj | never;
+  public setParams(params: TObj, value?: undefined): TObj | never;
   public setParams(key: string, value: TObj): TObj | never;
   public setParams(key: unknown, value: unknown): TObj | never {
     let params: TObj = {};
@@ -473,5 +473,18 @@ export default abstract class Mockit<T = unknown> {
   private runAll(result: unknown, options: TSuchInject) {
     result = this.runModifiers(result, options);
     return this.runFuncs(result, options);
+  }
+}
+// just for type check
+export class BaseExtendMockit extends Mockit {
+  init(): void {
+    // nothing to do
+  }
+  test(): boolean {
+    return false;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  generate(): any {
+    // nothing to do
   }
 }

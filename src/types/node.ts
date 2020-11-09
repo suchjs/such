@@ -2,7 +2,7 @@ import { TFunc, TObj, TStrList } from './common';
 import { TPath } from './common';
 import { TMFactoryOptions } from './mockit';
 import { IParserFactory } from './parser';
-
+import { loadConf } from '../index';
 export interface TSSConfig {
   rootDir?: TPath;
   suchDir?: TPath;
@@ -33,7 +33,7 @@ export type TSuchSettings = {
 };
 
 export type TNodeSuch = {
-  loadConf: (name: string | string[]) => TObj | TObj[];
+  loadConf: typeof loadConf;
   reloadData: () => Promise<unknown>;
   clearCache: () => Promise<unknown>;
 };

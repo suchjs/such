@@ -1,11 +1,10 @@
-import { TObj, TStrList } from '../../types/common';
+import { TStrList } from '../../types/common';
 import { IPPPath, IPPPathItem } from '../../types/parser';
 import { getRefMocker, withPromise } from '../../helpers/utils';
 import store from '../../data/store';
 import { Mocker } from '../../core/such';
-
 import { getCascaderValue, getRealPath, loadJson } from '../utils';
-import { TSuchInject } from 'src/types/instance';
+import { TSuchInject } from '../../types/instance';
 const { config, fileCache } = store;
 
 export default {
@@ -59,7 +58,7 @@ export default {
       const data = fileCache[realPath];
       return handle(data, values);
     } else {
-      return loadJson(realPath).then((data: TObj) => {
+      return loadJson(realPath).then((data) => {
         return Promise.all(withPromise(values)).then((last: unknown[]) => {
           const cur = handle(data, last);
           return cur;

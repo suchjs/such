@@ -1,12 +1,12 @@
 import { suchRule } from '../data/config';
 import PathMap, { Path } from '../helpers/pathmap';
 import * as utils from '../helpers/utils';
-import { mockitList, TMockitList } from './mockit';
-import Mockit from '../mockit/namespace';
+import { mockitList } from './mockit';
+import Mockit, { BaseExtendMockit } from '../mockit/namespace';
 import Parser from './parser';
 import store from '../data/store';
-import { TObj } from '../types/common';
-import { TMFactoryOptions } from '../types/mockit';
+import { TFunc, TObj } from '../types/common';
+import { TMClass, TMClassList, TMFactoryOptions } from '../types/mockit';
 import { TNodeSuch, TSuchSettings } from '../types/node';
 import { IParserConfig } from '../types/parser';
 import { TSuchInject } from '../types/instance';
@@ -67,13 +67,13 @@ export interface PromiseResult {
   result: Promise<unknown>;
 }
 // all mockits
-const AllMockits: TMockitList = {};
+const ALL_MOCKITS: TMClassList = {};
 Object.keys(mockitList).map((key: string) => {
   if (key.startsWith('_')) {
     // ignore special mockits name begin with '_'
     return;
   }
-  AllMockits[key] = mockitList[key];
+  ALL_MOCKITS[key] = mockitList[key];
 });
 
 /**
@@ -335,9 +335,9 @@ export class Mocker {
         const type = match && match[1];
         if (type) {
           const lastType = alias[type] ? alias[type] : type;
-          if (AllMockits.hasOwnProperty(lastType)) {
+          if (ALL_MOCKITS.hasOwnProperty(lastType)) {
             this.type = lastType;
-            const klass = AllMockits[lastType];
+            const klass = ALL_MOCKITS[lastType];
             const instance = new klass();
             const meta = sTarget.replace(match[0], '').replace(/^\s*:\s*/, '');
             if (meta !== '') {
@@ -366,7 +366,7 @@ export class Mocker {
    * @param {*} value
    * @memberof Mocker
    */
-  public setParams(value: string | TObj) {
+  public setParams(value: string | TObj): TObj | never {
     if (this.mockit) {
       return this.mockit.setParams(
         typeof value === 'string' ? Parser.parse(value) : value,
@@ -408,7 +408,7 @@ export class Mocker {
       if (utils.isPromise(result)) {
         this.root.promises.push({
           dpath,
-          result,
+          result: result as Promise<unknown>,
         });
       }
     }
@@ -474,12 +474,15 @@ export default class Such {
       types: types || {},
       globals: globals || {},
     });
-    Object.keys(lastConf).map((key: string) => {
-      const conf = lastConf[key as keyof TSuchSettings] as TObj;
-      const fnName = fnHashs[key] || key;
-      Object.keys(conf).map((name: string) => {
-        const args = typeOf(conf[name]) === 'Array' ? conf[name] : [conf[name]];
-        such[fnName](name, ...args);
+    Object.keys(lastConf).map((key: keyof TSuchSettings) => {
+      const conf = lastConf[key];
+      const fnName = fnHashs.hasOwnProperty(key) ? fnHashs[key] : key;
+      Object.keys(conf).map((name: keyof typeof conf) => {
+        const fn = such[fnName as keyof typeof Such] as TFunc;
+        const args = Array.isArray(conf[name])
+          ? conf[name]
+          : ([conf[name]] as Parameters<typeof fn>);
+        fn(name, ...args);
       });
     });
   }
@@ -551,17 +554,17 @@ export default class Such {
     const { param, init, generateFn, generate, configOptions } = config;
     const params = typeof param === 'string' ? Parser.parse(param) : {};
     const constrName = `To${capitalize(type)}`;
-    if (!AllMockits.hasOwnProperty(type)) {
-      let klass: Mockit;
+    if (!ALL_MOCKITS.hasOwnProperty(type)) {
+      let klass: TMClass;
       if (argsNum === 2) {
         const baseType = args[0];
-        const BaseClass = AllMockits[baseType as string];
+        const BaseClass = ALL_MOCKITS[baseType as string];
         if (!BaseClass) {
           throw new Error(
             `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
           );
         }
-        klass = class extends BaseClass {
+        klass = class extends (BaseClass as typeof BaseExtendMockit & Mockit) {
           constructor() {
             super(constrName);
           }
@@ -603,7 +606,7 @@ export default class Such {
               init.call(this);
             }
             if (isNoEmptyObject(params)) {
-              this.setParams(params, undefined);
+              this.setParams(params);
             }
             this.frozen();
           }
@@ -615,7 +618,7 @@ export default class Such {
           }
         };
       }
-      AllMockits[type] = klass;
+      ALL_MOCKITS[type] = klass;
     } else {
       throw new Error(`the type "${type}" has been defined yet.`);
     }

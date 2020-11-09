@@ -1,31 +1,32 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
-import { IPPPathItem } from 'src/types/parser';
-import { makeRandom, typeOf } from '../helpers/utils';
-import store from '../data/store';
+import { IPPPathItem } from '../types/parser';
+import { isObject, makeRandom, typeOf } from '../helpers/utils';
+import store, { IFileCache, isFileCache } from '../data/store';
+import { TStrList } from '../types/common';
 const { fileCache, config } = store;
 
 export const loadDict: (
-  filePath: string | string[],
+  filePath: string | TStrList,
   useCache?: boolean,
-) => Promise<string[] | string[][]> = function (
-  filePath: string | string[],
+) => Promise<TStrList | TStrList[]> = function (
+  filePath: string | TStrList,
   useCache = true,
 ) {
   if (typeOf(filePath) === 'Array') {
-    const queues: Array<Promise<string[]>> = [];
-    (filePath as string[]).map((curFile: string) => {
-      queues.push(loadDict(curFile) as Promise<string[]>);
+    const queues: Array<Promise<TStrList>> = [];
+    (filePath as TStrList).map((curFile: string) => {
+      queues.push(loadDict(curFile) as Promise<TStrList>);
     });
     return Promise.all(queues);
   }
   const lastPath = filePath as string;
   if (useCache && fileCache[lastPath]) {
-    return Promise.resolve(fileCache[lastPath]);
+    return Promise.resolve(fileCache[lastPath] as TStrList);
   } else {
     try {
-      const result: string[] = [];
+      const result: TStrList = [];
       return new Promise((resolve) => {
         const rl = readline.createInterface({
           input: fs.createReadStream(lastPath),
@@ -47,12 +48,12 @@ export const loadDict: (
   }
 };
 // get all files
-export const getAllFiles = (directory: string): Promise<string[]> => {
+export const getAllFiles = (directory: string): Promise<TStrList> => {
   const walk = function (
     dir: string,
-    done: (err: any, results?: string[]) => any,
+    done: (err: unknown, results?: TStrList) => unknown,
   ) {
-    let results: string[] = [];
+    let results: TStrList = [];
     fs.readdir(dir, function (err, list) {
       if (err) {
         return done(err);
@@ -90,22 +91,22 @@ export const getAllFiles = (directory: string): Promise<string[]> => {
 };
 // load json files
 export const loadJson = (
-  filePath: string | string[],
-): Promise<string[] | string[][]> => {
+  filePath: string | TStrList,
+): Promise<TStrList | TStrList[]> => {
   if (typeOf(filePath) === 'Array') {
-    const queues: Array<Promise<string[]>> = [];
-    (filePath as string[]).map((curFile: string) => {
-      queues.push(loadJson(curFile) as Promise<string[]>);
+    const queues: Array<Promise<TStrList>> = [];
+    (filePath as TStrList).map((curFile: string) => {
+      queues.push(loadJson(curFile) as Promise<TStrList>);
     });
     return Promise.all(queues);
   }
   const lastPath = filePath as string;
   fileCache[lastPath] = require(lastPath);
-  return Promise.resolve(fileCache[lastPath]);
+  return Promise.resolve(fileCache[lastPath] as TStrList);
 };
 // load all data files
-export const loadAllData = (allFiles: string[]) => {
-  const dictFiles: string[] = [];
+export const loadAllData = (allFiles: TStrList): Promise<unknown> => {
+  const dictFiles: TStrList = [];
   const jsonFiles = allFiles.filter((file) => {
     if (path.extname(file) === '.json') {
       return true;
@@ -116,14 +117,18 @@ export const loadAllData = (allFiles: string[]) => {
   return Promise.all([loadJson(jsonFiles), loadDict(dictFiles)]);
 };
 // load template json
-export const loadTemplate = (file: string) => {
+export const loadTemplate = (file: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     fs.stat(file, (err, stat) => {
       if (err) {
         reject(err);
       } else {
-        if (fileCache[file] && stat.mtime === fileCache[file].mtime) {
-          resolve(fileCache[file].content);
+        if (
+          fileCache[file] &&
+          isFileCache(fileCache[file]) &&
+          +stat.mtime === (fileCache[file] as IFileCache).mtime
+        ) {
+          resolve((fileCache[file] as IFileCache).content);
         } else {
           fs.readFile(file, 'utf8', (e, data) => {
             if (e) {
@@ -132,7 +137,7 @@ export const loadTemplate = (file: string) => {
               const content = JSON.parse(data);
               fileCache[file] = {
                 content,
-                mtime: stat.mtime,
+                mtime: +stat.mtime,
               };
               resolve(content);
             }
@@ -147,19 +152,29 @@ export const getRealPath = (item: IPPPathItem): string => {
   const { variable } = item;
   let { fullpath } = item;
   if (variable) {
-    fullpath = fullpath.replace(`<${variable}>`, config[variable]);
+    fullpath = fullpath.replace(
+      `<${variable}>`,
+      config[variable as 'dataDir' | 'rootDir'],
+    );
   } else {
     fullpath = path.join(config.dataDir || config.rootDir, fullpath);
   }
   return fullpath;
 };
 // default cascader handle
-export const getCascaderValue = (data: TObj, values: any[]) => {
+export const getCascaderValue = (
+  data: unknown,
+  values: TStrList,
+): unknown | never => {
   const len = values.length;
   let i = 0;
   while (i < len) {
     const cur = values[i++];
-    data = data[cur];
+    if (isObject(data)) {
+      data = data[cur];
+    } else {
+      throw new Error(`${values.slice(0, i).join('.')}字段路径没有找到`);
+    }
   }
   if (Array.isArray(data)) {
     const index = makeRandom(0, data.length - 1);

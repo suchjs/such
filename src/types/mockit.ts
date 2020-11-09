@@ -8,7 +8,7 @@ import {
   IPPRegexp,
   IPPSize,
 } from './parser';
-
+import Mockit from '../mockit/namespace';
 export type TMModifierFn<T> = (res: T) => T | string | never;
 export type TMRuleFn<T = unknown> = (cur: T) => T | void;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,3 +37,5 @@ export type TMFactoryOptions = {
   generate: () => unknown;
   generateFn?: () => void;
 };
+export type TMClass = new (...args: unknown[]) => Mockit;
+export type TMClassList = TObj<TMClass>;

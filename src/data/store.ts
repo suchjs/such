@@ -1,3 +1,4 @@
+import { isObject } from '../helpers/utils';
 import Mockit from '../mockit/namespace';
 import { TObj, TFunc, TStrList } from '../types/common';
 import { TMModifierFn, TMRuleFn } from '../types/mockit';
@@ -9,6 +10,10 @@ type MockitsCache<T> = TObj<{
   modifierFns: TObj<TMModifierFn<T>>;
   define?: TObj;
 }>;
+export interface IFileCache {
+  mtime: number;
+  content: string;
+}
 export interface Store {
   (name: string, value: unknown, alwaysVar: boolean): void;
   vars: TObj;
@@ -18,10 +23,15 @@ export interface Store {
   alias: TObj<string>;
   aliasTypes: TStrList;
   fileCache: {
-    [index: string]: TStrList;
+    [index: string]: IFileCache | TStrList | string;
   };
   config: TSSConfig;
 }
+export const isFileCache = (
+  target: IFileCache | string | TStrList,
+): target is IFileCache => {
+  return isObject(target) && typeof target.mtime === 'number';
+};
 const store: Store = (() => {
   const fns: TObj<TFunc> = {};
   const vars: TObj = {};

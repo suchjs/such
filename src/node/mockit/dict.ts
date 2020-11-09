@@ -52,7 +52,7 @@ export default {
     if (isSync) {
       const queues: TStrList[] = [];
       lastPaths.map((filePath: string) => {
-        queues.push(fileCache[filePath]);
+        queues.push(fileCache[filePath] as TStrList);
       });
       return makeAll(queues);
     } else {
