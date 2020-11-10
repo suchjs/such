@@ -1,7 +1,7 @@
 import RegexpParser, { NamedGroupConf, regexpRule } from 'reregexp';
 import { TMatchResult, TObj } from '../types/common';
 import { IPPRegexp } from '../types/parser';
-import Mockit from './namespace';
+import Mockit from '../core/mockit';
 export default class ToRegexp extends Mockit<string> {
   private instance: RegexpParser;
   constructor(constructName: string) {

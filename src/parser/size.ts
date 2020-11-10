@@ -1,5 +1,5 @@
 import { IParserFactory, IPPSize } from '../types/parser';
-import { AParser } from './namespace';
+import { AParser } from '../core/parser';
 const parser: IParserFactory = {
   config: {
     startTag: ['['],

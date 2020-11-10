@@ -8,7 +8,7 @@ import {
   IPPRegexp,
   IPPSize,
 } from './parser';
-import Mockit from '../mockit/namespace';
+import Mockit from '../core/mockit';
 export type TMModifierFn<T> = (res: T) => T | string | never;
 export type TMRuleFn<T = unknown> = (cur: T) => T | void;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

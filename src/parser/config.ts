@@ -1,7 +1,7 @@
 import { regexpRule } from 'reregexp';
 import { IParserFactory, IPPConfig } from '../types/parser';
 import { decodeTrans, getExp } from '../helpers/utils';
-import { AParser } from './namespace';
+import { AParser } from '../core/parser';
 
 const parser: IParserFactory = {
   config: {

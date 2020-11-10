@@ -1,5 +1,5 @@
 import { isObject } from '../helpers/utils';
-import Mockit from '../mockit/namespace';
+import Mockit from '../core/mockit';
 import { TObj, TFunc, TStrList } from '../types/common';
 import { TMModifierFn, TMRuleFn } from '../types/mockit';
 import { TSSConfig } from '../types/node';

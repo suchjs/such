@@ -2,7 +2,7 @@ import printf, { rule as formatRule } from 'nprintf';
 import { TMModifierFn } from '../types/mockit';
 import { IPPFormat, IPPSize } from '../types/parser';
 import { isOptional } from '../helpers/utils';
-import Mockit from './namespace';
+import Mockit from '../core/mockit';
 
 const factor = (type: number) => {
   const epsilon = Number.EPSILON || Math.pow(2, -52);

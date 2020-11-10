@@ -2,7 +2,7 @@ import { TSuchInject } from 'src/types/instance';
 import { IPPPath, IPPPathItem } from 'src/types/parser';
 import { getRefMocker, withPromise } from '../helpers/utils';
 import { Mocker } from '../core/such';
-import Mockit from './namespace';
+import Mockit from '../core/mockit';
 export default class ToRef extends Mockit<unknown> {
   constructor(constructName: string) {
     super(constructName);

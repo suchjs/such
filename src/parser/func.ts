@@ -5,10 +5,10 @@ import {
   IPPFuncOptions,
   IPPFuncParam,
 } from '../types/parser';
-import { encodeSplitor } from '../config';
+import { encodeSplitor } from '../data/config';
 import { getExp } from '../helpers/utils';
-import store from '../store';
-import { AParser } from './namespace';
+import store from '../data/store';
+import { AParser } from '../core/parser';
 const { fns: globalFns } = store;
 const parseFuncParams = (options: IPPFuncOptions) => {
   const { name, params } = options;

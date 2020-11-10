@@ -1,9 +1,9 @@
 import { TMModifierFn } from '../types/mockit';
 import { IPPFormat, IPPSize } from '../types/parser';
-import { strRule } from '../config';
+import { strRule } from '../data/config';
 import { dateformat, strtotime } from '../helpers/dateformat';
 import { decodeTrans, makeRandom } from '../helpers/utils';
-import Mockit from './namespace';
+import Mockit from '../core/mockit';
 const makeDate = (param: string | number): Date | never => {
   let date: Date;
   if (!isNaN(param as number)) {

@@ -1,7 +1,7 @@
 import { TFunc, TObj } from '../types/common';
-import { Path } from './pathmap';
-import { IPPPathItem } from 'src/types/parser';
-import { Mocker } from 'src/core/such';
+import { TFieldPath } from './pathmap';
+import { IPPPathItem } from '../types/parser';
+import { Mocker } from '../core/such';
 export const encodeRegexpChars = (chars: string): string => {
   return chars.replace(/([()\[{^$.*+?\/\-])/g, '\\$1');
 };
@@ -76,6 +76,31 @@ export const range = (start: number, end: number, step = 1): number[] => {
   });
 };
 
+function deepCopyHandle<T>(target: T, copy: T): void {
+  let keys: Array<keyof T> = [];
+  if (isObject(copy)) {
+    keys = Object.keys(copy) as Array<keyof T>;
+  } else if (Array.isArray(copy)) {
+    keys = range(0, copy.length - 1) as Array<keyof T>;
+  }
+  keys.map((key) => {
+    const from = copy[key];
+    const to = target[key];
+    const fromType = typeOf(from);
+    const toType = typeOf(to);
+    if (fromType === 'Object' || fromType === 'Array') {
+      target[key] = (toType === fromType
+        ? target[key]
+        : fromType === 'Object'
+        ? {}
+        : []) as typeof from;
+      deepCopy(target[key], from);
+    } else {
+      target[key] = from;
+    }
+  });
+}
+
 export const deepCopy = <T = unknown>(target: T, ...args: unknown[]): T => {
   let isObj = false;
   let isArr = false;
@@ -83,25 +108,7 @@ export const deepCopy = <T = unknown>(target: T, ...args: unknown[]): T => {
     for (let i = 0, j = args.length; i < j; i++) {
       const copy = args[i];
       if ((isObj && isObject(copy)) || (isArr && Array.isArray(copy))) {
-        const curTarget = target as typeof copy;
-        const kvs = Object.entries(copy);
-        for (const [key, val] of kvs) {
-          const from = val;
-          const to = curTarget[key];
-          const fromType = typeOf(from);
-          const toType = typeOf(to);
-          if (fromType === 'Object' || fromType === 'Array') {
-            curTarget[key] =
-              toType === fromType
-                ? curTarget[key]
-                : fromType === 'Object'
-                ? {}
-                : [];
-            deepCopy(curTarget[key], from);
-          } else {
-            curTarget[key] = from;
-          }
-        }
+        deepCopyHandle(target, copy);
       }
     }
   }
@@ -150,7 +157,10 @@ export const withPromise = <T = unknown>(res: T[]): Array<Promise<T> | T> => {
   });
   return last;
 };
-export const isRelativePath = (first: Path, second: Path): boolean => {
+export const isRelativePath = (
+  first: TFieldPath,
+  second: TFieldPath,
+): boolean => {
   if (first.length > second.length) {
     return isRelativePath(second, first);
   }
@@ -171,7 +181,7 @@ export const getRefMocker = (
   mocker: Mocker,
 ): Mocker | never => {
   let isExists = true;
-  let lastPath: Path;
+  let lastPath: TFieldPath;
   const { root, path } = mocker;
   const { instances } = root;
   if (!item.relative) {

@@ -1,5 +1,5 @@
 import { IParserFactory, IPPPath, IPPPathItem } from '../types/parser';
-import { AParser } from './namespace';
+import { AParser } from '../core/parser';
 const parser: IParserFactory = {
   config: {
     startTag: ['&'],

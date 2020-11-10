@@ -1,7 +1,7 @@
 import { TMatchResult, TStrList } from '../types/common';
 import { IPPSize } from '../types/parser';
 import { makeRandom } from '../helpers/utils';
-import Mockit from './namespace';
+import Mockit from '../core/mockit';
 const uniRule = /^\\u((?:[0-9a-fA-F]{4}|[0-9a-fA-F]{6}))$/;
 const numRule = /^\d+$/;
 const hex2num = (hex: string): number => {

@@ -1,9 +1,9 @@
 import { suchRule } from '../data/config';
-import PathMap, { Path } from '../helpers/pathmap';
+import PathMap, { TFieldPath } from '../helpers/pathmap';
 import * as utils from '../helpers/utils';
-import { mockitList } from './mockit';
-import Mockit, { BaseExtendMockit } from '../mockit/namespace';
-import Parser from './parser';
+import { mockitList } from '../data/mockit';
+import Mockit, { BaseExtendMockit } from './mockit';
+import Parser from '../data/parser';
 import store from '../data/store';
 import { TFunc, TObj } from '../types/common';
 import { TMClass, TMClassList, TMFactoryOptions } from '../types/mockit';
@@ -57,13 +57,13 @@ export type MockitInstances<T extends Mockit<unknown>> = {
  */
 export interface MockerOptions {
   target: unknown;
-  path: Path;
+  path: TFieldPath;
   parent?: Mocker;
   config?: IKeyRule;
 }
 //
 export interface PromiseResult {
-  dpath: Path;
+  dpath: TFieldPath;
   result: Promise<unknown>;
 }
 // all mockits
@@ -130,7 +130,7 @@ export class Mocker {
   public result: unknown;
   public readonly target: unknown;
   public readonly config: IKeyRule = {};
-  public readonly path: Path;
+  public readonly path: TFieldPath;
   public readonly type: string;
   public readonly instances?: PathMap<Mocker>;
   public readonly datas?: PathMap<unknown>;
@@ -138,7 +138,7 @@ export class Mocker {
   public readonly parent: Mocker;
   public readonly dataType: string;
   public readonly isRoot: boolean;
-  public readonly mockFn: (dpath: Path) => unknown;
+  public readonly mockFn: (dpath: TFieldPath) => unknown;
   public readonly mockit: Mockit;
   public readonly promises: PromiseResult[] = [];
   /**
@@ -194,7 +194,7 @@ export class Mocker {
         const mockers = target.map((_: unknown, index: number) => {
           return getInstance(index);
         });
-        this.mockFn = (dpath: Path) => {
+        this.mockFn = (dpath: TFieldPath) => {
           const result: unknown[] = [];
           mockers.map((instance: Mocker, index: number) => {
             const curDpath = dpath.concat(index);
@@ -207,7 +207,7 @@ export class Mocker {
       } else {
         // mock array type
         const makeArrFn = (
-          dpath: Path,
+          dpath: TFieldPath,
           instance: Mocker | Mocker[],
           total?: number,
         ) => {
@@ -227,7 +227,7 @@ export class Mocker {
           return result;
         };
         const makeOptional = (
-          dpath: Path,
+          dpath: TFieldPath,
           instance: Mocker,
           total: number,
         ): never | unknown => {
@@ -242,14 +242,14 @@ export class Mocker {
           datas.set(dpath, result);
           return result;
         };
-        let resultFn: (dpath: Path, instance: Mocker) => unknown;
+        let resultFn: (dpath: TFieldPath, instance: Mocker) => unknown;
         if (oneOf) {
           if (alwaysArray) {
             // e.g {"a:[0,1]":[{b:1},{"c":1},{"d":1}]}
             resultFn = makeArrFn;
           } else {
             // e.g {"a:{0,5}":["amd","cmd","umd"]}
-            resultFn = (dpath: Path, instance: Mocker) => {
+            resultFn = (dpath: TFieldPath, instance: Mocker) => {
               const total = makeRandom(min, max);
               if (total <= 1) {
                 return makeOptional(dpath, instance, total);
@@ -257,14 +257,14 @@ export class Mocker {
               return makeArrFn(dpath, instance, total);
             };
           }
-          this.mockFn = (dpath: Path) => {
+          this.mockFn = (dpath: TFieldPath) => {
             const instance = getInstance();
             return resultFn(dpath, instance);
           };
         } else {
           // e.g {"a[1,3]":["amd","cmd","umd"]}
           // e.g {"a{0,3}":["amd","cmd","umd"]}
-          const makeRandArrFn = (dpath: Path, total?: number) => {
+          const makeRandArrFn = (dpath: TFieldPath, total?: number) => {
             total = !isNaN(total) ? Number(total) : makeRandom(min, max);
             const targets = Array.from({
               length: total,
@@ -274,11 +274,11 @@ export class Mocker {
             return makeArrFn(dpath, targets, total);
           };
           if (alwaysArray || min > 1) {
-            this.mockFn = (dpath: Path) => {
+            this.mockFn = (dpath: TFieldPath) => {
               return makeRandArrFn(dpath);
             };
           } else {
-            this.mockFn = (dpath: Path) => {
+            this.mockFn = (dpath: TFieldPath) => {
               const total = makeRandom(min, max);
               if (total <= 1) {
                 return makeOptional(dpath, getInstance(), total);
@@ -300,7 +300,7 @@ export class Mocker {
           config: conf,
         };
       });
-      this.mockFn = (dpath: Path) => {
+      this.mockFn = (dpath: TFieldPath) => {
         const result: TObj = {};
         const prevPath = this.path;
         keys.map((item) => {
@@ -345,7 +345,7 @@ export class Mocker {
               instance.setParams(params);
             }
             this.mockit = instance;
-            this.mockFn = (dpath: Path) =>
+            this.mockFn = (dpath: TFieldPath) =>
               instance.make({
                 datas,
                 dpath,
@@ -356,7 +356,7 @@ export class Mocker {
           }
         }
       }
-      this.mockFn = (_dpath: Path) => target;
+      this.mockFn = (_dpath: TFieldPath) => target;
     }
   }
 
@@ -378,11 +378,11 @@ export class Mocker {
   /**
    *
    *
-   * @param {Path} [dpath]
+   * @param {TFieldPath} [dpath]
    * @returns
    * @memberof Mocker
    */
-  public mock(dpath: Path): unknown {
+  public mock(dpath: TFieldPath): unknown {
     const { optional } = this.config;
     if (this.isRoot && optional && isOptional()) {
       return;
@@ -391,7 +391,7 @@ export class Mocker {
     if (this.isRoot) {
       if (this.promises.length) {
         const queues: Array<Promise<unknown>> = [];
-        const dpaths: Path[] = [];
+        const dpaths: TFieldPath[] = [];
         this.promises.map((item: PromiseResult) => {
           const { result: promise, dpath: curDPath } = item;
           queues.push(promise);
@@ -629,7 +629,7 @@ export default class Such {
   public readonly instances: PathMap<Mocker>;
   public readonly mockits: PathMap<TObj>;
   public readonly datas: PathMap<unknown>;
-  public readonly paths: PathMap<Path>;
+  public readonly paths: PathMap<TFieldPath>;
   protected struct: TObj;
   private initail = false;
   constructor(target: unknown, options?: IAsOptions) {
