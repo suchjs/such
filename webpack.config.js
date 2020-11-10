@@ -7,17 +7,17 @@ module.exports = {
       {
         test: /\.ts$/,
         use: 'ts-loader',
-        exclude: /node_modules|__tests__|lib|dist/
-      }
-    ]
+        exclude: /node_modules|__tests__|lib|dist|local|coverage/,
+      },
+    ],
   },
   resolve: {
-    extensions: [ '.ts', '.js' ]
+    extensions: ['.ts', '.js'],
   },
   output: {
     filename: () => {
-      return `such.${version}.min.js`
+      return `such.${version}.min.js`;
     },
-    path: path.resolve(__dirname, 'dist')
-  }
+    path: path.resolve(__dirname, 'dist'),
+  },
 };

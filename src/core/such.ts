@@ -9,7 +9,13 @@ import { TFunc, TObj } from '../types/common';
 import { TMClass, TMClassList, TMFactoryOptions } from '../types/mockit';
 import { TNodeSuch, TSuchSettings } from '../types/node';
 import { IParserConfig } from '../types/parser';
-import { TSuchInject } from '../types/instance';
+import {
+  IAsOptions,
+  IMockerKeyRule,
+  IMockerOptions,
+  IPromiseResult,
+  TSuchInject,
+} from '../types/instance';
 const {
   capitalize,
   isFn,
@@ -20,52 +26,7 @@ const {
   isNoEmptyObject,
 } = utils;
 const { alias, aliasTypes } = store;
-/**
- *
- *
- * @interface IAsOptions
- */
-export interface IAsOptions {
-  instance?: boolean;
-  config?: IKeyRule;
-}
-/**
- *
- *
- * @interface IKeyRule
- */
-export interface IKeyRule {
-  min?: number;
-  max?: number;
-  optional?: boolean;
-  oneOf?: boolean;
-  alwaysArray?: boolean;
-}
-/**
- *
- *
- * @interface MockitInstances
- */
-export type MockitInstances<T extends Mockit<unknown>> = {
-  [index: string]: T;
-};
-/**
- *
- *
- * @export
- * @interface MockerOptions
- */
-export interface MockerOptions {
-  target: unknown;
-  path: TFieldPath;
-  parent?: Mocker;
-  config?: IKeyRule;
-}
-//
-export interface PromiseResult {
-  dpath: TFieldPath;
-  result: Promise<unknown>;
-}
+
 // all mockits
 const ALL_MOCKITS: TMClassList = {};
 Object.keys(mockitList).map((key: string) => {
@@ -129,7 +90,7 @@ export class Mocker {
   }
   public result: unknown;
   public readonly target: unknown;
-  public readonly config: IKeyRule = {};
+  public readonly config: IMockerKeyRule = {};
   public readonly path: TFieldPath;
   public readonly type: string;
   public readonly instances?: PathMap<Mocker>;
@@ -140,16 +101,16 @@ export class Mocker {
   public readonly isRoot: boolean;
   public readonly mockFn: (dpath: TFieldPath) => unknown;
   public readonly mockit: Mockit;
-  public readonly promises: PromiseResult[] = [];
+  public readonly promises: IPromiseResult[] = [];
   /**
    * Creates an instance of Mocker.
-   * @param {MockerOptions} options
+   * @param {IMockerOptions} options
    * @param {PathMap<Mocker>} [rootInstances]
    * @param {PathMap<any>} [rootDatas]
    * @memberof Mocker
    */
   constructor(
-    options: MockerOptions,
+    options: IMockerOptions,
     rootInstances?: PathMap<Mocker>,
     rootDatas?: PathMap<unknown>,
   ) {
@@ -309,7 +270,7 @@ export class Mocker {
           const nowPath = prevPath.concat(key);
           const nowDpath = dpath.concat(key);
           if (optional && isOptional()) {
-            // do nothing
+            // optional data
           } else {
             let instance = instances.get(nowPath);
             if (!(instance instanceof Mocker)) {
@@ -392,17 +353,18 @@ export class Mocker {
       if (this.promises.length) {
         const queues: Array<Promise<unknown>> = [];
         const dpaths: TFieldPath[] = [];
-        this.promises.map((item: PromiseResult) => {
+        this.promises.map((item: IPromiseResult) => {
           const { result: promise, dpath: curDPath } = item;
           queues.push(promise);
           dpaths.push(curDPath);
         });
-        return (this.result = Promise.all(queues).then((results: unknown[]) => {
+        return (async () => {
+          const results: unknown[] = await Promise.all(queues);
           results.map((res: unknown, i: number) => {
             this.datas.set(dpaths[i], res);
           });
-          return this.datas.get([]);
-        }));
+          return (this.result = this.datas.get([]));
+        })();
       }
     } else {
       if (utils.isPromise(result)) {
@@ -515,9 +477,20 @@ export default class Such {
    * @param {*} target
    * @memberof Such
    */
-  public static as(target: unknown, options?: IAsOptions): Such | unknown {
-    const ret = new Such(target, options);
-    return options && options.instance ? ret : ret.a();
+  public static as(target: unknown, options?: IAsOptions): unknown {
+    return Such.instance(target, options).a();
+  }
+  /**
+   *
+   *
+   * @static
+   * @param {unknown} target
+   * @param {IAsOptions} [options]
+   * @returns {Such}
+   * @memberof Such
+   */
+  public static instance(target: unknown, options?: IAsOptions): Such {
+    return new Such(target, options);
   }
   /**
    *
@@ -542,7 +515,9 @@ export default class Such {
   public static define(type: string, ...args: unknown[]): void | never {
     const argsNum = args.length;
     if (argsNum === 0 || argsNum > 2) {
-      throw new Error(`the static "define" method's arguments is not right.`);
+      throw new Error(
+        `the static "define" method's arguments is not right, expect 1 or 2 argments, but got ${argsNum}`,
+      );
     }
     const opts = args.pop();
     const config: Partial<TMFactoryOptions> =

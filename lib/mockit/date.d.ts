@@ -1,4 +1,4 @@
-import Mockit from './namespace';
+import Mockit from '../core/mockit';
 export default class ToDate extends Mockit<string | Date> {
     constructor(constructName: string);
     init(): void;

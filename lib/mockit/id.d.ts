@@ -1,8 +1,8 @@
-import { SuchOptions } from '../types';
-import Mockit from './namespace';
+import { TSuchInject } from '../types/instance';
+import Mockit from '../core/mockit';
 export default class ToId extends Mockit<number> {
     constructor(constructName: string);
     init(): void;
-    generate(options: SuchOptions): any;
+    generate(options: TSuchInject): number;
     test(): boolean;
 }

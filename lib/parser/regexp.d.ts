@@ -1,3 +1,3 @@
-import { ParserInstance } from '../types';
-declare const parser: ParserInstance;
+import { IParserFactory } from '../types/parser';
+declare const parser: IParserFactory;
 export default parser;

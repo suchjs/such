@@ -1,4 +1,4 @@
-import Mockit from './namespace';
+import Mockit from '../core/mockit';
 export default class ToRegexp extends Mockit<string> {
     private instance;
     constructor(constructName: string);

@@ -36,18 +36,16 @@ export default class PathMap<T> {
     for (; i < len - 1; i++) {
       const key = keys[i];
       const next = keys[i + 1];
-      if (Array.isArray(data) && typeof key === 'number') {
-        if (data.length < key) {
-          data[key] = typeof next === 'number' ? [] : {};
-        } else {
-          data = data[key] as TFieldValue<TFieldValue>;
-        }
-      } else if (isObject(data) && typeof key === 'string') {
-        if (data.hasOwnProperty(key)) {
-          data = data[key] as TFieldValue<TFieldValue>;
-        } else {
+      if (Array.isArray(data) && typeof key === 'number' && key % 1 === 0) {
+        if (data.length < key + 1) {
           data[key] = typeof next === 'number' ? [] : {};
         }
+        data = data[key] as TFieldValue<TFieldValue>;
+      } else if (isObject(data)) {
+        if (!data.hasOwnProperty(key)) {
+          data[key] = typeof next === 'number' ? [] : {};
+        }
+        data = data[key] as TFieldValue<TFieldValue>;
       } else {
         throw new Error(`wrong field path key: '${key}'`);
       }

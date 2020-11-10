@@ -1,5 +1,5 @@
-import { TStrList } from 'src/types/common';
-import { IPPPath, IPPPathItem } from 'src/types/parser';
+import { TStrList } from '../../types/common';
+import { IPPPath, IPPPathItem } from '../../types/parser';
 import { makeRandom } from '../../helpers/utils';
 import store from '../../data/store';
 import { getRealPath, loadDict } from '../utils';

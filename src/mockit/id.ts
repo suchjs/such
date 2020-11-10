@@ -1,4 +1,4 @@
-import { TSuchInject } from 'src/types/instance';
+import { TSuchInject } from '../types/instance';
 import Mockit from '../core/mockit';
 export default class ToId extends Mockit<number> {
   constructor(constructName: string) {

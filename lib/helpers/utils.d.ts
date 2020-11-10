@@ -1,34 +1,23 @@
-import { Mocker } from '../such';
-import { TObject, ParamsPathItem } from '../types';
+import { TFunc, TObj } from '../types/common';
+import { TFieldPath } from './pathmap';
+import { IPPPathItem } from '../types/parser';
+import { Mocker } from '../core/such';
 export declare const encodeRegexpChars: (chars: string) => string;
-export declare const typeOf: (target: any) => string;
-export declare const isFn: (target: any) => boolean;
-export declare const map: (
-  target: string | any[] | TObject,
-  fn: (item: any, index: string | number) => void,
-) => TObject;
+export declare const typeOf: (target: unknown) => string;
+export declare const isFn: <T = TFunc>(target: unknown) => target is T;
 export declare const makeRandom: (min: number, max: number) => number;
-export declare const makeStrRangeList: (
-  first?: string,
-  last?: string,
-  ...args: string[]
-) => string[];
+export declare const makeStrRangeList: (first?: string, last?: string, ...args: string[]) => string[];
 export declare const isOptional: () => boolean;
 export declare const capitalize: (target: string) => string;
 export declare const decodeTrans: (target: string) => string;
-export declare const getExp: (exp: string) => any;
-export declare const getExpValue: (...args: any[]) => any;
-export declare const range: (start: number, end: number, step?: number) => any;
-export declare const deepCopy: (target: any, ...args: any[]) => any;
-export declare const isNoEmptyObject: (target: any) => boolean;
-export declare const isPromise: (target: any) => boolean;
-export declare const shiftObject: (obj: TObject, keys: string[]) => TObject;
-export declare const withPromise: (res: any[]) => any[];
-export declare const isRelativePath: (
-  first: (string | number)[],
-  second: (string | number)[],
-) => boolean;
-export declare const getRefMocker: (
-  item: ParamsPathItem,
-  mocker: Mocker,
-) => Mocker;
+export declare const getExp: (exp: string) => unknown | never;
+export declare const getExpValue: (...args: unknown[]) => unknown | never;
+export declare const range: (start: number, end: number, step?: number) => number[];
+export declare const deepCopy: <T = unknown>(target: T, ...args: unknown[]) => T;
+export declare const isNoEmptyObject: (target: unknown) => boolean;
+export declare const isPromise: (target: unknown) => boolean;
+export declare const shifTObj: <T = TObj<unknown>>(obj: T, keys: (keyof T)[]) => Partial<T>;
+export declare const withPromise: <T = unknown>(res: T[]) => (T | Promise<T>)[];
+export declare const isRelativePath: (first: TFieldPath, second: TFieldPath) => boolean;
+export declare const getRefMocker: (item: IPPPathItem, mocker: Mocker) => Mocker | never;
+export declare const isObject: (target: unknown) => target is TObj<unknown>;

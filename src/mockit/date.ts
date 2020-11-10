@@ -69,7 +69,14 @@ export default class ToDate extends Mockit<string | Date> {
   }
   public generate(): Date {
     const { Size } = this.params;
-    const range = Size.range as number[];
+    const range = (
+      Size ?? {
+        range: [
+          strtotime('-10 year').getTime(),
+          strtotime('+10 year').getTime(),
+        ],
+      }
+    ).range as number[];
     const time = makeRandom(range[0], range[1]);
     return new Date(time);
   }

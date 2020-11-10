@@ -1,14 +1,16 @@
 {
   "name": "suchjs",
-  "version": "0.2.0",
-  "description": "An easy to use and extend mock tool.",
+  "version": "0.3.0",
+  "description": "An extendable and declarative mock tool, make build the structured data what you want easily.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
-  "author": "ONEBOX FE",
+  "author": "jxz_211@163.com",
   "keywords": [
-    "suchjs",
+    "mock",
+    "random",
+    "extendable",
     "such",
-    "mock"
+    "suchjs"
   ],
   "license": "MIT",
   "devDependencies": {
@@ -37,7 +39,7 @@
     "start": "tsc && node lib/index.js",
     "test": "jest",
     "lint": "eslint 'src/**/*.{ts,js}'",
-    "local": "ts-node -r tsconfig-paths/register src/local/test.ts",
+    "local": "ts-node -r tsconfig-paths/register local/test.ts",
     "build": "rm -rf ./lib/* && npm run lint && tsc && npm run build:web",
     "build:web": "webpack --progress --mode=\"production\" && cp ./dist/such.$npm_package_version.min.js ./dist/such.min.js",
     "coverage": "jest --coverage && coveralls < coverage/lcov.info",
@@ -45,7 +47,7 @@
   },
   "dependencies": {
     "nprintf": "^1.0.1",
-    "reregexp": "^1.1.1"
+    "reregexp": "^1.1.2"
   },
   "repository": {
     "type": "git",

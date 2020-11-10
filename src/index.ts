@@ -5,8 +5,9 @@ import ToCascader from './node/mockit/cascader';
 import ToDict from './node/mockit/dict';
 import { getAllFiles, loadAllData, loadTemplate } from './node/utils';
 import store from './data/store';
-import Such, { IAsOptions } from './core/such';
+import Such from './core/such';
 import { TNodeSuch, TSuchSettings } from './types/node';
+import { IAsOptions } from './types/instance';
 const NSuch = Such as typeof Such & TNodeSuch;
 const { config, fileCache } = store;
 // load config files

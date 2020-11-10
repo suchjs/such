@@ -1,4 +1,5 @@
-import { SuchOptions } from '../../types';
+import { TStrList } from '../../types/common';
+import { TSuchInject } from '../../types/instance';
 declare const _default: {
     configOptions: {
         root: {
@@ -10,6 +11,6 @@ declare const _default: {
         };
     };
     init(): void;
-    generate(options: SuchOptions): any;
+    generate(options: TSuchInject): TStrList | Promise<TStrList>;
 };
 export default _default;

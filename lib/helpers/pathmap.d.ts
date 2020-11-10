@@ -1,6 +1,6 @@
-export declare type PathKey = string | number;
-export declare type Path = PathKey[];
-export declare type PathValue<T> = {
+export declare type TFieldPathKey = string | number;
+export declare type TFieldPath = TFieldPathKey[];
+export declare type TFieldValue<T = unknown> = {
     [index: string]: T;
 } | T[];
 export default class PathMap<T> {
@@ -8,8 +8,8 @@ export default class PathMap<T> {
     private result;
     private initial;
     constructor(isPlain: boolean);
-    set(keys: Path, value: T): this;
-    get(keys: Path): T;
+    set(keys: TFieldPath, value: T): PathMap<T> | never;
+    get(keys: TFieldPath): T;
     clear(): void;
-    has(keys: Path): boolean;
+    has(keys: TFieldPath): boolean;
 }

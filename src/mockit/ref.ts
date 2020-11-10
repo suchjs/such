@@ -1,5 +1,5 @@
-import { TSuchInject } from 'src/types/instance';
-import { IPPPath, IPPPathItem } from 'src/types/parser';
+import { TSuchInject } from '../types/instance';
+import { IPPPath, IPPPathItem } from '../types/parser';
 import { getRefMocker, withPromise } from '../helpers/utils';
 import { Mocker } from '../core/such';
 import Mockit from '../core/mockit';

@@ -1,5 +1,4 @@
-import Such from 'src/core/such';
-import { TSuchInject } from 'src/types/instance';
+import { TSuchInject } from '../types/instance';
 import { TSuchSettings } from '../types/node';
 const confs: TSuchSettings = {
   types: {
@@ -30,14 +29,14 @@ const confs: TSuchSettings = {
     },
     color$rgb(options: TSuchInject): string {
       const { such } = options;
-      const instance = such.as(':int[0,255]', { instance: true }) as Such;
+      const instance = such.instance(':int[0,255]');
       return (
         'rgb(' + [instance.a(), instance.a(), instance.a()].join(',') + ')'
       );
     },
     color$rgba(options: TSuchInject): string {
       const { such } = options;
-      const instance = such.as(':int[0,255]', { instance: true }) as Such;
+      const instance = such.instance(':int[0,255]');
       const opacity = such.as(':number[0,1]:%.2f');
       return (
         'rgba(' +
@@ -48,13 +47,13 @@ const confs: TSuchSettings = {
     color$hsl(options: TSuchInject): string {
       const { such } = options;
       const highlight = such.as(':int[0,360]');
-      const instance = such.as(':percent', { instance: true }) as Such;
+      const instance = such.instance(':percent');
       return 'hsl(' + [highlight, instance.a(), instance.a()].join(',') + ')';
     },
     color$hsla(options: TSuchInject): string {
       const { such } = options;
       const highlight = such.as(':int[0,360]');
-      const instance = such.as(':percent', { instance: true }) as Such;
+      const instance = such.instance(':percent');
       const opacity = such.as(':number[0,1]:%.2f');
       return (
         'hsla(' +

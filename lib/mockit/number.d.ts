@@ -1,4 +1,4 @@
-import Mockit from './namespace';
+import Mockit from '../core/mockit';
 export default class ToNumber extends Mockit<number> {
     constructor(constructName: string);
     init(): void;
