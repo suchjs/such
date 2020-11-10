@@ -23,14 +23,14 @@ describe('validate parser and dispatch', () => {
   test('length parser', () => {
     expect(Parser.parse('{1}')).toEqual({
       Length: {
-        least: '1',
-        most: '1',
+        least: 1,
+        most: 1,
       },
     });
     expect(Parser.parse('{1,5}')).toEqual({
       Length: {
-        least: '1',
-        most: '5',
+        least: 1,
+        most: 5,
       },
     });
     expect(() => Parser.parse('{1,}')).toThrow();
