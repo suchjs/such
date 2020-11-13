@@ -44,9 +44,9 @@ export default abstract class Mockit<T = unknown> {
    * @memberof Mockit
    */
   constructor(protected readonly constructorName: string) {
-    const constrName = constructorName || this.constructor.name;
-    if (mockitsCache[constrName]) {
-      const { define } = mockitsCache[constrName];
+    const className = constructorName || this.constructor.name;
+    if (mockitsCache[className]) {
+      const { define } = mockitsCache[className];
       if (isObject(define)) {
         Object.keys(define).map((key) => {
           const value = define[key];
@@ -61,7 +61,7 @@ export default abstract class Mockit<T = unknown> {
       }
       return;
     }
-    mockitsCache[constrName] = {
+    mockitsCache[className] = {
       rules: [],
       ruleFns: {},
       modifiers: [],
@@ -137,7 +137,7 @@ export default abstract class Mockit<T = unknown> {
               : validator;
           }
           if (required && !hasKey) {
-            throw new Error(`${constrName} required set config "${key}"`);
+            throw new Error(`${className} required set config "${key}"`);
           } else if (hasKey && !validator.call(null, last[key])) {
             throw new Error(
               `the config of "${key}"'s value ${
@@ -162,7 +162,7 @@ export default abstract class Mockit<T = unknown> {
    * @type {string}
    * @memberof Mockit
    */
-  protected get constrName(): string {
+  protected get className(): string {
     return this.constructorName || this.constructor.name;
   }
 
@@ -232,9 +232,8 @@ export default abstract class Mockit<T = unknown> {
    */
   public frozen(): Mockit<T> {
     // frozen params for extend type.
-    const constrName = this.constructorName || this.constructor.name;
     const { params, origParams, generateFn, configOptions } = this;
-    mockitsCache[constrName].define = deepCopy(
+    mockitsCache[this.className].define = deepCopy(
       {},
       {
         params,
@@ -316,7 +315,7 @@ export default abstract class Mockit<T = unknown> {
     fn: TMRuleFn | TMModifierFn<T>,
     pos?: string,
   ): never | void {
-    const curName = this.constructorName || this.constructor.name;
+    const curName = this.className;
     const { rules, ruleFns, modifiers, modifierFns } = mockitsCache[curName];
     let target;
     let fns;
@@ -360,9 +359,7 @@ export default abstract class Mockit<T = unknown> {
    */
   private validParams(): boolean {
     const params = this.origParams;
-    const { rules, ruleFns } = mockitsCache[
-      this.constructorName || this.constructor.name
-    ];
+    const { rules, ruleFns } = mockitsCache[this.className];
     const keys = Object.keys(params);
     rules.map((name: string) => {
       try {
@@ -418,9 +415,7 @@ export default abstract class Mockit<T = unknown> {
    */
   private runModifiers(result: unknown, options: TSuchInject): unknown {
     const { params } = this;
-    const { modifiers, modifierFns } = mockitsCache[
-      this.constructorName || this.constructor.name
-    ];
+    const { modifiers, modifierFns } = mockitsCache[this.className];
     for (let i = 0, j = modifiers.length; i < j; i++) {
       const name = modifiers[i];
       if (params.hasOwnProperty(name)) {
