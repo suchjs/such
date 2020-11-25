@@ -7,11 +7,11 @@ const { config, fileCache } = store;
 type TMultiStr = string | TStrList;
 export default {
   init(): void {
-    this.addRule('Path', function (Path: IPPPath) {
-      if (!Path) {
+    this.addRule('$path', function ($path: IPPPath) {
+      if (!$path) {
         throw new Error('the dict type must have a path param.');
       } else {
-        Path.every((item: IPPPathItem) => {
+        $path.every((item: IPPPathItem) => {
           if (item.depth > 0) {
             throw new Error(
               `the dict type of path "${item.fullpath}" is not based on rootDir.`,
@@ -23,13 +23,13 @@ export default {
     });
   },
   generate(): TMultiStr | Promise<TMultiStr> {
-    const { Path, Length } = this.params;
+    const { $path, $length } = this.params;
     const preload = config.preload as boolean | TStrList;
     let isSync = false;
     if (typeof preload === 'boolean') {
       isSync = preload === true;
     } else if (Array.isArray(config.preload)) {
-      isSync = Path.every((item: IPPPathItem) =>
+      isSync = $path.every((item: IPPPathItem) =>
         preload.includes(item.fullpath),
       );
     }
@@ -38,7 +38,7 @@ export default {
       return dict[makeRandom(0, dict.length - 1)];
     };
     const makeAll = (result: TStrList[]): TMultiStr => {
-      let count = Length ? makeRandom(Length.least, Length.most) : 1;
+      let count = $length ? makeRandom($length.least, $length.most) : 1;
       const one = count === 1;
       const last: TStrList = [];
       while (count--) {
@@ -46,7 +46,7 @@ export default {
       }
       return one ? last[0] : last;
     };
-    const lastPaths = Path.map((item: IPPPathItem) => {
+    const lastPaths = $path.map((item: IPPPathItem) => {
       return getRealPath(item);
     });
     if (isSync) {

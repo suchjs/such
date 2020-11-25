@@ -19,13 +19,13 @@ export default class ToString extends Mockit<string> {
     super(constructName);
   }
   public init(): void {
-    // Size Rule
-    this.addRule('Size', function (Size: IPPSize) {
-      if (!Size) {
+    // $size Rule
+    this.addRule('$size', function ($size: IPPSize) {
+      if (!$size) {
         return;
       }
       // https://www.regular-expressions.info/unicode.html#prop
-      const { range } = Size;
+      const { range } = $size;
       if (range.length < 2) {
         throw new Error(
           `The count param should have 2 params,but got ${range.length}`,
@@ -118,9 +118,9 @@ export default class ToString extends Mockit<string> {
   }
   public generate(): string {
     const params = this.params;
-    const { Length } = params;
-    const { least, most } = Length || { least: 1, most: 100 };
-    const { range } = ((params.Size as unknown) as IPPSize<number[]>) || {
+    const { $length } = params;
+    const { least, most } = $length || { least: 1, most: 100 };
+    const { range } = ((params.$size as unknown) as IPPSize<number[]>) || {
       range: [[32, 126]],
     };
     const index = range.length - 1;

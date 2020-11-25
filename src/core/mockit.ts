@@ -69,11 +69,11 @@ export default abstract class Mockit<T = unknown> {
     };
     this.init();
     // all type support modifiers
-    this.addRule('Func', function (Func: IPPFunc) {
-      if (!Func) {
+    this.addRule('$func', function ($func: IPPFunc) {
+      if (!$func) {
         return;
       }
-      const options = Func.options;
+      const options = $func.options;
       for (let i = 0, j = options.length; i < j; i++) {
         const item: IPPFuncOptions = options[i];
         const { name, params } = item;
@@ -106,8 +106,8 @@ export default abstract class Mockit<T = unknown> {
     const { configOptions } = this;
     // if set configOptions,validate config
     if (isNoEmptyObject(configOptions)) {
-      this.addRule('Config', function (Config: IPPConfig = {}) {
-        const last = deepCopy({}, Config) as IPPConfig;
+      this.addRule('$config', function ($config: IPPConfig = {}) {
+        const last = deepCopy({}, $config) as IPPConfig;
         Object.keys(configOptions).map((key: string) => {
           const cur: TMConfigRule = configOptions[key];
           let required = false;
@@ -436,9 +436,9 @@ export default abstract class Mockit<T = unknown> {
    * @memberof Mockit
    */
   private runFuncs(result: unknown, options: TSuchInject): unknown {
-    const { Config, Func } = this.params;
-    if (Func) {
-      const { queue, params: fnsParams, fns } = Func as IPPFunc;
+    const { $config, $func } = this.params;
+    if ($func) {
+      const { queue, params: fnsParams, fns } = $func as IPPFunc;
       for (let i = 0, j = queue.length; i < j; i++) {
         const name = queue[i];
         const fn = fns[i];
@@ -448,7 +448,7 @@ export default abstract class Mockit<T = unknown> {
           fnsParams[i],
           globalVars,
           result,
-          (Config as IPPConfig) || {},
+          ($config as IPPConfig) || {},
           getExpValue,
         ]);
         result = fn.apply(options, args);

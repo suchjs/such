@@ -19,7 +19,7 @@ export default class ToId extends Mockit<number> {
   }
   public generate(options: TSuchInject): number {
     const { dpath } = options;
-    const config = (this.params.Config || {}) as {
+    const config = (this.params.$config || {}) as {
       start?: number;
       step?: number;
     };

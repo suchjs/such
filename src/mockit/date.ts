@@ -21,11 +21,11 @@ export default class ToDate extends Mockit<string | Date> {
   }
   public init(): void {
     // range
-    this.addRule('Size', function (Size: IPPSize) {
-      if (!Size) {
+    this.addRule('$size', function ($size: IPPSize) {
+      if (!$size) {
         return;
       }
-      const { range } = Size;
+      const { range } = $size;
       if (range.length !== 2) {
         throw new Error(
           `the time range should supply 2 arguments,but got ${range.length}`,
@@ -47,30 +47,30 @@ export default class ToDate extends Mockit<string | Date> {
         }
       }
     });
-    // Format rule
-    this.addRule('Format', function (Format: IPPFormat) {
-      if (!Format) {
+    // $format rule
+    this.addRule('$format', function ($format: IPPFormat) {
+      if (!$format) {
         return {
           format: 'yyyy-mm-dd',
         };
       }
       // nothing
-      let { format } = Format;
+      let { format } = $format;
       format = decodeTrans(format.slice(1));
       return {
         format,
       };
     });
     // modifier
-    this.addModifier('Format', function (result: unknown, Format: IPPFormat) {
-      const { format } = Format;
+    this.addModifier('$format', function (result: unknown, $format: IPPFormat) {
+      const { format } = $format;
       return dateformat(format, result as Date);
     } as TMModifierFn<string>);
   }
   public generate(): Date {
-    const { Size } = this.params;
+    const { $size } = this.params;
     const range = (
-      Size ?? {
+      $size ?? {
         range: [
           strtotime('-10 year').getTime(),
           strtotime('+10 year').getTime(),

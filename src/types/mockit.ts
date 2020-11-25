@@ -22,13 +22,13 @@ export type TMConfigRule<T = TConstructor> = T | T[] | TMConfigFullRule;
 export type TMConfig<T = TConstructor> = TObj<TMConfigRule<T>>;
 export type TMParams = {
   [index: string]: unknown;
-  Config?: IPPConfig;
-  Func?: IPPFunc;
-  Format?: IPPFormat;
-  Path?: IPPPath;
-  Length?: IPPLength;
-  Size?: IPPSize;
-  Regexp?: IPPRegexp;
+  $config?: IPPConfig;
+  $func?: IPPFunc;
+  $format?: IPPFormat;
+  $path?: IPPPath;
+  $length?: IPPLength;
+  $size?: IPPSize;
+  $regexp?: IPPRegexp;
 };
 export type TMFactoryOptions = {
   param?: string;

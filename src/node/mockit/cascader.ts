@@ -2,7 +2,6 @@ import { TStrList } from '../../types/common';
 import { IPPPath, IPPPathItem } from '../../types/parser';
 import { getRefMocker, withPromise } from '../../helpers/utils';
 import store from '../../data/store';
-import { Mocker } from '../../core/such';
 import { getCascaderValue, getRealPath, loadJson } from '../utils';
 import { TSuchInject } from '../../types/instance';
 const { config, fileCache } = store;
@@ -18,29 +17,29 @@ export default {
     },
   },
   init(): void {
-    this.addRule('Path', (Path: IPPPath) => {
-      if (!Path) {
+    this.addRule('$path', ($path: IPPPath) => {
+      if (!$path) {
         throw new Error('the cascader type must have a path or ref.');
-      } else if (Path.length !== 1) {
+      } else if ($path.length !== 1) {
         throw new Error('the cascader type must have an only path or ref.');
       }
     });
   },
   generate(options: TSuchInject): TStrList | Promise<TStrList> {
     const { mocker } = options;
-    let { Path, Config } = this.params;
-    let lastPath = Path[0];
-    let handle = Config.handle;
+    let { $path, $config } = this.params;
+    let lastPath = $path[0];
+    let handle = $config.handle;
     const values: unknown[] = [];
     let loop = 1;
-    while (!Config.root && loop++ < 10) {
-      const refMocker = getRefMocker(lastPath, mocker as Mocker);
+    while (!$config.root && loop++ < 10) {
+      const refMocker = getRefMocker(lastPath, mocker);
       const { mockit } = refMocker;
       const { params } = mockit;
-      Path = params.Path;
-      Config = params.Config;
-      lastPath = Path[0];
-      handle = handle || Config.handle;
+      $path = params.$path;
+      $config = params.$config;
+      lastPath = $path[0];
+      handle = handle || $config.handle;
       values.unshift(refMocker.result);
     }
     handle = handle || getCascaderValue;
@@ -49,7 +48,7 @@ export default {
     if (typeof preload === 'boolean') {
       isSync = preload === true;
     } else if (Array.isArray(config.preload)) {
-      isSync = (Path as IPPPath).every((item: IPPPathItem) =>
+      isSync = ($path as IPPPath).every((item: IPPPathItem) =>
         preload.includes(item.fullpath),
       );
     }

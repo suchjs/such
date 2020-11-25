@@ -9,24 +9,24 @@ export default class ToRegexp extends Mockit<string> {
   }
   public init(): void {
     // regexp rule
-    this.addRule('Regexp', function (Regexp: IPPRegexp) {
-      if (!Regexp) {
+    this.addRule('$regexp', function ($regexp: IPPRegexp) {
+      if (!$regexp) {
         throw new Error(`the regexp type must has a regexp rule.`);
       }
-      const { rule } = Regexp;
+      const { rule } = $regexp;
       if (!regexpRule.test(rule)) {
         throw new Error('wrong regexp expression');
       }
     });
     // config rule
-    this.addRule('Config', function (Config: TObj) {
-      if (!Config) {
+    this.addRule('$config', function ($config: TObj) {
+      if (!$config) {
         return;
       }
       const result: TObj = {};
       const rule = /(.?)\|/g;
-      Object.keys(Config).forEach((key) => {
-        const value = Config[key];
+      Object.keys($config).forEach((key) => {
+        const value = $config[key];
         if (typeof value === 'string') {
           let match: TMatchResult | null = null;
           let segs: string[] = [];
@@ -56,10 +56,10 @@ export default class ToRegexp extends Mockit<string> {
   }
   public generate(): string {
     let { instance } = this;
-    const { Config, Regexp } = this.params;
+    const { $config, $regexp } = this.params;
     if (!instance) {
-      instance = this.instance = new RegexpParser(Regexp.rule, {
-        namedGroupConf: (Config as NamedGroupConf) || {},
+      instance = this.instance = new RegexpParser($regexp.rule, {
+        namedGroupConf: ($config as NamedGroupConf) || {},
       });
     }
     return instance.build();

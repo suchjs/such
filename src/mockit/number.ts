@@ -29,18 +29,18 @@ export default class ToNumber extends Mockit<number> {
         type: Number,
       },
     };
-    // Size Rule
-    this.addRule('Size', function (Size: IPPSize) {
-      if (!Size) {
+    // $size Rule
+    this.addRule('$size', function ($size: IPPSize) {
+      if (!$size) {
         return;
       }
-      const { range } = Size;
+      const { range } = $size;
       const size = range.length;
       if (size !== 2) {
         throw new Error(
           size < 2
-            ? `the Size param must have the min and the max params`
-            : `the Size param length should be 2,but got ${size}`,
+            ? `the $size param must have the min and the max params`
+            : `the $size param length should be 2,but got ${size}`,
         );
       }
       let [min, max] = range;
@@ -72,27 +72,27 @@ export default class ToNumber extends Mockit<number> {
         range: [lastMin, lastMax],
       };
     });
-    // Format rule
-    this.addRule('Format', function (Format: IPPFormat) {
-      if (!Format) {
+    // $format rule
+    this.addRule('$format', function ($format: IPPFormat) {
+      if (!$format) {
         return;
       }
-      const { format } = Format;
+      const { format } = $format;
       if (!formatRule.test(format)) {
         throw new Error(`Wrong format rule(${format})`);
       }
     });
-    // Format Modifier
-    this.addModifier('Format', function (result: number, Format: IPPFormat) {
-      return printf(Format.format, result);
+    // $format Modifier
+    this.addModifier('$format', function (result: number, $format: IPPFormat) {
+      return printf($format.format, result);
     } as TMModifierFn<number>);
   }
   public generate(): number {
-    const { Size, Config } = this.params;
+    const { $size, $config } = this.params;
     let result: number;
-    if (Size) {
-      const { range } = Size;
-      const step = Config && (Config.step as number);
+    if ($size) {
+      const { range } = $size;
+      const step = $config && ($config.step as number);
       const [min, max] = range as number[];
       if (step) {
         const minPlus = 0;
