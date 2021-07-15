@@ -2,53 +2,161 @@ import { TFunc, TObj } from '../types/common';
 import { TFieldPath } from './pathmap';
 import { IPPPathItem } from '../types/parser';
 import { Mocker } from '../core/such';
-export const encodeRegexpChars = (chars: string): string => {
-  return chars.replace(/([()\[{^$.*+?\/\-])/g, '\\$1');
-};
+/**
+ *
+ * @param target [unkown]
+ * @returns [string] the type of the target
+ */
 export const typeOf = (target: unknown): string => {
   return Object.prototype.toString.call(target).slice(8, -1);
 };
+
+/**
+ *
+ * @param target [unkown]
+ * @returns [boolean] check if the target is a function
+ */
 export const isFn = <T = TFunc>(target: unknown): target is T =>
   typeof target === 'function';
 
+/**
+ *
+ * @param target [unkown]
+ * @returns [boolean] check if the target is an array
+ */
+export const isArray = <T = unknown[]>(target: unknown): target is T => {
+  return Array.isArray(target);
+};
+
+/**
+ *
+ * @param target [unkown]
+ * @returns [boolean] check if the target is a plain object
+ */
+export const isObject = (target: unknown): target is TObj =>
+  typeOf(target) === 'Object';
+
+/**
+ *
+ * @param target [unkown]
+ * @returns [boolean] check if the target is a plain object and has no keys
+ */
+export const isNoEmptyObject = (target: unknown): boolean => {
+  return isObject(target) && Object.keys(target).length > 0;
+};
+
+/**
+ *
+ * @param target [unkown]
+ * @returns [boolean] check if the target is a promise object
+ */
+export const isPromise = (target: unknown): boolean => {
+  return (
+    typeOf(target) === 'Promise' || (isObject(target) && isFn(target.then))
+  );
+};
+
+/**
+ *
+ * @param chars [string] regexp instance context string
+ * @returns [string] escaped context string
+ */
+export const encodeRegexpChars = (chars: string): string => {
+  return chars.replace(/([()\[{^$.*+?\/\-])/g, '\\$1');
+};
+
+/**
+ *
+ * @param min [number] the min of the random number
+ * @param max [number] the max of the random number
+ * @returns [number] a random number between min and max
+ */
 export const makeRandom = (min: number, max: number): number => {
   if (min === max) {
     return min;
-  } else {
-    return min + Math.floor(Math.random() * (max + 1 - min));
   }
+  return min + Math.floor(Math.random() * (max + 1 - min));
 };
+
+/**
+ *
+ * @param begin [character] the begin character
+ * @param end [character] the end character
+ * @param args [characters] more character begin and end pairs
+ * @returns [character[]] all characters between begin and end
+ */
 export const makeStrRangeList = (
-  first?: string,
-  last?: string,
+  begin?: string,
+  end?: string,
   ...args: string[]
 ): string[] => {
-  if (!first || !last) {
+  if (!begin || !end) {
     return [];
   }
-  const min = first.charCodeAt(0);
-  const max = last.charCodeAt(0);
+  const min = begin.charCodeAt(0);
+  const max = end.charCodeAt(0);
   const results = [];
-  let i = 0;
-  while (min + i <= max) {
-    results.push(String.fromCharCode(min + i));
-    i++;
+  let cur = min;
+  while (cur <= max) {
+    results.push(String.fromCharCode(cur++));
   }
   return args.length > 0 && args.length % 2 === 0
     ? results.concat(makeStrRangeList(...args))
     : results;
 };
+
+/**
+ *
+ * @param start [number] the range of the start
+ * @param end [number] the range of the end
+ * @param step [number] the step of the range
+ * @returns number[]
+ */
+export const range = (start: number, end: number, step = 1): number[] => {
+  const length = Math.floor((end - start) / step) + 1;
+  return Array.from(
+    {
+      length,
+    },
+    (_: undefined, index: number) => {
+      return start + index * step;
+    },
+  );
+};
+
+/**
+ *
+ * @returns [boolean] return random true or false
+ */
 export const isOptional = (): boolean => {
   return Math.random() >= 0.5;
 };
+
+/**
+ *
+ * @param target [string] the string need be capitalized
+ * @returns [string]
+ */
 export const capitalize = (target: string): string => {
   return target && target.length
     ? target.charAt(0).toUpperCase() + target.slice(1)
     : '';
 };
+
+/**
+ *
+ * @param target [string]
+ * @returns [string] translate back the translate characters
+ */
 export const decodeTrans = (target: string): string => {
   return target.replace(/\\(.)/g, '$1');
 };
+
+/**
+ *
+ * @param exp [string] a javascript expression
+ * @returns [unkown|never]
+ */
 export const getExp = (exp: string): unknown | never => {
   const fn = new Function('', `return ${exp}`);
   try {
@@ -57,6 +165,12 @@ export const getExp = (exp: string): unknown | never => {
     throw new Error(`wrong expression of "${exp}".reason:${e}`);
   }
 };
+
+/**
+ *
+ * @param args [unkown[]]
+ * @returns [unkown|never]
+ */
 export const getExpValue = (...args: unknown[]): unknown | never => {
   const param = '__$__';
   const value = args.pop();
@@ -69,18 +183,12 @@ export const getExpValue = (...args: unknown[]): unknown | never => {
     }
   }
 };
-export const range = (start: number, end: number, step = 1): number[] => {
-  const count = Math.floor((end - start) / step) + 1;
-  return Array.from(new Array(count), (_: undefined, index: number) => {
-    return start + index * step;
-  });
-};
 
 function deepCopyHandle<T>(target: T, copy: T): void {
   let keys: Array<keyof T> = [];
   if (isObject(copy)) {
     keys = Object.keys(copy) as Array<keyof T>;
-  } else if (Array.isArray(copy)) {
+  } else if (isArray(copy)) {
     keys = range(0, copy.length - 1) as Array<keyof T>;
   }
   keys.map((key) => {
@@ -101,6 +209,12 @@ function deepCopyHandle<T>(target: T, copy: T): void {
   });
 }
 
+/**
+ *
+ * @param target [any]
+ * @param args [unkown[]]
+ * @returns [unkown] deep copy the nest of args into target
+ */
 export const deepCopy = <T = unknown>(target: T, ...args: unknown[]): T => {
   let isObj = false;
   let isArr = false;
@@ -114,15 +228,13 @@ export const deepCopy = <T = unknown>(target: T, ...args: unknown[]): T => {
   }
   return target;
 };
-export const isNoEmptyObject = (target: unknown): boolean => {
-  return typeOf(target) === 'Object' && Object.keys(target).length > 0;
-};
-export const isPromise = (target: unknown): boolean => {
-  return (
-    typeOf(target) === 'Promise' ||
-    (typeOf(target) === 'Object' && isFn((target as TObj).then))
-  );
-};
+
+/**
+ *
+ * @param obj [object]
+ * @param keys [string[]]
+ * @returns [object] get the pointed `keys` of the `obj` and remove them from `obj`
+ */
 export const shifTObj = <T = TObj>(
   obj: T,
   keys: Array<keyof T>,
@@ -134,6 +246,12 @@ export const shifTObj = <T = TObj>(
   });
   return res;
 };
+
+/**
+ *
+ * @param res [array]
+ * @returns [Array<Promise>] translate the array of `res` into array of `Promise<res>`
+ */
 export const withPromise = <T = unknown>(res: T[]): Array<Promise<T> | T> => {
   let last: Array<Promise<T> | T> = [];
   let hasPromise = false;
@@ -157,14 +275,21 @@ export const withPromise = <T = unknown>(res: T[]): Array<Promise<T> | T> => {
   });
   return last;
 };
+
+/**
+ *
+ * @param first [TFieldPath]
+ * @param second [TFieldPath]
+ * @returns [boolean] check if two paths has a relation of parent and sub child
+ */
 export const isRelativePath = (
   first: TFieldPath,
   second: TFieldPath,
 ): boolean => {
-  if (first.length > second.length) {
+  const len = first.length;
+  if (len > second.length) {
     return isRelativePath(second, first);
   }
-  const len = first.length;
   let i = 0;
   while (i < len) {
     const cur = first[i].toString();
@@ -176,6 +301,13 @@ export const isRelativePath = (
   }
   return i === len;
 };
+
+/**
+ *
+ * @param item [IPPPathItem]
+ * @param mocker [Mocker]
+ * @returns [Mocker|never] get the reference mocker by path
+ */
 export const getRefMocker = (
   item: IPPPathItem,
   mocker: Mocker,
@@ -212,5 +344,3 @@ export const getRefMocker = (
     );
   }
 };
-export const isObject = (target: unknown): target is TObj =>
-  typeOf(target) === 'Object';
