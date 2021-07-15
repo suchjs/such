@@ -51,7 +51,7 @@ export default abstract class Mockit<T = unknown> {
         Object.keys(define).map((key) => {
           const value = define[key];
           // force to add defines
-          const self = (this as unknown) as TObj;
+          const self = this as unknown as TObj;
           if (typeOf(value) === 'Object') {
             self[key] = deepCopy({}, value);
           } else {
@@ -442,9 +442,9 @@ export default abstract class Mockit<T = unknown> {
       for (let i = 0, j = queue.length; i < j; i++) {
         const name = queue[i];
         const fn = fns[i];
-        const args: unknown[] = ((globalFns[name]
-          ? [globalFns[name]]
-          : []) as unknown[]).concat([
+        const args: unknown[] = (
+          (globalFns[name] ? [globalFns[name]] : []) as unknown[]
+        ).concat([
           fnsParams[i],
           globalVars,
           result,

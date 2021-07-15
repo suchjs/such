@@ -197,11 +197,9 @@ function deepCopyHandle<T>(target: T, copy: T): void {
     const fromType = typeOf(from);
     const toType = typeOf(to);
     if (fromType === 'Object' || fromType === 'Array') {
-      target[key] = (toType === fromType
-        ? target[key]
-        : fromType === 'Object'
-        ? {}
-        : []) as typeof from;
+      target[key] = (
+        toType === fromType ? target[key] : fromType === 'Object' ? {} : []
+      ) as typeof from;
       deepCopy(target[key], from);
     } else {
       target[key] = from;
@@ -306,16 +304,18 @@ export const isRelativePath = (
  *
  * @param item [IPPPathItem]
  * @param mocker [Mocker]
- * @returns [Mocker|never] get the reference mocker by path
+ * @returns
  */
-export const getRefMocker = (
+export const getPathInfo = (
   item: IPPPathItem,
   mocker: Mocker,
-): Mocker | never => {
+): {
+  lastPath: TFieldPath;
+  isExists: boolean;
+} => {
   let isExists = true;
   let lastPath: TFieldPath;
-  const { root, path } = mocker;
-  const { instances } = root;
+  const { path } = mocker;
   if (!item.relative) {
     lastPath = item.path;
   } else {
@@ -325,6 +325,25 @@ export const getRefMocker = (
       lastPath = path.slice(0, -(1 + item.depth)).concat(item.path);
     }
   }
+  return {
+    lastPath,
+    isExists,
+  };
+};
+
+/**
+ *
+ * @param item [IPPPathItem]
+ * @param mocker [Mocker]
+ * @returns [Mocker|never] get the reference mocker by path
+ */
+export const getRefMocker = (
+  item: IPPPathItem,
+  mocker: Mocker,
+): Mocker | never => {
+  const { root, path } = mocker;
+  const { instances } = root;
+  const { isExists, lastPath } = getPathInfo(item, mocker);
   let refMocker: Mocker;
   if (isExists && (refMocker = instances.get(lastPath))) {
     if (isRelativePath(path, lastPath)) {

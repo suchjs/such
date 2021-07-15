@@ -51,9 +51,7 @@ export class Mocker {
    * @returns
    * @memberof Mocker
    */
-  public static parseKey(
-    key: string,
-  ): {
+  public static parseKey(key: string): {
     key: string;
     config: TObj;
   } {
@@ -133,8 +131,8 @@ export class Mocker {
     const { instances, datas } = this.root;
     const hasLength = !isNaN(min);
     this.dataType = dataType;
-    if (Array.isArray(target)) {
-      const totalIndex = target.length - 1;
+    if (dataType === 'array') {
+      const totalIndex = (target as unknown[]).length - 1;
       const getInstance = (mIndex?: number): Mocker => {
         mIndex =
           typeof mIndex === 'number' ? mIndex : makeRandom(0, totalIndex);
@@ -142,7 +140,7 @@ export class Mocker {
         let instance = instances.get(nowPath);
         if (!(instance instanceof Mocker)) {
           instance = new Mocker({
-            target: target[mIndex],
+            target: (target as unknown[])[mIndex],
             path: nowPath,
             parent: this,
           });
@@ -152,9 +150,11 @@ export class Mocker {
       };
       if (!hasLength) {
         // e.g {"a":["b","c"]},orignal array type
-        const mockers = target.map((_: unknown, index: number) => {
-          return getInstance(index);
-        });
+        const mockers = (target as unknown[]).map(
+          (_: unknown, index: number) => {
+            return getInstance(index);
+          },
+        );
         this.mockFn = (dpath: TFieldPath) => {
           const result: unknown[] = [];
           mockers.map((instance: Mocker, index: number) => {
@@ -406,9 +406,8 @@ export default class Such {
       aliasTypes.push(long);
     }
   }
+
   /**
-   *
-   *
    * @static
    * @param {TSuchSettings} config
    * @memberof Such
@@ -605,7 +604,6 @@ export default class Such {
   public readonly mockits: PathMap<TObj>;
   public readonly datas: PathMap<unknown>;
   public readonly paths: PathMap<TFieldPath>;
-  protected struct: TObj;
   private initail = false;
   constructor(target: unknown, options?: IAsOptions) {
     this.target = target;
@@ -629,8 +627,10 @@ export default class Such {
    */
   public a(): unknown {
     if (!this.initail) {
+      // set initial true
       this.initail = true;
     } else {
+      // clear the data
       this.datas.clear();
     }
     return this.mocker.mock([]);
