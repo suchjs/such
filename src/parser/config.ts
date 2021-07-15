@@ -4,11 +4,19 @@ import { decodeTrans, getExp } from '../helpers/utils';
 import { AParser } from '../core/parser';
 
 const parser: IParserFactory = {
+  /**
+   * config syntax: #[a = 1, b = 2]
+   */
   config: {
     startTag: ['#['],
     endTag: [']'],
     separator: ',',
   },
+  /**
+   *
+   * @param this [APaser]
+   * @returns [IPPConfig] a config object
+   */
   parse(this: AParser): IPPConfig | never {
     const { params } = this.info();
     const config: IPPConfig = {};
@@ -53,6 +61,9 @@ const parser: IParserFactory = {
     }
     return config;
   },
+  /**
+   * config won't frozen
+   */
   setting: {
     frozen: false,
   },

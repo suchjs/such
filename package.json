@@ -1,14 +1,16 @@
 {
   "name": "suchjs",
   "version": "0.3.0",
-  "description": "An extendable and declarative mock tool, make build the structured data what you want easily.",
+  "description": "A powerful javascript mocking library, written in typescript.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "author": "jxz_211@163.com",
   "keywords": [
     "mock",
     "random",
-    "extendable",
+    "javascript",
+    "typescript",
+    "string",
     "such",
     "suchjs"
   ],
@@ -29,8 +31,6 @@
     "prettier": "^2.1.2",
     "ts-jest": "^26.4.3",
     "ts-loader": "^8.0.7",
-    "ts-node": "^9.0.0",
-    "tsconfig-paths": "^3.6.0",
     "typescript": "^4.0.5",
     "webpack": "^4.26.0",
     "webpack-cli": "^3.1.2"
@@ -39,7 +39,6 @@
     "start": "tsc && node lib/index.js",
     "test": "jest",
     "lint": "eslint 'src/**/*.{ts,js}'",
-    "local": "ts-node -r tsconfig-paths/register local/test.ts",
     "build": "rm -rf ./lib/* && npm run lint && tsc && npm run build:web",
     "build:web": "webpack --progress --mode=\"production\" && cp ./dist/such.$npm_package_version.min.js ./dist/such.min.js",
     "coverage": "jest --coverage && coveralls < coverage/lcov.info",
@@ -47,7 +46,7 @@
   },
   "dependencies": {
     "nprintf": "^1.0.1",
-    "reregexp": "^1.1.2"
+    "reregexp": "^1.5.0"
   },
   "repository": {
     "type": "git",

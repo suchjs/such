@@ -12,14 +12,18 @@ export interface IParserConstructor extends IParserConfig {
 }
 /**
  * Abstract Property Parser
- * 属性解析器抽象类
  * @interface AParser
  */
 export abstract class AParser {
+  // params
   public params: TStrList;
+  // patterns
   public patterns: TMatchResult[] = [];
+  // tags
   public tags: Tags;
+  // code
   public code = '';
+  // setting
   public setting: TObj = {
     frozen: true,
   };
@@ -28,18 +32,14 @@ export abstract class AParser {
     this.init();
   }
   /**
-   *
-   *
-   * @returns
+   * @returns AParser instance
    * @memberof AParser
    */
   public init(): AParser {
     return this;
   }
   /**
-   *
-   *
-   * @returns
+   * @returns information data of the parser
    * @memberof AParser
    */
   public info(): Pick<AParser, 'tags' | 'params' | 'code' | 'patterns'> {
@@ -52,8 +52,6 @@ export abstract class AParser {
     };
   }
   /**
-   *
-   *
    * @param {string} code
    * @param {Tags} tags
    * @memberof AParser
@@ -120,16 +118,12 @@ export abstract class AParser {
     }
   }
   /**
-   *
-   *
    * @abstract
    * @returns {Object|never}
    * @memberof AParser
    */
   public abstract parse(): unknown | never;
   /**
-   *
-   *
    * @protected
    * @param {string} err
    * @returns {never}
@@ -156,8 +150,7 @@ type TParseUntilResult = {
   total: number;
 };
 /**
- * dispatcher: design which parser should use when meat the character.
- * 调配器：当遇到代码片段时，决定使用哪个解析器来解析
+ * dispatcher: detect the characters and decide which parser should be used.
  * @export
  * @abstract
  * @class Dispatcher
@@ -169,8 +162,7 @@ export class Dispatcher {
   protected readonly splitor: string = confSplitor;
   protected instances: IParserInstances = {};
   /**
-   * add
-   *
+   * add all parsers
    * @param {string} name
    * @param {ParserConfig} config
    * @param {()=>void} parse
@@ -249,14 +241,16 @@ export class Dispatcher {
       const hasEnd = endTag.length;
       const endWith = `(?=${encodeSplitor}|$)`;
       const startWith = `(?:${startRuleSegs.join('|')})`;
-      let context: string;
       if (hasEnd) {
         const endFilter = endRuleSegs.join('|');
-        context = `^${startWith}(?:\\\\.|[^\\\\](?!${endFilter})|[^\\\\])+?(?:${endFilter}${endWith})`;
+        rule = new RegExp(
+          `^${startWith}(?:\\\\.|[^\\\\](?!${endFilter})|[^\\\\])+?(?:${endFilter}${endWith})`,
+        );
       } else {
-        context = `^${startWith}(?:\\\\.|[^\\\\${splitor}])+?${endWith}`;
+        rule = new RegExp(
+          `^${startWith}(?:\\\\.|[^\\\\${splitor}])+?${endWith}`,
+        );
       }
-      rule = new RegExp(context);
     }
     // make sure startTag and endTag combine is unique, and the pair matched max is in the start.
     this.tagPairs = this.tagPairs.concat(pairs).sort((a, b) => {
@@ -330,7 +324,6 @@ export class Dispatcher {
   }
   /**
    * get a parser's instance by name
-   * 获取某个名称的parser实例
    * @protected
    * @param {string} name
    * @returns
@@ -438,8 +431,6 @@ export class Dispatcher {
     }
   }
   /**
-   *
-   *
    * @protected
    * @param {string} err
    * @returns {never}

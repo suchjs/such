@@ -87,6 +87,10 @@ export default class ToNumber extends Mockit<number> {
       return printf($format.format, result);
     } as TMModifierFn<number>);
   }
+  /**
+   * generate a random number
+   * @returns [number]
+   */
   public generate(): number {
     const { $size, $config } = this.params;
     let result: number;
