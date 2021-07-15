@@ -1,12 +1,6 @@
 import { PrototypeMethodNames } from '../types/common';
 import { capitalize } from './utils';
-/*1.形如2016/06/01,2016-06-01,2016.06.01
-2.特殊日期
-3.形如20160601 201661
-4.形如06/01/2016 06/01 06/01/16 月/日/年
-5.形如[June 1st] June 1st,2016,June.1,Jun 1st等
-6.形如+1 day,-1 week,1 week ago
-*/
+
 interface ISpecialDayAdd {
   today: number;
   tomorrow: number;
@@ -25,9 +19,11 @@ interface DateHashResult extends IDateHashInterface<number> {
   date: number;
   fullYear: number;
 }
+
 /**
  *
- * @param date
+ * @param date [Date|string|number]
+ * @returns [Date] always return a Date object from the date parameter
  */
 const fixDate = (date?: Date | string | number): Date => {
   if (typeof date === 'undefined') {
@@ -38,11 +34,12 @@ const fixDate = (date?: Date | string | number): Date => {
   }
   return new Date(date);
 };
+
 /**
  *
- * @param year
- * @param month
- * @param day
+ * @param year [string]
+ * @param month [string]
+ * @param day [string]
  */
 const makeDate = (
   year: string | null,
@@ -54,11 +51,11 @@ const makeDate = (
   year = year || fullYear;
   month = month || (localDate.getMonth() + 1).toString();
   day = day || localDate.getDate().toString();
-  year =
-    (year.length < 4 ? fullYear.slice(0, fullYear.length - year.length) : '') +
-    year;
-  const strDate = [year, month, day].join('/') + ' 00:00:00';
-  return new Date(strDate);
+  const yearLen = year.length;
+  if (yearLen < 4) {
+    year = fullYear.slice(0, fullYear.length - yearLen) + year;
+  }
+  return new Date(`${year}/${month}/${day} 00:00:00`);
 };
 /**
  *
@@ -69,6 +66,12 @@ const strToDate = (
   dateStr: string,
   baseDate?: Date | string | number,
 ): Date | never => {
+  // if dateStr is empty, return begin of today
+  const localDate = new Date();
+  if (dateStr === '') {
+    localDate.setHours(0, 0, 0, 0);
+    return localDate;
+  }
   const mS: string[] = [
     'jan',
     'feb',
@@ -97,32 +100,30 @@ const strToDate = (
     'november',
     'december',
   ];
+  /**
+  1. r1|format: 2016/06/01,2016-06-01,2016.06.01
+  2. r2|format: special datetime (today|yeasterday|tomorrow)
+  3. r3|format: 20160601 201661
+  4. r4|format: 06/01/2016 06/01 06/01/16 month/date/year
+  5. r5|format: [June 1st] June 1st,2016,June.1,Jun 1st ect.
+  6. r6&r6e|format: +1 day,-1 week,1 week ago
+  */
+  // match the r1 format
   const r1 = /^(\d{4})([-\/.])(\d{1,2})\2(\d{1,2})$/;
-  const r2 = /^(today|yesterday|tomorrow)$/;
-  const r3 = /^(\d{4})(\d{1,2})(\d{1,2})$/;
-  const r4 = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4})?)$/;
-  const r5 = new RegExp(
-    '^(' +
-      mS.concat(mL).join('|') +
-      ')(?:\\s+|\\.)(?:(([13]?1)(?:st)?|([12]?2)(?:nd)?|([12]?3)(?:rd)?|([12]0|[12]?[4-9])(?:th)?|(30)th))(?:\\s*,\\s*(\\d{2}|\\d{4}))?$',
-  );
-  const r6 = /^(([+-]?\d+)\s+(day|month|week|year)s?(\s+(?!$)|))+?(\s+ago)?$/;
-  const r6e = /([+-]?\d+)\s+(day|month|week|year)s?/g;
-  let match;
-  const localDate = new Date();
   dateStr = dateStr.toLowerCase();
-  if (dateStr === '') {
-    localDate.setHours(0, 0, 0, 0);
-    return localDate;
-  } else if ((match = dateStr.match(r1))) {
-    return makeDate(match[1], match[3], match[4]);
-  } else if ((match = dateStr.match(r2))) {
+  let matchs;
+  if ((matchs = dateStr.match(r1))) {
+    return makeDate(matchs[1], matchs[3], matchs[4]);
+  }
+  // match the r2 format
+  const r2 = /^(today|yesterday|tomorrow)$/;
+  if ((matchs = dateStr.match(r2))) {
     const addNum: ISpecialDayAdd = {
       today: 0,
       tomorrow: 1,
       yesterday: -1,
     };
-    const key: keyof ISpecialDayAdd = match[1] as keyof ISpecialDayAdd;
+    const key: keyof ISpecialDayAdd = matchs[1] as keyof ISpecialDayAdd;
     if (baseDate) {
       baseDate = fixDate(baseDate);
       if (addNum[key]) {
@@ -140,15 +141,28 @@ const strToDate = (
       }
       return makeDate(null, null, null);
     }
-  } else if ((match = dateStr.match(r3))) {
-    const args = match.slice(1, 4) as Parameters<typeof makeDate>;
+  }
+  // match the r3 format
+  const r3 = /^(\d{4})(\d{1,2})(\d{1,2})$/;
+  if ((matchs = dateStr.match(r3))) {
+    const args = matchs.slice(1, 4) as Parameters<typeof makeDate>;
     return makeDate(...args);
-  } else if ((match = dateStr.match(r4))) {
-    return makeDate(match[4], match[1], match[2]);
-  } else if ((match = dateStr.match(r5))) {
-    let month = match[1];
-    const day = match[3];
-    const year = match[8];
+  }
+  // match the r4 format
+  const r4 = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4})?)$/;
+  if ((matchs = dateStr.match(r4))) {
+    return makeDate(matchs[4], matchs[1], matchs[2]);
+  }
+  // match the r5 format
+  const r5 = new RegExp(
+    '^(' +
+      mS.concat(mL).join('|') +
+      ')(?:\\s+|\\.)(?:(([13]?1)(?:st)?|([12]?2)(?:nd)?|([12]?3)(?:rd)?|([12]0|[12]?[4-9])(?:th)?|(30)th))(?:\\s*,\\s*(\\d{2}|\\d{4}))?$',
+  );
+  if ((matchs = dateStr.match(r5))) {
+    let month = matchs[1];
+    const day = matchs[3];
+    const year = matchs[8];
     const atMS = mS.indexOf(month);
     const atML = mL.indexOf(month);
     if (atMS > -1) {
@@ -157,9 +171,12 @@ const strToDate = (
       month = (atML + 1).toString();
     }
     return makeDate(year, month, day);
-  } else if ((match = dateStr.match(r6))) {
-    const needReverse = match[5] ? '-' : '';
-    let group = null;
+  }
+  // match the r6 format
+  const r6 = /^(([+-]?\d+)\s+(day|month|week|year)s?(\s+(?!$)|))+?(\s+ago)?$/;
+  const r6e = /([+-]?\d+)\s+(day|month|week|year)s?/g;
+  if ((matchs = dateStr.match(r6))) {
+    const needReverse = matchs[5] ? '-' : '';
     const info: TDateHashInfo = {
       year: [],
       month: [],
@@ -174,6 +191,7 @@ const strToDate = (
       date: 0,
       fullYear: 0,
     };
+    let group = null;
     while ((group = r6e.exec(dateStr)) !== null) {
       const type = group[2];
       const num = group[1];
@@ -215,9 +233,16 @@ const strToDate = (
     }
     return lastDate;
   } else {
+    // doesn't match any of the patterns
     throw new Error('can not parse the date!');
   }
 };
+
+/**
+ *
+ * @param date [unkown]
+ * @returns [Date|never] return a Date object from the date
+ */
 export const strtotime = (date: unknown): Date | never => {
   if (!isNaN(date as number)) {
     return new Date(+date);
@@ -240,6 +265,7 @@ export const strtotime = (date: unknown): Date | never => {
     throw new Error(`invalid date:${date}`);
   }
 };
+
 const dayNames = [
   'Sunday',
   'Monday',
@@ -249,6 +275,7 @@ const dayNames = [
   'Friday',
   'Saturday',
 ];
+
 const monthNames = [
   'January',
   'February',
@@ -263,6 +290,7 @@ const monthNames = [
   'November',
   'December',
 ];
+
 const formatter: TFormatter & ThisType<Date> = {
   d(): string {
     return this.getDate();
@@ -376,6 +404,13 @@ type TFormatter = {
 const zerofill = (fnName: keyof TFormatter, date: Date): string => {
   return formatter[fnName].call(date).toString().padStart(2, '0');
 };
+
+/**
+ *
+ * @param fmt [string] the format of the date
+ * @param date [Date] the Date object
+ * @returns [string] return the formatted date string of the `date` paramter
+ */
 export const dateformat = (fmt: string, date: Date): string => {
   return fmt.replace(/[A-Za-z]*/g, (type: keyof TFormatter) => {
     if (formatter[type]) {

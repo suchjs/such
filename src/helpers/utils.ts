@@ -39,7 +39,7 @@ export const isObject = (target: unknown): target is TObj =>
 /**
  *
  * @param target [unkown]
- * @returns [boolean] check if the target is a plain object and has no keys
+ * @returns [boolean] check if the target is a plain object and not empty
  */
 export const isNoEmptyObject = (target: unknown): boolean => {
   return isObject(target) && Object.keys(target).length > 0;
