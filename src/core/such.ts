@@ -5,7 +5,7 @@ import { mockitList } from '../data/mockit';
 import Mockit, { BaseExtendMockit } from './mockit';
 import Parser from '../data/parser';
 import store from '../data/store';
-import { TFunc, TObj } from '../types/common';
+import { TFunc, TObj, TPath } from '../types/common';
 import { TMClass, TMClassList, TMFactoryOptions } from '../types/mockit';
 import { TNodeSuch, TSuchSettings } from '../types/node';
 import { IParserConfig } from '../types/parser';
@@ -13,7 +13,7 @@ import {
   IAsOptions,
   IMockerKeyRule,
   IMockerOptions,
-  IPromiseResult,
+  IPreloadPromises,
   TSuchInject,
 } from '../types/instance';
 const {
@@ -51,7 +51,9 @@ export class Mocker {
    * @returns
    * @memberof Mocker
    */
-  public static parseKey(key: string): {
+  public static parseKey(
+    key: string,
+  ): {
     key: string;
     config: TObj;
   } {
@@ -99,7 +101,8 @@ export class Mocker {
   public readonly isRoot: boolean;
   public readonly mockFn: (dpath: TFieldPath) => unknown;
   public readonly mockit: Mockit;
-  public readonly promises: IPromiseResult[] = [];
+  private preloads: IPreloadPromises = {};
+  private onValued: [];
   /**
    * Creates an instance of Mocker.
    * @param {IMockerOptions} options
@@ -336,6 +339,24 @@ export class Mocker {
       throw new Error('This mocker is not the mockit type.');
     }
   }
+
+  /**
+   * @param file [TPath]
+   * @returns [boolean] check if the preload file has already added
+   */
+  public isPreloadExists(file: TPath): boolean {
+    return this.preloads.hasOwnProperty(file);
+  }
+
+  /**
+   *
+   * @param file [TPath]
+   * @param promise [boolean] add a preload task
+   */
+  public addPreload(file: TPath, promise: Promise<unknown>): void {
+    this.preloads[file] = promise;
+  }
+
   /**
    *
    *
@@ -344,37 +365,24 @@ export class Mocker {
    * @memberof Mocker
    */
   public mock(dpath: TFieldPath): unknown {
-    const { optional } = this.config;
-    if (this.isRoot && optional && isOptional()) {
-      return;
-    }
-    const result = this.mockFn(dpath);
     if (this.isRoot) {
-      if (this.promises.length) {
-        const queues: Array<Promise<unknown>> = [];
-        const dpaths: TFieldPath[] = [];
-        this.promises.map((item: IPromiseResult) => {
-          const { result: promise, dpath: curDPath } = item;
-          queues.push(promise);
-          dpaths.push(curDPath);
-        });
+      const { optional } = this.config;
+      if (optional && isOptional()) {
+        return;
+      }
+      if (isNoEmptyObject(this.preloads)) {
+        const preloads: Array<Promise<unknown>> = Object.values(this.preloads);
         return (async () => {
-          const results: unknown[] = await Promise.all(queues);
-          results.map((res: unknown, i: number) => {
-            this.datas.set(dpaths[i], res);
-          });
-          return (this.result = this.datas.get([]));
+          // load all files
+          await Promise.all(preloads);
+          // clear preloads
+          this.preloads = {};
+          // return result
+          return (this.result = this.mockFn(dpath));
         })();
       }
-    } else {
-      if (utils.isPromise(result)) {
-        this.root.promises.push({
-          dpath,
-          result: result as Promise<unknown>,
-        });
-      }
     }
-    return (this.result = result);
+    return (this.result = this.mockFn(dpath));
   }
 }
 /**
@@ -440,7 +448,7 @@ export default class Such {
       const fnName = fnHashs.hasOwnProperty(key) ? fnHashs[key] : key;
       Object.keys(conf).map((name: keyof typeof conf) => {
         const fn = such[fnName as keyof typeof Such] as TFunc;
-        const args = Array.isArray(conf[name])
+        const args = utils.isArray(conf[name])
           ? conf[name]
           : ([conf[name]] as Parameters<typeof fn>);
         fn(name, ...args);

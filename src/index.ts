@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { deepCopy } from './helpers/utils';
+import { deepCopy, isArray } from './helpers/utils';
 import ToCascader from './node/mockit/cascader';
 import ToDict from './node/mockit/dict';
 import { getAllFiles, loadAllData, loadTemplate } from './node/utils';
@@ -86,7 +86,7 @@ if (lastConfFile) {
     if (preload && dataDir) {
       (async () => {
         let allFiles: string[];
-        if (Array.isArray(preload)) {
+        if (isArray(preload)) {
           allFiles = preload.map((cur: string) => {
             return path.resolve(dataDir, cur);
           });

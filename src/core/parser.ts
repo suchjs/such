@@ -1,6 +1,6 @@
 import { IParserConfig } from '../types/parser';
 import { encodeSplitor, splitor as confSplitor } from '../data/config';
-import { encodeRegexpChars } from '../helpers/utils';
+import { encodeRegexpChars, isArray } from '../helpers/utils';
 import { TMatchResult, TObj, TStrList } from '../types/common';
 export interface Tags {
   start: string;
@@ -309,7 +309,7 @@ export class Dispatcher {
         );
       } else {
         const curResult = instance.parse() as TObj;
-        if (Array.isArray(curResult)) {
+        if (isArray(curResult)) {
           result[type] = curResult;
         } else if (typeof curResult === 'object') {
           result[type] = {

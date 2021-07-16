@@ -1,5 +1,5 @@
 import { TObj } from '../types/common';
-import { isObject, typeOf } from './utils';
+import { isArray, isObject, typeOf } from './utils';
 export type TFieldPathKey = string | number;
 export type TFieldPath = TFieldPathKey[];
 export type TFieldValue<T = unknown> = { [index: string]: T } | T[];
@@ -36,7 +36,7 @@ export default class PathMap<T> {
     for (; i < len - 1; i++) {
       const key = keys[i];
       const next = keys[i + 1];
-      if (Array.isArray(data) && typeof key === 'number' && key % 1 === 0) {
+      if (isArray(data) && typeof key === 'number' && key % 1 === 0) {
         if (data.length < key + 1) {
           data[key] = typeof next === 'number' ? [] : {};
         }
@@ -94,7 +94,7 @@ export default class PathMap<T> {
     for (let i = 0, len = keys.length; i < len; i++) {
       const key = keys[i];
       if (typeof key === 'number') {
-        flag = Array.isArray(result) && result.length > key;
+        flag = isArray(result) && result.length > key;
         result = (result as unknown[])[key] as TFieldValue<T>;
       } else {
         flag = isObject(result) && result.hasOwnProperty(key);

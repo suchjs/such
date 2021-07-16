@@ -1,6 +1,6 @@
 import { TStrList } from '../../types/common';
 import { IPPPath, IPPPathItem } from '../../types/parser';
-import { getRefMocker, withPromise } from '../../helpers/utils';
+import { getRefMocker, isArray, withPromise } from '../../helpers/utils';
 import store from '../../data/store';
 import { getCascaderValue, getRealPath, loadJson } from '../utils';
 import { TSuchInject } from '../../types/instance';
@@ -47,7 +47,7 @@ export default {
     const preload = config.preload as boolean | string[];
     if (typeof preload === 'boolean') {
       isSync = preload === true;
-    } else if (Array.isArray(config.preload)) {
+    } else if (isArray(config.preload)) {
       isSync = ($path as IPPPath).every((item: IPPPathItem) =>
         preload.includes(item.fullpath),
       );

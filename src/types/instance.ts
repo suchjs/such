@@ -52,9 +52,8 @@ export interface IMockerOptions {
  *
  *
  * @export
- * @interface IPromiseResult
+ * @interface IPreloadPromises
  */
-export interface IPromiseResult {
-  dpath: TFieldPath;
-  result: Promise<unknown>;
+export interface IPreloadPromises {
+  [index: string]: Promise<unknown>;
 }

@@ -197,9 +197,11 @@ function deepCopyHandle<T>(target: T, copy: T): void {
     const fromType = typeOf(from);
     const toType = typeOf(to);
     if (fromType === 'Object' || fromType === 'Array') {
-      target[key] = (
-        toType === fromType ? target[key] : fromType === 'Object' ? {} : []
-      ) as typeof from;
+      target[key] = (toType === fromType
+        ? target[key]
+        : fromType === 'Object'
+        ? {}
+        : []) as typeof from;
       deepCopy(target[key], from);
     } else {
       target[key] = from;
@@ -216,10 +218,10 @@ function deepCopyHandle<T>(target: T, copy: T): void {
 export const deepCopy = <T = unknown>(target: T, ...args: unknown[]): T => {
   let isObj = false;
   let isArr = false;
-  if ((isObj = isObject(target)) || (isArr = Array.isArray(target))) {
+  if ((isObj = isObject(target)) || (isArr = isArray(target))) {
     for (let i = 0, j = args.length; i < j; i++) {
       const copy = args[i];
-      if ((isObj && isObject(copy)) || (isArr && Array.isArray(copy))) {
+      if ((isObj && isObject(copy)) || (isArr && isArray(copy))) {
         deepCopyHandle(target, copy);
       }
     }

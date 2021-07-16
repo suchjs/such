@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 import { IPPPathItem } from '../types/parser';
-import { isObject, makeRandom, typeOf } from '../helpers/utils';
+import { isArray, isObject, makeRandom, typeOf } from '../helpers/utils';
 import store, { IFileCache, isFileCache } from '../data/store';
 import { TStrList } from '../types/common';
 const { fileCache, config } = store;
@@ -176,7 +176,7 @@ export const getCascaderValue = (
       throw new Error(`${values.slice(0, i).join('.')}字段路径没有找到`);
     }
   }
-  if (Array.isArray(data)) {
+  if (isArray(data)) {
     const index = makeRandom(0, data.length - 1);
     return data[index];
   } else {

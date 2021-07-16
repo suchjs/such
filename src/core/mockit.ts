@@ -3,6 +3,7 @@ import { IPPConfig, IPPFunc, IPPFuncOptions } from '../types/parser';
 import {
   deepCopy,
   getExpValue,
+  isArray,
   isFn,
   isNoEmptyObject,
   isObject,
@@ -20,11 +21,9 @@ import {
 } from 'src/types/mockit';
 import { TSuchInject } from 'src/types/instance';
 const { fns: globalFns, vars: globalVars, mockitsCache } = store;
-//
 
 /**
  * abstrct class Mockit
- * mockit抽象类：所有模拟的数据类型继承自该类
  * @export
  * @abstract
  * @class Mockit
@@ -51,7 +50,7 @@ export default abstract class Mockit<T = unknown> {
         Object.keys(define).map((key) => {
           const value = define[key];
           // force to add defines
-          const self = this as unknown as TObj;
+          const self = (this as unknown) as TObj;
           if (typeOf(value) === 'Object') {
             self[key] = deepCopy({}, value);
           } else {
@@ -116,7 +115,7 @@ export default abstract class Mockit<T = unknown> {
           const typeNames: TStrList = [];
           let validator = (target: unknown) => {
             const targetType = typeOf(target);
-            const allTypes = Array.isArray(type) ? type : [type];
+            const allTypes = isArray(type) ? type : [type];
             let flag = false;
             allTypes.map((Cur) => {
               const curName = Cur.name;
@@ -156,7 +155,6 @@ export default abstract class Mockit<T = unknown> {
   }
   /**
    * get construct name
-   * 获取当前类名
    * @readonly
    * @protected
    * @type {string}
@@ -262,10 +260,9 @@ export default abstract class Mockit<T = unknown> {
    */
   public make(options: TSuchInject): TResult<T> {
     this.validate();
-    let result =
-      typeof this.generateFn === 'function'
-        ? this.generateFn.call(this, options)
-        : this.generate(options);
+    let result = isFn(this.generateFn)
+      ? this.generateFn.call(this, options)
+      : this.generate(options);
     let isPromRes = isPromise(result);
     if (!isPromRes && typeOf(result) === 'Array') {
       result = withPromise(result);
@@ -442,9 +439,9 @@ export default abstract class Mockit<T = unknown> {
       for (let i = 0, j = queue.length; i < j; i++) {
         const name = queue[i];
         const fn = fns[i];
-        const args: unknown[] = (
-          (globalFns[name] ? [globalFns[name]] : []) as unknown[]
-        ).concat([
+        const args: unknown[] = ((globalFns[name]
+          ? [globalFns[name]]
+          : []) as unknown[]).concat([
           fnsParams[i],
           globalVars,
           result,
