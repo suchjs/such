@@ -1,11 +1,11 @@
-import { suchRule } from '../data/config';
+import { splitor, suchRule } from '../data/config';
 import PathMap, { TFieldPath } from '../helpers/pathmap';
 import * as utils from '../helpers/utils';
 import { mockitList } from '../data/mockit';
 import Mockit, { BaseExtendMockit } from './mockit';
 import Parser from '../data/parser';
 import store from '../data/store';
-import { TFunc, TObj, TPath } from '../types/common';
+import { TFunc, TObj } from '../types/common';
 import { TMClass, TMClassList, TMFactoryOptions } from '../types/mockit';
 import { TNodeSuch, TSuchSettings } from '../types/node';
 import { IParserConfig } from '../types/parser';
@@ -13,7 +13,6 @@ import {
   IAsOptions,
   IMockerKeyRule,
   IMockerOptions,
-  IPreloadPromises,
   TSuchInject,
 } from '../types/instance';
 const {
@@ -57,23 +56,19 @@ export class Mocker {
     key: string;
     config: TObj;
   } {
-    const rule = /(\??)(:?)(?:\{(\d+)(?:,(\d+))?}|\[(\d+)(?:,(\d+))?])?$/;
+    const rule = /(:?)(?:\{(\+?0|[1-9]\d*)(?:,([1-9]\d*))?})?(\??)$/;
     let match: Array<string | undefined>;
     const config: TObj = {};
     if ((match = key.match(rule)).length && match[0] !== '') {
-      const [all, query, colon, lMin, lMax, aMin, aMax] = match;
-      const hasArrLen = aMin !== undefined;
-      const hasNormalLen = lMin !== undefined;
-      config.optional = query === '?';
+      // eslint-disable-next-line prefer-const
+      let [all, colon, min, max, opt] = match;
+      config.optional = opt === '?';
       config.oneOf = colon === ':';
-      config.alwaysArray = hasArrLen;
-      if (hasNormalLen || hasArrLen) {
-        const min = hasNormalLen ? lMin : aMin;
-        let max = hasNormalLen ? lMax : aMax;
+      if (min !== undefined) {
+        config.alwaysArray = min.startsWith('+');
         if (max === undefined) {
           max = min;
-        }
-        if (Number(max) < Number(min)) {
+        } else if (Number(max) < Number(min)) {
           throw new Error(`the max of ${max} is less than ${min}`);
         }
         config.min = Number(min);
@@ -101,8 +96,6 @@ export class Mocker {
   public readonly isRoot: boolean;
   public readonly mockFn: (dpath: TFieldPath) => unknown;
   public readonly mockit: Mockit;
-  private preloads: IPreloadPromises = {};
-  private onValued: [];
   /**
    * Creates an instance of Mocker.
    * @param {IMockerOptions} options
@@ -134,8 +127,9 @@ export class Mocker {
     const { instances, datas } = this.root;
     const hasLength = !isNaN(min);
     this.dataType = dataType;
-    if (dataType === 'array') {
-      const totalIndex = (target as unknown[]).length - 1;
+    if (utils.isArray(target)) {
+      // when target is array
+      const totalIndex = target.length - 1;
       const getInstance = (mIndex?: number): Mocker => {
         mIndex =
           typeof mIndex === 'number' ? mIndex : makeRandom(0, totalIndex);
@@ -143,7 +137,7 @@ export class Mocker {
         let instance = instances.get(nowPath);
         if (!(instance instanceof Mocker)) {
           instance = new Mocker({
-            target: (target as unknown[])[mIndex],
+            target: target[mIndex],
             path: nowPath,
             parent: this,
           });
@@ -252,75 +246,104 @@ export class Mocker {
           }
         }
       }
-    } else if (dataType === 'object') {
-      const oTarget = target as TObj;
-      // parse key
-      const keys = Object.keys(oTarget).map((i: string) => {
-        const val = oTarget[i];
-        const { key, config: conf } = Mocker.parseKey(i);
-        return {
-          key,
-          target: val,
-          config: conf,
-        };
-      });
-      this.mockFn = (dpath: TFieldPath) => {
-        const result: TObj = {};
-        const prevPath = this.path;
-        keys.map((item) => {
-          const { key, config: conf, target: tar } = item;
-          const { optional } = conf;
-          const nowPath = prevPath.concat(key);
-          const nowDpath = dpath.concat(key);
-          if (optional && isOptional()) {
-            // optional data
-          } else {
-            let instance = instances.get(nowPath);
-            if (!(instance instanceof Mocker)) {
-              instance = new Mocker({
-                target: tar,
-                config: conf,
-                path: nowPath,
-                parent: this,
-              });
-              instances.set(nowPath, instance);
-            }
-            const value = instance.mock(nowDpath);
-            result[key] = value;
-            datas.set(nowDpath, value);
-          }
-        });
-        return result;
-      };
     } else {
-      if (dataType === 'string') {
-        const sTarget = target as string;
-        const match = sTarget.match(suchRule);
-        const type = match && match[1];
-        if (type) {
-          const lastType = alias[type] ? alias[type] : type;
-          if (ALL_MOCKITS.hasOwnProperty(lastType)) {
-            this.type = lastType;
-            const klass = ALL_MOCKITS[lastType];
-            const instance = new klass();
-            const meta = sTarget.replace(match[0], '').replace(/^\s*:\s*/, '');
-            if (meta !== '') {
-              const params = Parser.parse(meta);
-              instance.setParams(params);
+      if (dataType === 'object') {
+        // when target is object
+        const oTarget = target as TObj;
+        // parse key
+        const keys = Object.keys(oTarget).map((i: string) => {
+          const val = oTarget[i];
+          const { key, config: conf } = Mocker.parseKey(i);
+          return {
+            key,
+            target: val,
+            config: conf,
+          };
+        });
+        this.mockFn = (dpath: TFieldPath) => {
+          const result: TObj = {};
+          const prevPath = this.path;
+          keys.map((item) => {
+            const { key, config: conf, target: tar } = item;
+            const { optional } = conf;
+            const nowPath = prevPath.concat(key);
+            const nowDpath = dpath.concat(key);
+            if (optional && isOptional()) {
+              // optional data
+            } else {
+              let instance = instances.get(nowPath);
+              if (!(instance instanceof Mocker)) {
+                instance = new Mocker({
+                  target: tar,
+                  config: conf,
+                  path: nowPath,
+                  parent: this,
+                });
+                instances.set(nowPath, instance);
+              }
+              const value = instance.mock(nowDpath);
+              result[key] = value;
+              datas.set(nowDpath, value);
             }
-            this.mockit = instance;
-            this.mockFn = (dpath: TFieldPath) =>
-              instance.make({
-                datas,
-                dpath,
-                such: Such,
-                mocker: this,
-              });
-            return;
+          });
+          return result;
+        };
+      } else {
+        let isMockFnOk = false;
+        if (typeof target === 'string') {
+          const match = target.match(suchRule);
+          const type = match && match[1];
+          if (type) {
+            const lastType = alias[type] ? alias[type] : type;
+            if (ALL_MOCKITS.hasOwnProperty(lastType)) {
+              this.type = lastType;
+              const klass = ALL_MOCKITS[lastType];
+              const instance = new klass();
+              const meta = target.replace(match[0], '').replace(/^\s*:\s*/, '');
+              if (meta !== '') {
+                const params = Parser.parse(meta);
+                instance.setParams(params);
+              }
+              this.mockit = instance;
+              this.mockFn = (dpath: TFieldPath) =>
+                instance.make({
+                  datas,
+                  dpath,
+                  such: Such,
+                  mocker: this,
+                });
+              isMockFnOk = true;
+            }
+          } else {
+            // string, but begin with translated splitor
+            const transKey = '\\' + splitor;
+            if (target.startsWith(transKey)) {
+              const result = target.slice(1);
+              this.mockFn = (_dpath: TFieldPath) => result;
+              isMockFnOk = true;
+            }
           }
         }
+        if (!isMockFnOk) {
+          this.mockFn = (_dpath: TFieldPath) => target;
+        }
       }
-      this.mockFn = (_dpath: TFieldPath) => target;
+      if (hasLength) {
+        // if the key set the config of length
+        const origMockFn = this.mockFn;
+        this.mockFn = (dpath: TFieldPath) => {
+          const total = makeRandom(min, max);
+          if (!alwaysArray && total <= 1) {
+            return origMockFn(dpath);
+          }
+          const result = [];
+          for (let i = 0; i < total; i++) {
+            const nowDpath = dpath.concat(i);
+            result.push(origMockFn(nowDpath));
+          }
+          return result;
+        };
+      }
     }
   }
 
@@ -341,23 +364,6 @@ export class Mocker {
   }
 
   /**
-   * @param file [TPath]
-   * @returns [boolean] check if the preload file has already added
-   */
-  public isPreloadExists(file: TPath): boolean {
-    return this.preloads.hasOwnProperty(file);
-  }
-
-  /**
-   *
-   * @param file [TPath]
-   * @param promise [boolean] add a preload task
-   */
-  public addPreload(file: TPath, promise: Promise<unknown>): void {
-    this.preloads[file] = promise;
-  }
-
-  /**
    *
    *
    * @param {TFieldPath} [dpath]
@@ -369,17 +375,6 @@ export class Mocker {
       const { optional } = this.config;
       if (optional && isOptional()) {
         return;
-      }
-      if (isNoEmptyObject(this.preloads)) {
-        const preloads: Array<Promise<unknown>> = Object.values(this.preloads);
-        return (async () => {
-          // load all files
-          await Promise.all(preloads);
-          // clear preloads
-          this.preloads = {};
-          // return result
-          return (this.result = this.mockFn(dpath));
-        })();
       }
     }
     return (this.result = this.mockFn(dpath));
@@ -613,6 +608,11 @@ export default class Such {
   public readonly datas: PathMap<unknown>;
   public readonly paths: PathMap<TFieldPath>;
   private initail = false;
+  /**
+   * constructor of such
+   * @param target [unkown] the target need to be mocking
+   * @param options
+   */
   constructor(target: unknown, options?: IAsOptions) {
     this.target = target;
     this.instances = new PathMap(false);

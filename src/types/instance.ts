@@ -48,12 +48,3 @@ export interface IMockerOptions {
   parent?: Mocker;
   config?: IMockerKeyRule;
 }
-/**
- *
- *
- * @export
- * @interface IPreloadPromises
- */
-export interface IPreloadPromises {
-  [index: string]: Promise<unknown>;
-}

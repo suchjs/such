@@ -5,6 +5,7 @@
 /dist/
 /node_modules/
 /coverage
+/examples
 
 # files
 browser.ts
@@ -17,6 +18,7 @@ browser.ts
 
 # package
 yarn.lock
+yarn-error.log
 package-lock.json
 
 # config files

@@ -47,17 +47,6 @@ export const isNoEmptyObject = (target: unknown): boolean => {
 
 /**
  *
- * @param target [unkown]
- * @returns [boolean] check if the target is a promise object
- */
-export const isPromise = (target: unknown): boolean => {
-  return (
-    typeOf(target) === 'Promise' || (isObject(target) && isFn(target.then))
-  );
-};
-
-/**
- *
  * @param chars [string] regexp instance context string
  * @returns [string] escaped context string
  */
@@ -249,35 +238,6 @@ export const shifTObj = <T = TObj>(
 
 /**
  *
- * @param res [array]
- * @returns [Array<Promise>] translate the array of `res` into array of `Promise<res>`
- */
-export const withPromise = <T = unknown>(res: T[]): Array<Promise<T> | T> => {
-  let last: Array<Promise<T> | T> = [];
-  let hasPromise = false;
-  res.map((item: T) => {
-    const imPromise = isPromise(item);
-    if (hasPromise) {
-      if (imPromise) {
-        last.push(item);
-      } else {
-        last.push(Promise.resolve(item));
-      }
-    } else {
-      if (imPromise) {
-        hasPromise = true;
-        last = last.map((cur) => Promise.resolve(cur));
-        last.push(item);
-      } else {
-        last.push(item);
-      }
-    }
-  });
-  return last;
-};
-
-/**
- *
  * @param first [TFieldPath]
  * @param second [TFieldPath]
  * @returns [boolean] check if two paths has a relation of parent and sub child
@@ -311,26 +271,33 @@ export const isRelativePath = (
 export const getPathInfo = (
   item: IPPPathItem,
   mocker: Mocker,
-): {
-  lastPath: TFieldPath;
-  isExists: boolean;
-} => {
-  let isExists = true;
+): TFieldPath | never => {
   let lastPath: TFieldPath;
   const { path } = mocker;
   if (!item.relative) {
     lastPath = item.path;
   } else {
     if (path.length < item.depth + 1) {
-      isExists = false;
+      // the path not exists
+      throw new Error(
+        `the path of "${
+          lastPath ? '/' + lastPath.join('/') : item.fullpath
+        }" is not exists in the instances.`,
+      );
     } else {
+      // get the relative path
       lastPath = path.slice(0, -(1 + item.depth)).concat(item.path);
     }
   }
-  return {
-    lastPath,
-    isExists,
-  };
+  if (isRelativePath(path, lastPath)) {
+    // the mocker path and the reference path has relation of parent and descendants
+    throw new Error(
+      `the ref path of "${path.join('/')}" and "${lastPath.join(
+        '/',
+      )}" is a relative path.`,
+    );
+  }
+  return lastPath;
 };
 
 /**
@@ -343,25 +310,8 @@ export const getRefMocker = (
   item: IPPPathItem,
   mocker: Mocker,
 ): Mocker | never => {
-  const { root, path } = mocker;
+  const { root } = mocker;
   const { instances } = root;
-  const { isExists, lastPath } = getPathInfo(item, mocker);
-  let refMocker: Mocker;
-  if (isExists && (refMocker = instances.get(lastPath))) {
-    if (isRelativePath(path, lastPath)) {
-      throw new Error(
-        `the ref path of "${path.join('/')}" and "${lastPath.join(
-          '/',
-        )}" is a relative path.`,
-      );
-    } else {
-      return refMocker;
-    }
-  } else {
-    throw new Error(
-      `the path of "${
-        lastPath ? '/' + lastPath.join('/') : item.fullpath
-      }" is not exists in the instances.`,
-    );
-  }
+  const lastPath = getPathInfo(item, mocker);
+  return instances.get(lastPath);
 };

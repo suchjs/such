@@ -40,9 +40,7 @@ export default {
     // check if every path is in preload
     for (const filePath of lastPaths) {
       if (!fileCache.hasOwnProperty(filePath)) {
-        throw new Error(
-          `the dict filepath '${filePath}' is not found in dict directory`,
-        );
+        throw new Error(`the dict of '${filePath}' is not loaded or not found`);
       } else {
         queues.push(fileCache[filePath] as TStrList);
       }

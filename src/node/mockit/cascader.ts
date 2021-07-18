@@ -1,10 +1,9 @@
-import { TStrList } from '../../types/common';
-import { IPPPath, IPPPathItem } from '../../types/parser';
-import { getRefMocker, isArray, withPromise } from '../../helpers/utils';
+import { IPPPath } from '../../types/parser';
+import { getRefMocker } from '../../helpers/utils';
 import store from '../../data/store';
-import { getCascaderValue, getRealPath, loadJson } from '../utils';
+import { getCascaderValue, getRealPath } from '../utils';
 import { TSuchInject } from '../../types/instance';
-const { config, fileCache } = store;
+const { fileCache } = store;
 
 export default {
   configOptions: {
@@ -25,15 +24,29 @@ export default {
       }
     });
   },
-  generate(options: TSuchInject): TStrList | Promise<TStrList> {
+  /**
+   * generate a cascader value
+   * @param options [TSuchReject]
+   * @returns [unkown]
+   */
+  generate(options: TSuchInject): unknown | never {
     const { mocker } = options;
     let { $path, $config } = this.params;
     let lastPath = $path[0];
     let handle = $config.handle;
     const values: unknown[] = [];
+    // the nested max level < 10
     let loop = 1;
+    // loop to get the root mocker
     while (!$config.root && loop++ < 10) {
       const refMocker = getRefMocker(lastPath, mocker);
+      if (!refMocker) {
+        // eslint-disable-next-line no-console
+        console.error(
+          `the cascader reference the path '${lastPath}' is not exist or generated.`,
+        );
+        return;
+      }
       const { mockit } = refMocker;
       const { params } = mockit;
       $path = params.$path;
@@ -43,26 +56,8 @@ export default {
       values.unshift(refMocker.result);
     }
     handle = handle || getCascaderValue;
-    let isSync = false;
-    const preload = config.preload as boolean | string[];
-    if (typeof preload === 'boolean') {
-      isSync = preload === true;
-    } else if (isArray(config.preload)) {
-      isSync = ($path as IPPPath).every((item: IPPPathItem) =>
-        preload.includes(item.fullpath),
-      );
-    }
     const realPath = getRealPath(lastPath);
-    if (isSync) {
-      const data = fileCache[realPath];
-      return handle(data, values);
-    } else {
-      return loadJson(realPath).then((data) => {
-        return Promise.all(withPromise(values)).then((last: unknown[]) => {
-          const cur = handle(data, last);
-          return cur;
-        });
-      });
-    }
+    const data = fileCache[realPath];
+    return handle(data, values);
   },
 };

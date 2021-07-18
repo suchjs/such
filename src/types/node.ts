@@ -34,6 +34,7 @@ export type TSuchSettings = {
 
 export type TNodeSuch = {
   loadConf: typeof loadConf;
+  loadData: () => Promise<unknown>;
   reloadData: () => Promise<unknown>;
   clearCache: () => Promise<unknown>;
 };

@@ -7,9 +7,7 @@ import {
   isFn,
   isNoEmptyObject,
   isObject,
-  isPromise,
   typeOf,
-  withPromise,
 } from '../helpers/utils';
 import store from '../data/store';
 import {
@@ -258,25 +256,13 @@ export default abstract class Mockit<T = unknown> {
    * @returns {TResult<T>}
    * @memberof Mockit
    */
-  public make(options: TSuchInject): TResult<T> {
+  public make(options: TSuchInject): unknown {
     this.validate();
-    let result = isFn(this.generateFn)
+    const result = isFn(this.generateFn)
       ? this.generateFn.call(this, options)
       : this.generate(options);
-    let isPromRes = isPromise(result);
-    if (!isPromRes && typeOf(result) === 'Array') {
-      result = withPromise(result);
-      isPromRes = isPromise(result[0]);
-      if (isPromRes) {
-        result = Promise.all(result);
-      }
-    }
     // judge if promise
-    return isPromRes
-      ? result.then((res: unknown) => {
-          return this.runAll(res, options);
-        })
-      : this.runAll(result, options);
+    return this.runAll(result, options);
   }
   /**
    *
@@ -462,7 +448,7 @@ export default abstract class Mockit<T = unknown> {
    * @returns
    * @memberof Mockit
    */
-  private runAll(result: unknown, options: TSuchInject) {
+  private runAll(result: unknown, options: TSuchInject): unknown {
     result = this.runModifiers(result, options);
     return this.runFuncs(result, options);
   }

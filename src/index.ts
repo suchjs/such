@@ -56,7 +56,7 @@ const lastConfFile = tryConfigFile(
 );
 config.rootDir = lastConfFile ? path.dirname(lastConfFile) : rootDir;
 // open api for reload data and clear cache
-(<const>['reloadData', 'clearCache']).map((name) => {
+(<const>['loadData', 'reloadData', 'clearCache']).map((name) => {
   NSuch[name] = function () {
     return Promise.resolve();
   };
@@ -84,23 +84,34 @@ if (lastConfFile) {
       };
     }
     if (preload && dataDir) {
-      (async () => {
-        let allFiles: string[];
-        if (isArray(preload)) {
-          allFiles = preload.map((cur: string) => {
-            return path.resolve(dataDir, cur);
-          });
-        } else {
-          allFiles = await getAllFiles(dataDir);
-        }
-        await loadAllData(allFiles);
-        NSuch.clearCache = () => {
+      if (isArray(preload)) {
+        const allFiles: string[] = preload.map((cur: string) => {
+          return path.resolve(dataDir, cur);
+        });
+        // load data
+        NSuch.loadData = async () => {
+          await loadAllData(allFiles);
+        };
+        NSuch.clearCache = async () => {
           allFiles.map((key: string) => {
             delete fileCache[key];
           });
-          return loadAllData(allFiles);
+          return NSuch.loadData();
         };
-      })();
+      } else {
+        // load data
+        NSuch.loadData = async () => {
+          const allFiles = await getAllFiles(dataDir);
+          await loadAllData(allFiles);
+        };
+        NSuch.clearCache = async () => {
+          const allFiles = await getAllFiles(dataDir);
+          allFiles.map((key: string) => {
+            delete fileCache[key];
+          });
+          return NSuch.loadData();
+        };
+      }
     }
   }
   NSuch.config(conf);

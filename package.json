@@ -1,6 +1,6 @@
 {
   "name": "suchjs",
-  "version": "0.3.0",
+  "version": "1.0.0-beta.1",
   "description": "A powerful javascript mocking library, written in typescript.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -39,10 +39,12 @@
     "start": "tsc && node lib/index.js",
     "test": "jest",
     "lint": "eslint 'src/**/*.{ts,js}'",
-    "build": "rm -rf ./lib/* && npm run lint && tsc && npm run build:web",
-    "build:web": "webpack --progress --mode=\"production\" && cp ./dist/such.$npm_package_version.min.js ./dist/such.min.js",
+    "clear": "rm -rf ./lib/*",
+    "build": "npm run clear && npm run lint && tsc && npm run build:web",
+    "build:web": "webpack --progress --mode=\"production\" && cp ./dist/such.$npm_package_version.min.js ./dist/such.min.js && npm run clear",
     "coverage": "jest --coverage && coveralls < coverage/lcov.info",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "postpublish": "npm run clear"
   },
   "dependencies": {
     "nprintf": "^1.0.1",
