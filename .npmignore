@@ -21,8 +21,11 @@ yarn.lock
 yarn-error.log
 package-lock.json
 
-# config files
+# tools
 .travis.yml
+.husky/
+
+# config files
 webpack.config.js
 jest.config.js
 .prettierrc.js
