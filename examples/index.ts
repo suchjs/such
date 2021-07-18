@@ -16,6 +16,7 @@ const instance = Such.instance({
   await Such.loadData();
   for (let i = 0; i < 3; i++) {
     const value = await instance.a();
+    // eslint-disable-next-line no-console
     console.log(value);
   }
 })();
