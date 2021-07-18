@@ -1,10 +1,9 @@
 # suchjs
 
-[![npm version](https://badge.fury.io/js/suchjs.svg)](https://badge.fury.io/js/suchjs)&nbsp;&nbsp;[![Build Status](https://travis-ci.org/suchjs/such.svg?branch=master)](https://travis-ci.org/suchjs/such)
+[![npm version](https://badge.fury.io/js/suchjs.svg)](https://badge.fury.io/js/suchjs)&nbsp;&nbsp;[![Build Status](https://travis-ci.com/suchjs/such.svg?branch=master)](https://travis-ci.com/suchjs/such)
 
-An extendable and declarative mock tool, make build the structured data what you want easily.
+A javascript mock library, both for node & browser, make the data mocking extendedable and easily, written in typescript.
 
-一个可扩展、声明式的 mock 工具，可以用来方便的构建您想要的数据格式。
 
 ## Documents
 
