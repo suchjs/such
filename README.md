@@ -2,7 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/suchjs.svg)](https://badge.fury.io/js/suchjs)&nbsp;&nbsp;[![Build Status](https://travis-ci.com/suchjs/such.svg?branch=master)](https://travis-ci.com/suchjs/such)
 
-A javascript mock library, both for node & browser, make the data mocking extendedable and easily, written in typescript.
+A javascript mocking library, both for node & browser, make the data mocking extendedable and easily, written in typescript.
 
 
 ## Documents
@@ -10,7 +10,7 @@ A javascript mock library, both for node & browser, make the data mocking extend
   [Document](https://github.com/suchjs/such/wiki/API) &nbsp; [中文文档](https://github.com/suchjs/such/wiki/%E4%B8%AD%E6%96%87%E6%96%87%E6%A1%A3)
 
 ## Installation
--  ### Browser & package tools / Nodejs
+-  ### Nodejs
 
     ```bash
     # npm
@@ -21,7 +21,7 @@ A javascript mock library, both for node & browser, make the data mocking extend
 
     ```
 
--   ### Browser & source code
+-   ### Browser
 
     Download the source code [./dist/such.min.js](./dist/such.min.js) and save the js file.
 
@@ -159,8 +159,34 @@ A javascript mock library, both for node & browser, make the data mocking extend
       ```
 
 - ### Extended types, such:recommend
+  - #### `integer`
+    equal to `:number:%d`
+  
+  - #### `percent`
+    equal to `:number:%d%`
 
-  `boolean`/`bool`(alias short) `url` `uppercase` `lowercase` `email` `integer` `int`(alias short) ... for more,you can see [such:recommend](./src/config/recommend.ts)
+  - #### `int`
+    short alias for `integer`
+
+  - #### `boolean`
+    a boolean value `true` or `false`
+
+  - #### `bool`
+    short alias for `boolean`
+  
+  - #### `uppercase`
+    equal to `:string:[65,90]`
+  
+  - #### `lowercase`
+    equal to `:string:[97,122]`
+
+  - #### `url`
+    a type base on `regexp`
+
+  - #### `email`
+    a type base on `regexp`
+
+  - ### see more in the [such:recommend](./src/extends/recommend.ts) file
 
 ## Questions & Bugs?
 

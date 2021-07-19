@@ -397,7 +397,7 @@ export default class Such {
    */
   public static alias(short: string, long: string): void | never {
     if (short === '' || long === '' || short === long) {
-      throw new Error(`wrong alias params:[${short}][${long}]`);
+      throw new Error(`wrong alias params:'${short}' short for '${long}'`);
     }
     if (aliasTypes.indexOf(long) > -1) {
       throw new Error(
@@ -415,7 +415,7 @@ export default class Such {
    * @memberof Such
    */
   public static config(config: TSuchSettings): void {
-    const { parsers, types, globals } = config;
+    const { parsers, types, globals, alias } = config;
     const fnHashs: TObj = {
       parsers: 'parser',
       types: 'define',
@@ -436,6 +436,7 @@ export default class Such {
       parsers: parsers || {},
       types: types || {},
       globals: globals || {},
+      alias: alias || {},
     });
     Object.keys(lastConf).map((key: keyof TSuchSettings) => {
       const conf = lastConf[key];
