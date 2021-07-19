@@ -4,6 +4,11 @@ import { getRefMocker } from '../helpers/utils';
 import { Mocker } from '../core/such';
 import Mockit from '../core/mockit';
 export default class ToRef extends Mockit<unknown> {
+  // set constructor name
+  constructor() {
+    super('ToRef');
+  }
+  // init
   public init(): void {
     // path
     this.addRule('$path', function ($path: IPPPath) {

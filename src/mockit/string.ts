@@ -15,6 +15,11 @@ const hex2num = (hex: string): number => {
  * @extends {Mockit<string>}
  */
 export default class ToString extends Mockit<string> {
+  // set constructor name
+  constructor() {
+    super('ToString');
+  }
+  // init
   public init(): void {
     // $size Rule
     this.addRule('$size', function ($size: IPPSize) {

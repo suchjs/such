@@ -1,9 +1,11 @@
 const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
+const FileManagerPlugin = require('filemanager-webpack-plugin');
 const version = require('./package.json').version;
+const resolve = (pathname) => path.resolve(__dirname, pathname);
+const fileName = `such.${version}.min.js`;
 module.exports = {
   entry: './src/browser.ts',
-  mode: 'production',
   module: {
     rules: [
       {
@@ -14,14 +16,29 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.ts'],
   },
   output: {
     filename: () => {
-      return `such.${version}.min.js`;
+      return fileName;
     },
-    path: path.resolve(__dirname, 'dist'),
+    path: resolve('dist'),
   },
+  plugins: [
+    new FileManagerPlugin({
+      events: {
+        onEnd: {
+          copy: [
+            {
+              source: resolve(`dist/${fileName}`),
+              destination: resolve('dist/such.min.js'),
+            },
+          ],
+          delete: [resolve('lib')],
+        },
+      },
+    }),
+  ],
   optimization: {
     minimize: true,
     minimizer: [

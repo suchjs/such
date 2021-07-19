@@ -35,14 +35,13 @@ export default abstract class Mockit<T = unknown> {
   protected isValidOk = false;
   protected hasValid = false;
   protected invalidKeys: TStrList = [];
-  protected readonly constrName = this.constructor.name;
   /**
    * create an instance of Mockit.
    * 构造函数
    * @memberof Mockit
    */
-  constructor() {
-    const className = this.constrName;
+  constructor(protected readonly constrName: string) {
+    const className = this.className;
     if (mockitsCache[className]) {
       const { define } = mockitsCache[className];
       if (isObject(define)) {

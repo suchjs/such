@@ -529,6 +529,7 @@ export default class Such {
         : opts;
     const { param, init, generateFn, generate, configOptions } = config;
     const params = typeof param === 'string' ? Parser.parse(param) : {};
+    const constrName = `To${utils.capitalize(type)}`;
     if (!ALL_MOCKITS.hasOwnProperty(type)) {
       let klass: TMClass;
       if (argsNum === 2) {
@@ -540,6 +541,11 @@ export default class Such {
           );
         }
         klass = class extends (BaseClass as typeof BaseExtendMockit & Mockit) {
+          // set constructor name
+          constructor() {
+            super(constrName);
+          }
+          // init
           public init() {
             super.init();
             if (isNoEmptyObject(configOptions)) {
@@ -563,6 +569,11 @@ export default class Such {
         };
       } else {
         klass = class extends Mockit {
+          // set constructor name
+          constructor() {
+            super(constrName);
+          }
+          // init
           public init() {
             if (isNoEmptyObject(configOptions)) {
               this.configOptions = deepCopy(

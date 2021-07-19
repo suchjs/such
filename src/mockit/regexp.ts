@@ -3,7 +3,13 @@ import { TMatchResult, TObj } from '../types/common';
 import { IPPRegexp } from '../types/parser';
 import Mockit from '../core/mockit';
 export default class ToRegexp extends Mockit<string> {
+  // parser
   private instance: RegexpParser;
+  // set constructor name
+  constructor() {
+    super('ToRegexp');
+  }
+  // init
   public init(): void {
     // regexp rule
     this.addRule('$regexp', function ($regexp: IPPRegexp) {

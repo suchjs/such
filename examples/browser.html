@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suchjs browser test</title>
+</head>
+<body>
+  <script src="../dist/such.min.js"></script>
+  <script>
+    ;(function(){
+      const data = Such.as({
+        errno: ':number[0,1]:%d',
+        errmsg: ':string{0,20}',
+        url: ':url',
+        data: {
+          'count?': ':number[1e5,1e6]:%d',
+          'list{+0,5}': {
+            url: ':url',
+            date: ':date:%yyyy-mm-dd HH\\:MM\\:ss',
+            price: ':number[100,200]:%.2f',
+            color: ':color$rgba',
+            isNew: ':boolean',
+          },
+          'from:{1}': ['a.com', 'b.com'],
+        },
+        'more{3}': '\\:number',
+      });
+      console.log(data);
+    })();
+  </script>
+</body>
+</html>
