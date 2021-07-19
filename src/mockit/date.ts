@@ -16,9 +16,6 @@ const makeDate = (param: string | number): Date | never => {
   return date;
 };
 export default class ToDate extends Mockit<string | Date> {
-  constructor(constructName: string) {
-    super(constructName);
-  }
   public init(): void {
     // range
     this.addRule('$size', function ($size: IPPSize) {

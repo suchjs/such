@@ -19,9 +19,6 @@ const factor = (type: number) => {
   }
 };
 export default class ToNumber extends Mockit<number> {
-  constructor(constructName: string) {
-    super(constructName);
-  }
   // init
   public init(): void {
     this.configOptions = {

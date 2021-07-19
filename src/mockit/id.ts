@@ -1,9 +1,6 @@
 import { TSuchInject } from '../types/instance';
 import Mockit from '../core/mockit';
 export default class ToId extends Mockit<number> {
-  constructor(constructName: string) {
-    super(constructName);
-  }
   // init
   public init(): void {
     this.configOptions = {

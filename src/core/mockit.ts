@@ -16,8 +16,8 @@ import {
   TMModifierFn,
   TMParams,
   TMRuleFn,
-} from 'src/types/mockit';
-import { TSuchInject } from 'src/types/instance';
+} from '../types/mockit';
+import { TSuchInject } from '../types/instance';
 const { fns: globalFns, vars: globalVars, mockitsCache } = store;
 
 /**
@@ -35,13 +35,14 @@ export default abstract class Mockit<T = unknown> {
   protected isValidOk = false;
   protected hasValid = false;
   protected invalidKeys: TStrList = [];
+  protected readonly constrName = this.constructor.name;
   /**
    * create an instance of Mockit.
    * 构造函数
    * @memberof Mockit
    */
-  constructor(protected readonly constructorName: string) {
-    const className = constructorName || this.constructor.name;
+  constructor() {
+    const className = this.constrName;
     if (mockitsCache[className]) {
       const { define } = mockitsCache[className];
       if (isObject(define)) {
@@ -159,7 +160,7 @@ export default abstract class Mockit<T = unknown> {
    * @memberof Mockit
    */
   protected get className(): string {
-    return this.constructorName || this.constructor.name;
+    return this.constrName || this.constructor.name;
   }
 
   /**

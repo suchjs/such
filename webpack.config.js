@@ -1,7 +1,9 @@
 const path = require('path');
+const TerserPlugin = require('terser-webpack-plugin');
 const version = require('./package.json').version;
 module.exports = {
   entry: './src/browser.ts',
+  mode: 'production',
   module: {
     rules: [
       {
@@ -19,5 +21,17 @@ module.exports = {
       return `such.${version}.min.js`;
     },
     path: path.resolve(__dirname, 'dist'),
+  },
+  optimization: {
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          mangle: true,
+          keep_classnames: false,
+          keep_fnames: false,
+        },
+      }),
+    ],
   },
 };

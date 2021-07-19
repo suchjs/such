@@ -4,9 +4,6 @@ import { IPPRegexp } from '../types/parser';
 import Mockit from '../core/mockit';
 export default class ToRegexp extends Mockit<string> {
   private instance: RegexpParser;
-  constructor(constructName: string) {
-    super(constructName);
-  }
   public init(): void {
     // regexp rule
     this.addRule('$regexp', function ($regexp: IPPRegexp) {
