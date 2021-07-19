@@ -540,7 +540,9 @@ export default class Such {
             `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
           );
         }
-        klass = class extends (BaseClass as typeof BaseExtendMockit & Mockit) {
+        klass = class
+          extends (BaseClass as typeof BaseExtendMockit)
+          implements Mockit {
           // set constructor name
           constructor() {
             super(constrName);
@@ -562,7 +564,7 @@ export default class Such {
               this.reGenerate(generateFn);
             }
             if (isNoEmptyObject(params)) {
-              this.setParams(params);
+              this.setParams(params, true);
             }
             this.frozen();
           }
@@ -570,7 +572,7 @@ export default class Such {
       } else {
         klass = class extends Mockit {
           // set constructor name
-          constructor() {
+          constructor(protected readonly constrName: string = constrName) {
             super(constrName);
           }
           // init
@@ -586,7 +588,7 @@ export default class Such {
               init.call(this);
             }
             if (isNoEmptyObject(params)) {
-              this.setParams(params);
+              this.setParams(params, true);
             }
             this.frozen();
           }

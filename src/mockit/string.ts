@@ -16,8 +16,8 @@ const hex2num = (hex: string): number => {
  */
 export default class ToString extends Mockit<string> {
   // set constructor name
-  constructor() {
-    super('ToString');
+  constructor(protected readonly constrName: string = 'ToString') {
+    super(constrName);
   }
   // init
   public init(): void {

@@ -5,8 +5,8 @@ import { Mocker } from '../core/such';
 import Mockit from '../core/mockit';
 export default class ToRef extends Mockit<unknown> {
   // set constructor name
-  constructor() {
-    super('ToRef');
+  constructor(protected readonly constrName: string = 'ToRef') {
+    super(constrName);
   }
   // init
   public init(): void {
