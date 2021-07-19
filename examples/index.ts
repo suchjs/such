@@ -7,7 +7,7 @@ const instance = Such.instance({
       title: ':dict:&<dataDir>/dict.txt',
       email: ':email',
       url: ':url',
-      date: ':date',
+      date: ':date:%yyyy-mm-dd HH\\:MM\\:ss',
     },
   ],
   'more{3}': '\\:number',
