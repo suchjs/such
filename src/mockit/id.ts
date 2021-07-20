@@ -1,7 +1,7 @@
 import { TSuchInject } from '../types/instance';
 import Mockit from '../core/mockit';
 import { IPPSize } from '../types/parser';
-import { makeRandom } from 'src/helpers/utils';
+import { makeRandom } from '../helpers/utils';
 export default class ToId extends Mockit<number | number[]> {
   // set constructor name
   constructor(protected readonly constrName: string = 'ToId') {
@@ -29,32 +29,40 @@ export default class ToId extends Mockit<number | number[]> {
   }
   // generate
   public generate(options: TSuchInject): number | number[] {
-    const { dpath } = options;
     const { $config, $length } = this.params;
     const config = ($config || {}) as {
       start?: number;
       step?: number;
     };
     const { start, step } = config;
+    const { mocker } = options;
+    const storeData = mocker.storeData as { id: number };
     if ($length) {
       const { least, most } = $length;
-      const count = makeRandom(least, most);
-      let i = 0;
       const result: number[] = [];
-      while (i < count) {
-        result.push(start + step * i);
-        i++;
+      let count = makeRandom(least, most);
+      if (count > 0) {
+        if (typeof storeData['id'] !== 'number') {
+          storeData['id'] = start;
+          // push the start id
+          result.push(storeData['id']);
+          // reduce count
+          count--;
+        }
+        // if count still > 1
+        while (count-- > 0) {
+          storeData['id'] += step;
+          result.push(storeData['id']);
+        }
       }
       return result;
     }
-    let len = dpath.length;
-    while (len--) {
-      const cur = dpath[len];
-      if (typeof cur === 'number') {
-        return start + step * cur;
-      }
+    if (typeof storeData['id'] === 'number') {
+      storeData['id'] += step;
+    } else {
+      storeData['id'] = start;
     }
-    return start;
+    return storeData['id'] as number;
   }
   public test(): boolean {
     return true;

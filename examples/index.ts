@@ -6,7 +6,7 @@ import Such from '../src/index';
     const value = await Such.as({
       errno: ':number[0,1]:%d',
       errmsg: ':string{0,20}',
-      'count?': ':number[1e5,1e6]:%d',
+      'count?': ':number[1,2]:#[exclude="max"]',
       'list{+0,5}': {
         id: ':id',
         url: ':url',
@@ -21,5 +21,11 @@ import Such from '../src/index';
     });
     // eslint-disable-next-line no-console
     console.log(value);
+  }
+  const instance = Such.instance(':id{3}');
+  for (let i = 0; i < 5; i++) {
+    const result = instance.a();
+    // eslint-disable-next-line no-console
+    console.log(result);
   }
 })();

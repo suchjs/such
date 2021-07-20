@@ -4,16 +4,26 @@ import { IPPFormat, IPPSize } from '../types/parser';
 import { isOptional } from '../helpers/utils';
 import Mockit from '../core/mockit';
 
+/**
+ * Inclusive
+ */
+const INCLUSIVE = {
+  none: 0,
+  min: 1,
+  max: 2,
+  both: 3,
+};
+
 const factor = (type: number) => {
   const epsilon = Number.EPSILON || Math.pow(2, -52);
   switch (type) {
-    case 2:
+    case INCLUSIVE.max:
       return 1 - Math.random();
-    case 3:
+    case INCLUSIVE.both:
       return (1 + epsilon) * Math.random();
-    case 0:
+    case INCLUSIVE.none:
       return (1 - epsilon) * (1 - Math.random());
-    case 1:
+    case INCLUSIVE.min:
     default:
       return Math.random();
   }
@@ -99,6 +109,8 @@ export default class ToNumber extends Mockit<number> {
       const { range } = $size;
       const step = $config && ($config.step as number);
       const [min, max] = range as number[];
+      const exclude = $config && ($config.exclude as string);
+      // if has step, use the step
       if (step) {
         const minPlus = 0;
         const maxPlus = Math.floor((max - min) / step);
@@ -109,7 +121,16 @@ export default class ToNumber extends Mockit<number> {
           );
         }
       }
-      result = +min + (max - min) * factor(3);
+      let fac = INCLUSIVE.both;
+      // if has exclude config, change the factor
+      if (exclude) {
+        const excludes = exclude.split(',');
+        excludes.map((end: keyof typeof INCLUSIVE) => {
+          fac -= INCLUSIVE[end];
+        });
+        fac = fac < 0 ? 0 : fac;
+      }
+      result = +min + (max - min) * factor(fac);
     } else {
       result = Math.random() * Math.pow(10, Math.floor(10 * Math.random()));
       result = isOptional() ? -result : result;

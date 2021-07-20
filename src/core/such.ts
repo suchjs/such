@@ -95,6 +95,7 @@ export class Mocker {
   public readonly isRoot: boolean;
   public readonly mockFn: (dpath: TFieldPath) => unknown;
   public readonly mockit: Mockit;
+  public readonly storeData: TObj = {};
   /**
    * Creates an instance of Mocker.
    * @param {IMockerOptions} options
