@@ -1,7 +1,7 @@
 import Such from '../src/index';
 
 (async () => {
-  await Such.loadData();
+  // await Such.loadData();
   for (let i = 0; i < 1; i++) {
     const value = await Such.as({
       errno: ':number[0,1]:%d',

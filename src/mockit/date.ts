@@ -1,8 +1,12 @@
 import { TMModifierFn } from '../types/mockit';
 import { IPPFormat, IPPSize } from '../types/parser';
 import { strRule } from '../data/config';
-import { dateformat, strtotime } from '../helpers/dateformat';
-import { decodeTrans, makeRandom } from '../helpers/utils';
+import {
+  decodeTrans,
+  makeRandom,
+  dateformat,
+  strtotime,
+} from '../helpers/utils';
 import Mockit from '../core/mockit';
 const makeDate = (param: string | number): Date | never => {
   let date: Date;

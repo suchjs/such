@@ -18,8 +18,9 @@ import {
   TMRuleFn,
 } from '../types/mockit';
 import { TSuchInject } from '../types/instance';
-const { fns: globalFns, vars: globalVars, mockitsCache } = store;
+import { TStaticSuch } from './such';
 
+const { fns: globalFns, vars: globalVars, mockitsCache } = store;
 /**
  * abstrct class Mockit
  * @export
@@ -31,7 +32,9 @@ export default abstract class Mockit<T = unknown> {
   public params: TMParams = {};
   protected configOptions: TMConfig = {};
   protected initParams: TMParams = {};
-  protected generateFn: undefined | ((options: TSuchInject) => TResult<T>);
+  protected generateFn:
+    | undefined
+    | ((options?: TSuchInject, such?: TStaticSuch) => TResult<T>);
   protected isValidOk = false;
   protected hasValid = false;
   protected invalidKeys: TStrList = [];
@@ -247,7 +250,9 @@ export default abstract class Mockit<T = unknown> {
    * @param {() => TResult<T>} [fn]
    * @memberof Mockit
    */
-  public reGenerate(fn?: (options: TSuchInject) => TResult<T>): void {
+  public reGenerate(
+    fn?: (options?: TSuchInject, such?: TStaticSuch) => TResult<T>,
+  ): void {
     this.generateFn = fn;
   }
   /**
@@ -257,11 +262,11 @@ export default abstract class Mockit<T = unknown> {
    * @returns {TResult<T>}
    * @memberof Mockit
    */
-  public make(options: TSuchInject): unknown {
+  public make(options: TSuchInject, such: TStaticSuch): unknown {
     this.validate();
     const result = isFn(this.generateFn)
-      ? this.generateFn.call(this, options)
-      : this.generate(options);
+      ? this.generateFn.call(this, options, such)
+      : this.generate(options, such);
     // judge if promise
     return this.runAll(result, options);
   }
@@ -272,7 +277,7 @@ export default abstract class Mockit<T = unknown> {
    * @returns {TResult<T>}
    * @memberof Mockit
    */
-  public abstract generate(options: TSuchInject): TResult<T>;
+  public abstract generate(options: TSuchInject, such: TStaticSuch): TResult<T>;
   /**
    *
    *

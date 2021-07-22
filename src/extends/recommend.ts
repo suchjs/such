@@ -1,4 +1,4 @@
-import { TSuchInject } from '../types/instance';
+import Such from '../core/such';
 import { TSuchSettings } from '../types/node';
 const confs: TSuchSettings = {
   types: {
@@ -16,45 +16,39 @@ const confs: TSuchSettings = {
       'regexp',
       '/(?<user>(?:[a-z0-9]+(?:[-_]?[a-z0-9]+|[a-z0-9]*)))@(?<domain>(?:[a-z0-9]+(?:-?[a-z0-9]+|[a-z0-9]*))\\.(?<ltd>com|cn|com\\.cn|org|net|gov\\.cn|wang|ren|xyz|top|cc|io))/',
     ],
-    boolean(options: TSuchInject): boolean {
-      const { such } = options;
-      return such.utils.isOptional();
+    boolean(): boolean {
+      return Such.utils.isOptional();
     },
-    color$hex(options: TSuchInject): string {
-      const { such } = options;
+    color$hex(): string {
       return (
         '#' +
-        such.utils.makeRandom(0x000000, 0xffffff).toString(16).toUpperCase()
+        Such.utils.makeRandom(0x000000, 0xffffff).toString(16).toUpperCase()
       );
     },
-    color$rgb(options: TSuchInject): string {
-      const { such } = options;
-      const instance = such.instance(':int[0,255]');
+    color$rgb(): string {
+      const instance = Such.instance(':int[0,255]');
       return (
         'rgb(' + [instance.a(), instance.a(), instance.a()].join(',') + ')'
       );
     },
-    color$rgba(options: TSuchInject): string {
-      const { such } = options;
-      const instance = such.instance(':int[0,255]');
-      const opacity = such.as(':number[0,1]:%.2f');
+    color$rgba(): string {
+      const instance = Such.instance(':int[0,255]');
+      const opacity = Such.as(':number[0,1]:%.2f');
       return (
         'rgba(' +
         [instance.a(), instance.a(), instance.a(), opacity || 0].join(',') +
         ')'
       );
     },
-    color$hsl(options: TSuchInject): string {
-      const { such } = options;
-      const highlight = such.as(':int[0,360]');
-      const instance = such.instance(':percent');
+    color$hsl(): string {
+      const highlight = Such.as(':int[0,360]');
+      const instance = Such.instance(':percent');
       return 'hsl(' + [highlight, instance.a(), instance.a()].join(',') + ')';
     },
-    color$hsla(options: TSuchInject): string {
-      const { such } = options;
-      const highlight = such.as(':int[0,360]');
-      const instance = such.instance(':percent');
-      const opacity = such.as(':number[0,1]:%.2f');
+    color$hsla(): string {
+      const highlight = Such.as(':int[0,360]');
+      const instance = Such.instance(':percent');
+      const opacity = Such.as(':number[0,1]:%.2f');
       return (
         'hsla(' +
         [highlight, instance.a(), instance.a(), opacity || 0].join(',') +

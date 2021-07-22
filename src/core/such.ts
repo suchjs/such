@@ -1,4 +1,4 @@
-import { splitor, suchRule } from '../data/config';
+import { dtNameRule, splitor, suchRule } from '../data/config';
 import PathMap, { TFieldPath } from '../helpers/pathmap';
 import * as utils from '../helpers/utils';
 import { mockitList } from '../data/mockit';
@@ -55,7 +55,7 @@ export class Mocker {
     key: string;
     config: TObj;
   } {
-    const rule = /(:?)(?:\{(\+?0|[1-9]\d*)(?:,([1-9]\d*))?})?(\??)$/;
+    const rule = /(:?)(?:\{(\+?[01]|[1-9]\d*)(?:,([1-9]\d*))?})?(\??)$/;
     let match: Array<string | undefined>;
     const config: TObj = {};
     if ((match = key.match(rule)).length && match[0] !== '') {
@@ -306,12 +306,14 @@ export class Mocker {
               }
               this.mockit = instance;
               this.mockFn = (dpath: TFieldPath) =>
-                instance.make({
-                  datas,
-                  dpath,
-                  such: Such,
-                  mocker: this,
-                });
+                instance.make(
+                  {
+                    datas,
+                    dpath,
+                    mocker: this,
+                  },
+                  Such,
+                );
               isMockFnOk = true;
             }
           } else {
@@ -423,7 +425,7 @@ export default class Such {
       globals: 'assign',
     };
     const lastConf: TSuchSettings = {};
-    const such = Such as typeof Such & TNodeSuch;
+    const such = Such as TStaticSuch & TNodeSuch;
     if (config.extends && typeof such.loadConf === 'function') {
       const confFiles =
         typeof config.extends === 'string' ? [config.extends] : config.extends;
@@ -443,7 +445,7 @@ export default class Such {
       const conf = lastConf[key];
       const fnName = fnHashs.hasOwnProperty(key) ? fnHashs[key] : key;
       Object.keys(conf).map((name: keyof typeof conf) => {
-        const fn = such[fnName as keyof typeof Such] as TFunc;
+        const fn = such[fnName as keyof TStaticSuch] as TFunc;
         const args = utils.isArray(conf[name])
           ? conf[name]
           : ([conf[name]] as Parameters<typeof fn>);
@@ -516,6 +518,11 @@ export default class Such {
    * @memberof Such
    */
   public static define(type: string, ...args: unknown[]): void | never {
+    if (!dtNameRule.test(type)) {
+      throw new Error(
+        `define a wrong type name '${type}', the name should match the regexp '${dtNameRule.toString()}'`,
+      );
+    }
     const argsNum = args.length;
     if (argsNum === 0 || argsNum > 2) {
       throw new Error(
@@ -560,7 +567,7 @@ export default class Such {
               );
             }
             if (isFn(init)) {
-              init.call(this);
+              init.call(this, utils);
             }
             if (isFn(generateFn)) {
               this.reGenerate(generateFn);
@@ -587,15 +594,15 @@ export default class Such {
               );
             }
             if (isFn(init)) {
-              init.call(this);
+              init.call(this, utils);
             }
             if (isNoEmptyObject(params)) {
               this.setParams(params, true);
             }
             this.frozen();
           }
-          public generate(options: TSuchInject) {
-            return generate.call(this, options);
+          public generate(options: TSuchInject, such: TStaticSuch) {
+            return generate.call(this, options, such);
           }
           public test() {
             return true;
@@ -651,3 +658,5 @@ export default class Such {
     return this.mocker.mock([]);
   }
 }
+
+export type TStaticSuch = typeof Such;

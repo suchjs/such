@@ -2,6 +2,12 @@ import { TFunc, TObj } from '../types/common';
 import { TFieldPath } from './pathmap';
 import { IPPPathItem } from '../types/parser';
 import { Mocker } from '../core/such';
+
+/*
+ * re export strtotime/dateformat from dateformat
+ */
+export { strtotime, dateformat } from './dateformat';
+
 /**
  *
  * @param target [unkown]

@@ -1,34 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Suchjs browser test</title>
-</head>
-<body>
-  <script src="../dist/such.min.js"></script>
-  <script>
-    ;(function(){
-      const data = Such.as({
-        errno: ':number[0,1]:%d',
-        errmsg: ':string{0,20}',
-        url: ':url',
-        data: {
-          'count?': ':number[1e5,1e6]:%d',
-          'list{+0,5}': {
-            url: ':url',
-            date: ':date:%yyyy-mm-dd HH\\:MM\\:ss',
-            price: ':number[100,200]:%.2f',
-            color: ':color$rgba',
-            isNew: ':boolean',
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Suchjs browser test</title>
+  </head>
+  <body>
+    <script src="../dist/such.min.js"></script>
+    <script>
+      (function () {
+        const data = Such.as({
+          errno: ':number[0,1]:%d',
+          errmsg: ':string{0,20}',
+          url: ':url',
+          data: {
+            'count?': ':number[1e5,1e6]:%d',
+            'list{+0,5}': {
+              url: ':url',
+              date: ':date:%yyyy-mm-dd HH\\:MM\\:ss',
+              price: ':number[100,200]:%.2f',
+              color: ':color$rgba',
+              isNew: ':boolean',
+            },
+            'from:{1}': ['a.com', 'b.com'],
           },
-          'from:{1}': ['a.com', 'b.com'],
-        },
-        'more{3}': '\\:number',
-      });
-      console.log(data);
-    })();
-  </script>
-</body>
+          'more{3}': '\\:number',
+        });
+        console.log(data);
+
+        const instance = Such.instance({
+          // name字段可有可无
+          'title?': ':string:{3,10}',
+          // list字段一定为数组，大小为0到5
+          'books{+0,5}': {
+            date: ':date',
+            author: ':string:{10,20}',
+          },
+          // tags字段非必须，如果存在，就是一个3个字符串组成的数组
+          'tags{3}?': ':string:{5,10}',
+          // firm字段非必须，如果存在，就从
+          'firm:{1}?': ['Netflix', 'Disney'],
+        });
+        console.log(instance.a());
+      })();
+    </script>
+  </body>
 </html>
