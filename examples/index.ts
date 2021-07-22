@@ -14,11 +14,11 @@ import Such from '../src/index';
         price: ':number[100,200]:%.2f',
         content: ':regexp:/(?:[a-z]{3,8} ){3,10}/',
         isNew: ':boolean',
-        color: ':color$rgba',
         firstName: ':string{5,10}',
         lastName: ':string{3,10}',
         fullName: ':ref:&./firstName,./lastName:@join(" ")',
       },
+      color: ':color$hex:#[argb=true,lowercase=true]',
       'from:{1}': ['a.com', 'b.com'],
       'more{3}': '\\:number',
     });

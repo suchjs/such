@@ -20,10 +20,18 @@ const confs: TSuchSettings = {
       return Such.utils.isOptional();
     },
     color$hex(): string {
-      return (
-        '#' +
-        Such.utils.makeRandom(0x000000, 0xffffff).toString(16).toUpperCase()
-      );
+      const { $config = {} } = this.params;
+      const { lowercase = false, argb = false } = $config;
+      let hexValue: number;
+      if (!argb) {
+        hexValue = Such.utils.makeRandom(0x000000, 0xffffff);
+      } else {
+        hexValue = Such.utils.makeRandom(0x00000000, 0xffffffff);
+      }
+      if (!lowercase) {
+        return `#${hexValue.toString(16).toUpperCase()}`;
+      }
+      return `#${hexValue.toString(16)}`;
     },
     color$rgb(): string {
       const instance = Such.instance(':int[0,255]');
