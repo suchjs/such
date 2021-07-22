@@ -19,10 +19,16 @@ module.exports = {
     extensions: ['.ts'],
   },
   output: {
-    filename: () => {
+    filename() {
       return fileName;
     },
     path: resolve('dist'),
+    globalObject: 'this',
+    library: {
+      name: 'Such',
+      type: 'umd',
+      export: 'default',
+    },
   },
   plugins: [
     new FileManagerPlugin({

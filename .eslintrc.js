@@ -36,5 +36,15 @@ module.exports = {
         '@typescript-eslint/no-var-requires': 'off',
       },
     },
+    {
+      files: ['src/browser.ts'],
+      env: {
+        browser: true,
+        amd: true,
+      },
+      globals: {
+        define: 'readable',
+      },
+    },
   ],
 };
