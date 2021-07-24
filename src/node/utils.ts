@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 import { IPPPathItem } from '../types/parser';
-import { isArray, isObject, makeRandom, typeOf } from '../helpers/utils';
+import { typeOf } from '../helpers/utils';
 import store, { IFileCache, isFileCache } from '../data/store';
 import { TStrList } from '../types/common';
 const { fileCache, config } = store;
@@ -160,28 +160,4 @@ export const getRealPath = (item: IPPPathItem): string => {
     fullpath = path.join(config.dataDir || config.rootDir, fullpath);
   }
   return fullpath;
-};
-// default cascader handle
-export const getCascaderValue = (
-  data: unknown,
-  values: TStrList,
-): unknown | never => {
-  const len = values.length;
-  let i = 0;
-  while (i < len) {
-    const cur = values[i++];
-    if (isObject(data)) {
-      data = data[cur];
-    } else {
-      throw new Error(`${values.slice(0, i).join('.')}字段路径没有找到`);
-    }
-  }
-  if (isArray(data)) {
-    const index = makeRandom(0, data.length - 1);
-    return data[index];
-  } else {
-    const keys = Object.keys(data);
-    const index = makeRandom(0, keys.length - 1);
-    return keys[index];
-  }
 };

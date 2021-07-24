@@ -1,7 +1,8 @@
-import { TFunc, TObj } from '../types/common';
+import { TFunc, TObj, TStrList } from '../types/common';
 import { TFieldPath } from './pathmap';
 import { IPPPathItem } from '../types/parser';
 import { Mocker } from '../core/such';
+import { TMParams, TMultiStr } from 'src/types/mockit';
 
 /*
  * re export strtotime/dateformat from dateformat
@@ -320,4 +321,117 @@ export const getRefMocker = (
   const { instances } = root;
   const lastPath = getPathInfo(item, mocker);
   return instances.get(lastPath);
+};
+
+/**
+ *
+ */
+export const validator = {
+  validNumber(type: string, field: string, value: unknown): boolean | never {
+    if (typeof value !== 'number') {
+      throw new Error(
+        `the data type '${type}' only accept a '${field}' configuration with number, but got a value of type '${typeof value}'`,
+      );
+    }
+    return true;
+  },
+  validInteger(type: string, field: string, value: unknown): boolean | never {
+    if (typeof value !== 'number') {
+      throw new Error(
+        `the data type '${type}' only accept a '${field}' configuration with integer number, but got a value of type '${typeof value}'`,
+      );
+    } else {
+      if (value % 1 !== 0) {
+        throw new Error(
+          `the data type '${type}' only accept a '${field}' configuration with integer number, but got a number '${value}'`,
+        );
+      }
+    }
+    return true;
+  },
+};
+
+// default cascader handle
+export const getCascaderValue = (
+  data: unknown,
+  values: TStrList,
+): unknown | never => {
+  const len = values.length;
+  let i = 0;
+  while (i < len) {
+    const cur = values[i++];
+    if (isObject(data)) {
+      data = data[cur];
+    } else {
+      throw new Error(`${values.slice(0, i).join('.')}字段路径没有找到`);
+    }
+  }
+  if (isArray(data)) {
+    const index = makeRandom(0, data.length - 1);
+    return data[index];
+  } else {
+    const keys = Object.keys(data);
+    const index = makeRandom(0, keys.length - 1);
+    return keys[index];
+  }
+};
+
+export const makeCascaderData = (
+  params: TMParams,
+  mocker: Mocker,
+): {
+  handle: typeof getCascaderValue;
+  lastPath: IPPPathItem;
+  values: unknown[];
+} => {
+  let { $path = [], $config } = params;
+  let lastPath = $path[0];
+  let handle = $config.handle as typeof getCascaderValue;
+  const values: unknown[] = [];
+  // the nested max level < 10
+  let loop = 1;
+  // loop to get the root mocker
+  while (!$config.root && loop++ < 10) {
+    const refMocker = getRefMocker(lastPath, mocker);
+    if (!refMocker) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `the cascader reference the path '${lastPath}' is not exist or generated.`,
+      );
+      return;
+    }
+    const { mockit } = refMocker;
+    const { params } = mockit;
+    $path = params.$path;
+    $config = params.$config;
+    lastPath = $path && $path[0];
+    handle = (handle || $config.handle) as typeof getCascaderValue;
+    values.unshift(refMocker.result);
+  }
+  handle = handle || getCascaderValue;
+  return {
+    handle,
+    lastPath,
+    values,
+  };
+};
+
+export const makeDictData = (
+  params: TMParams,
+): ((result: TStrList[]) => TMultiStr) => {
+  const { $length } = params;
+  const makeOne = (result: TStrList[]): string => {
+    const dict = result[makeRandom(0, result.length - 1)];
+    return dict[makeRandom(0, dict.length - 1)];
+  };
+  const makeAll = (result: TStrList[]): TMultiStr => {
+    let count = $length ? makeRandom($length.least, $length.most) : 1;
+    const one = count === 1;
+    const last: TStrList = [];
+    while (count--) {
+      last.push(makeOne(result));
+    }
+    return one ? last[0] : last;
+  };
+  return makeAll;
 };

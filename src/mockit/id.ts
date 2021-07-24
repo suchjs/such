@@ -1,31 +1,32 @@
 import { TSuchInject } from '../types/instance';
 import Mockit from '../core/mockit';
-import { IPPSize } from '../types/parser';
-import { makeRandom } from '../helpers/utils';
+import { makeRandom, validator } from '../helpers/utils';
 export default class ToId extends Mockit<number | number[]> {
   // set constructor name
-  constructor(protected readonly constrName: string = 'ToId') {
-    super(constrName);
+  constructor() {
+    super('ToId');
   }
   // init
   public init(): void {
-    // set default config params
+    // set config options
     this.configOptions = {
       step: {
         type: Number,
         default: 1,
+        validator(value: unknown): boolean | never {
+          return validator.validNumber(this.constrName, 'step', value);
+        },
       },
       start: {
         type: Number,
         default: 1,
+        validator(value: unknown): boolean | never {
+          return validator.validNumber(this.constrName, 'start', value);
+        },
       },
     };
-    // allow $size, now it become to a range type
-    this.addRule('$size', function ($size: IPPSize) {
-      if (!$size) {
-        return;
-      }
-    });
+    // set allow data attributes
+    this.setAllowAttrs('$length', '$size');
   }
   // generate
   public generate(options: TSuchInject): number | number[] {

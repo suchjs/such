@@ -1,6 +1,6 @@
 {
   "name": "suchjs",
-  "version": "1.0.0-beta.5",
+  "version": "1.0.0-beta.6",
   "description": "A javascript data mocking library, extendedable and powerful, written in typescript.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -42,7 +42,7 @@
     "lint": "eslint 'src/**/*.{ts,js}'",
     "clear": "rm -rf ./lib/*",
     "build": "npm run clear && npm run lint && tsc",
-    "build:web": "webpack --progress --mode=\"production\"",
+    "build:web": "BROWSER=true webpack --progress --mode=\"production\"",
     "coverage": "jest --coverage && coveralls < coverage/lcov.info",
     "prepublish": "npm run build",
     "postpublish": "npm run clear",

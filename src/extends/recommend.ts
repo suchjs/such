@@ -19,19 +19,31 @@ const confs: TSuchSettings = {
     boolean(): boolean {
       return Such.utils.isOptional();
     },
-    color$hex(): string {
-      const { $config = {} } = this.params;
-      const { lowercase = false, argb = false } = $config;
-      let hexValue: number;
-      if (!argb) {
-        hexValue = Such.utils.makeRandom(0x000000, 0xffffff);
-      } else {
-        hexValue = Such.utils.makeRandom(0x00000000, 0xffffffff);
-      }
-      if (!lowercase) {
-        return `#${hexValue.toString(16).toUpperCase()}`;
-      }
-      return `#${hexValue.toString(16)}`;
+    color$hex: {
+      configOptions: {
+        lowercase: {
+          type: Boolean,
+          default: false,
+        },
+        argb: {
+          type: Boolean,
+          default: false,
+        },
+      },
+      generate(): string {
+        const { $config = {} } = this.params;
+        const { lowercase, argb } = $config;
+        let hexValue: number;
+        if (!argb) {
+          hexValue = Such.utils.makeRandom(0x000000, 0xffffff);
+        } else {
+          hexValue = Such.utils.makeRandom(0x00000000, 0xffffffff);
+        }
+        if (!lowercase) {
+          return `#${hexValue.toString(16).toUpperCase()}`;
+        }
+        return `#${hexValue.toString(16)}`;
+      },
     },
     color$rgb(): string {
       const instance = Such.instance(':int[0,255]');

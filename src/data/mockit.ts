@@ -15,3 +15,15 @@ export const mockitList: TMClassList = {
   ref,
   id,
 };
+// all mockits
+export const ALL_MOCKITS: TMClassList = {};
+
+export const addMockitList = (mockitList: TMClassList): void => {
+  Object.keys(mockitList).map((key: string) => {
+    if (key.startsWith('_')) {
+      // ignore special mockits name begin with '_'
+      return;
+    }
+    ALL_MOCKITS[key] = mockitList[key];
+  });
+};

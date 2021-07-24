@@ -15,7 +15,10 @@ import {
   TMConfigRule,
   TMModifierFn,
   TMParams,
+  TMAttrs,
   TMRuleFn,
+  TMParamsValidFn,
+  TMFactoryOptions,
 } from '../types/mockit';
 import { TSuchInject } from '../types/instance';
 import { TStaticSuch } from './such';
@@ -30,24 +33,26 @@ const { fns: globalFns, vars: globalVars, mockitsCache } = store;
  */
 export default abstract class Mockit<T = unknown> {
   public params: TMParams = {};
-  protected configOptions: TMConfig = {};
+  // allowed data attribute
+  public readonly allowAttrs: TMAttrs = [];
+  // if config options is set, will allow configuration `data attribute`
+  public configOptions: TMConfig = {};
+  // validate all params
+  public validator: TMParamsValidFn;
   protected initParams: TMParams = {};
-  protected generateFn:
-    | undefined
-    | ((options?: TSuchInject, such?: TStaticSuch) => TResult<T>);
   protected isValidOk = false;
   protected hasValid = false;
   protected invalidKeys: TStrList = [];
   /**
    * create an instance of Mockit.
-   * 构造函数
+   * constructor
    * @memberof Mockit
    */
-  constructor(protected readonly constrName: string) {
+  constructor(public readonly constrName: string) {
     if (mockitsCache[constrName]) {
       const { define } = mockitsCache[constrName];
       if (isObject(define)) {
-        Object.keys(define).map((key) => {
+        Object.keys(define).map((key: keyof TMFactoryOptions) => {
           const value = define[key];
           // force to add defines
           const self = (this as unknown) as TObj;
@@ -66,8 +71,9 @@ export default abstract class Mockit<T = unknown> {
       modifiers: [],
       modifierFns: {},
     };
+    // intialize
     this.init();
-    // all type support modifiers
+    // all mockits allow funcs
     this.addRule('$func', function ($func: IPPFunc) {
       if (!$func) {
         return;
@@ -81,10 +87,7 @@ export default abstract class Mockit<T = unknown> {
           if (param.variable) {
             try {
               if (typeof param.value === 'string') {
-                if (
-                  param.value.indexOf('.') > -1 ||
-                  param.value.indexOf('[') > -1
-                ) {
+                if (param.value.includes('.') || param.value.includes('[')) {
                   new Function(
                     '__CONFIG__',
                     'return __CONFIG__.' + param.value,
@@ -104,12 +107,16 @@ export default abstract class Mockit<T = unknown> {
     });
     const { configOptions } = this;
     // if set configOptions,validate config
-    if (isNoEmptyObject(configOptions)) {
+    if (
+      isNoEmptyObject(configOptions) &&
+      !mockitsCache[constrName].rules.includes('$config')
+    ) {
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
+      const $this = this;
       this.addRule('$config', function ($config: IPPConfig = {}) {
         const last = deepCopy({}, $config) as IPPConfig;
         Object.keys(configOptions).map((key: string) => {
           const cur: TMConfigRule = configOptions[key];
-          let required = false;
           let def: unknown;
           let type: TConstructor | TConstructor[];
           const typeNames: TStrList = [];
@@ -128,30 +135,32 @@ export default abstract class Mockit<T = unknown> {
           };
           const hasKey = last.hasOwnProperty(key);
           if (isObject(cur)) {
-            required = !!cur.required;
             def = isFn(cur.default) ? cur.default() : cur.default;
             type = cur.type;
             validator = isFn<typeof validator>(cur.validator)
               ? cur.validator
               : validator;
           }
-          if (required && !hasKey) {
-            throw new Error(`${constrName} required set config "${key}"`);
-          } else if (hasKey && !validator.call(null, last[key])) {
-            throw new Error(
-              `the config of "${key}"'s value ${
-                last[key]
-              } is not instance of ${typeNames.join(',')}`,
-            );
-          } else {
-            if (!hasKey && def !== undefined) {
+          if (!hasKey) {
+            // set default
+            if (def !== undefined) {
               last[key] = def;
+            }
+          } else {
+            if (!validator.call($this, last[key])) {
+              throw new Error(
+                `the config of "${key}"'s value ${
+                  last[key]
+                } is not instance of ${typeNames.join(',')}`,
+              );
             }
           }
         });
         return last;
       });
     }
+    // cached the mockit, frozen all data
+    this.frozen();
   }
 
   /**
@@ -226,20 +235,40 @@ export default abstract class Mockit<T = unknown> {
     return this.initParams;
   }
   /**
+   * setAllowAttrs
+   * @returns
+   */
+  public setAllowAttrs(...names: string[]): void {
+    names.forEach((name) => {
+      if (!this.allowAttrs.includes(name)) {
+        this.allowAttrs.push(name);
+      }
+    });
+  }
+  /**
    *
    *
    * @memberof Mockit
    */
   public frozen(): Mockit<T> {
     // frozen params for extend type.
-    const { params, initParams, generateFn, configOptions } = this;
+    const {
+      params,
+      initParams,
+      generate,
+      validator,
+      configOptions,
+      allowAttrs,
+    } = this;
     mockitsCache[this.constrName].define = deepCopy(
       {},
       {
         params,
         initParams,
         configOptions,
-        generateFn,
+        generate,
+        validator,
+        allowAttrs,
       },
     );
     return this;
@@ -253,7 +282,7 @@ export default abstract class Mockit<T = unknown> {
   public reGenerate(
     fn?: (options?: TSuchInject, such?: TStaticSuch) => TResult<T>,
   ): void {
-    this.generateFn = fn;
+    this.generate = fn;
   }
   /**
    *
@@ -263,10 +292,10 @@ export default abstract class Mockit<T = unknown> {
    * @memberof Mockit
    */
   public make(options: TSuchInject, such: TStaticSuch): unknown {
+    // validate params, and cache the result
     this.validate();
-    const result = isFn(this.generateFn)
-      ? this.generateFn.call(this, options, such)
-      : this.generate(options, such);
+    // generate a result
+    const result = this.generate(options, such);
     // judge if promise
     return this.runAll(result, options);
   }
@@ -306,18 +335,24 @@ export default abstract class Mockit<T = unknown> {
   ): never | void {
     const curName = this.constrName;
     const { rules, ruleFns, modifiers, modifierFns } = mockitsCache[curName];
+    const isRuleType = type === 'rule';
     let target;
     let fns;
-    if (type === 'rule') {
+    if (isRuleType) {
       target = rules;
       fns = ruleFns;
     } else {
       target = modifiers;
       fns = modifierFns;
     }
-    if (target.indexOf(name) > -1) {
+    if (target.includes(name)) {
       throw new Error(`${type} of ${name} already exists`);
     } else {
+      // when add a rule, auto add the rule name to allowAttrs
+      if (isRuleType && !this.allowAttrs.includes(name)) {
+        this.setAllowAttrs(name);
+      }
+      // add by position
       if (typeof pos === 'undefined' || pos.trim() === '') {
         target.push(name);
       } else {
@@ -347,14 +382,14 @@ export default abstract class Mockit<T = unknown> {
    * @memberof Mockit
    */
   private validParams(): boolean {
-    const params = this.params;
+    const { params, validator } = this;
     const { rules, ruleFns } = mockitsCache[this.constrName];
     const keys = Object.keys(params);
     rules.map((name: string) => {
       try {
         const res = ruleFns[name].call(this, params[name]);
-        if (typeof res === 'object') {
-          this.params[name] = res;
+        if (isObject(res)) {
+          params[name] = res;
         }
         const index = keys.indexOf(name);
         if (index > -1) {
@@ -364,6 +399,10 @@ export default abstract class Mockit<T = unknown> {
         this.invalidKeys.push(`[(${name})${e.message}]`);
       }
     });
+    // validate all params
+    if (isFn(validator)) {
+      this.validator(this.params);
+    }
     return this.invalidKeys.length === 0;
   }
   /**

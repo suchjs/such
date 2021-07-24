@@ -16,11 +16,13 @@ const hex2num = (hex: string): number => {
  */
 export default class ToString extends Mockit<string> {
   // set constructor name
-  constructor(protected readonly constrName: string = 'ToString') {
-    super(constrName);
+  constructor() {
+    super('ToString');
   }
   // init
   public init(): void {
+    // set allow data attributes
+    this.setAllowAttrs('$length');
     // $size Rule
     this.addRule('$size', function ($size: IPPSize) {
       if (!$size) {

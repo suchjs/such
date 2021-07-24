@@ -30,11 +30,12 @@ const factor = (type: number) => {
 };
 export default class ToNumber extends Mockit<number> {
   // set constructor name
-  constructor(protected readonly constrName: string = 'ToNumber') {
-    super(constrName);
+  constructor() {
+    super('ToNumber');
   }
   // init
   public init(): void {
+    // config options
     this.configOptions = {
       step: {
         type: Number,

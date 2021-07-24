@@ -117,7 +117,7 @@ export type IPPPath = IPPPathItem[];
  * @export
  * @interface IPPConfig
  */
-export interface IPPConfig<T = unknown> {
+export interface IPPConfig<T = unknown | { variable: string }> {
   [index: string]: T;
 }
 /**

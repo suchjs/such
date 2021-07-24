@@ -1,14 +1,14 @@
 import { isObject } from '../helpers/utils';
 import Mockit from '../core/mockit';
 import { TObj, TFunc, TStrList } from '../types/common';
-import { TMModifierFn, TMRuleFn } from '../types/mockit';
+import { TMFactoryOptions, TMModifierFn, TMRuleFn } from '../types/mockit';
 import { TSSConfig } from '../types/node';
 type MockitsCache<T> = TObj<{
   rules: TStrList;
   ruleFns: TObj<TMRuleFn>;
   modifiers: TStrList;
   modifierFns: TObj<TMModifierFn<T>>;
-  define?: TObj;
+  define?: Partial<TMFactoryOptions>;
 }>;
 export interface IFileCache {
   mtime: number;

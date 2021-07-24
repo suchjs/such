@@ -6,8 +6,8 @@ export default class ToRegexp extends Mockit<string> {
   // parser
   private instance: RegexpParser;
   // set constructor name
-  constructor(protected readonly constrName: string = 'ToRegexp') {
-    super(constrName);
+  constructor() {
+    super('ToRegexp');
   }
   // init
   public init(): void {
@@ -57,6 +57,7 @@ export default class ToRegexp extends Mockit<string> {
       return result;
     });
   }
+  // generate
   public generate(): string {
     let { instance } = this;
     const { $config, $regexp } = this.params;
@@ -67,6 +68,7 @@ export default class ToRegexp extends Mockit<string> {
     }
     return instance.build();
   }
+  // test
   public test(): boolean {
     return true;
   }

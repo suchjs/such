@@ -1,4 +1,4 @@
-import { TConstructor, TObj } from './common';
+import { TConstructor, TObj, TStrList } from './common';
 import {
   IPPConfig,
   IPPFormat,
@@ -11,12 +11,12 @@ import {
 import Mockit from '../core/mockit';
 export type TMModifierFn<T> = (res: T) => T | string | never;
 export type TMRuleFn<T = unknown> = (cur: T) => T | void;
+export type TMParamsValidFn = (params: TMParams) => void | never;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type TMConfigFullRule<U = any, T = TConstructor<U | any>> = {
   type: T;
   default?: U | (() => U);
-  validator?: () => boolean | never;
-  required?: boolean;
+  validator?: (value: unknown) => boolean | never;
 };
 export type TMConfigRule<T = TConstructor> = T | T[] | TMConfigFullRule;
 export type TMConfig<T = TConstructor> = TObj<TMConfigRule<T>>;
@@ -30,12 +30,15 @@ export type TMParams = {
   $size?: IPPSize;
   $regexp?: IPPRegexp;
 };
+export type TMAttrs = string[];
 export type TMFactoryOptions = {
   param?: string;
-  configOptions?: TObj;
+  configOptions?: TMConfig;
   init?: () => void;
   generate: () => unknown;
-  generateFn?: () => void;
+  validator?: TMParamsValidFn;
+  allowAttrs?: TMAttrs;
 };
 export type TMClass = new (...args: unknown[]) => Mockit;
 export type TMClassList = TObj<TMClass>;
+export type TMultiStr = string | TStrList;

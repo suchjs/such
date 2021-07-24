@@ -1,8 +1,9 @@
 import { IPPPath } from '../../types/parser';
-import { getRefMocker } from '../../helpers/utils';
+import { makeCascaderData } from '../../helpers/utils';
 import store from '../../data/store';
-import { getCascaderValue, getRealPath } from '../utils';
+import { getRealPath } from '../utils';
 import { TSuchInject } from '../../types/instance';
+import { TStrList } from '../../types/common';
 const { fileCache } = store;
 
 export default {
@@ -31,33 +32,9 @@ export default {
    */
   generate(options: TSuchInject): unknown | never {
     const { mocker } = options;
-    let { $path, $config } = this.params;
-    let lastPath = $path[0];
-    let handle = $config.handle;
-    const values: unknown[] = [];
-    // the nested max level < 10
-    let loop = 1;
-    // loop to get the root mocker
-    while (!$config.root && loop++ < 10) {
-      const refMocker = getRefMocker(lastPath, mocker);
-      if (!refMocker) {
-        // eslint-disable-next-line no-console
-        console.error(
-          `the cascader reference the path '${lastPath}' is not exist or generated.`,
-        );
-        return;
-      }
-      const { mockit } = refMocker;
-      const { params } = mockit;
-      $path = params.$path;
-      $config = params.$config;
-      lastPath = $path[0];
-      handle = handle || $config.handle;
-      values.unshift(refMocker.result);
-    }
-    handle = handle || getCascaderValue;
+    const { handle, values, lastPath } = makeCascaderData(this.params, mocker);
     const realPath = getRealPath(lastPath);
     const data = fileCache[realPath];
-    return handle(data, values);
+    return handle(data, values as TStrList);
   },
 };

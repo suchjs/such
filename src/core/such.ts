@@ -1,12 +1,12 @@
 import { dtNameRule, splitor, suchRule } from '../data/config';
 import PathMap, { TFieldPath } from '../helpers/pathmap';
 import * as utils from '../helpers/utils';
-import { mockitList } from '../data/mockit';
+import { addMockitList, ALL_MOCKITS, mockitList } from '../data/mockit';
 import Mockit, { BaseExtendMockit } from './mockit';
-import Parser from '../data/parser';
+import Dispatcher from '../data/parser';
 import store from '../data/store';
 import { TFunc, TObj } from '../types/common';
-import { TMClass, TMClassList, TMFactoryOptions } from '../types/mockit';
+import { TMClass, TMFactoryOptions } from '../types/mockit';
 import { TNodeSuch, TSuchSettings } from '../types/node';
 import { IParserConfig } from '../types/parser';
 import {
@@ -24,17 +24,8 @@ const {
   isNoEmptyObject,
 } = utils;
 const { alias, aliasTypes } = store;
-
-// all mockits
-const ALL_MOCKITS: TMClassList = {};
-Object.keys(mockitList).map((key: string) => {
-  if (key.startsWith('_')) {
-    // ignore special mockits name begin with '_'
-    return;
-  }
-  ALL_MOCKITS[key] = mockitList[key];
-});
-
+// add all mockit list
+addMockitList(mockitList);
 /**
  *
  *
@@ -301,7 +292,7 @@ export class Mocker {
               const instance = new klass();
               const meta = target.replace(match[0], '').replace(/^\s*:\s*/, '');
               if (meta !== '') {
-                const params = Parser.parse(meta);
+                const params = Dispatcher.parse(meta, instance);
                 instance.setParams(params);
               }
               this.mockit = instance;
@@ -357,8 +348,9 @@ export class Mocker {
    */
   public setParams(value: string | TObj): TObj | never {
     if (this.mockit) {
-      return this.mockit.setParams(
-        typeof value === 'string' ? Parser.parse(value) : value,
+      const instance = this.mockit;
+      return instance.setParams(
+        typeof value === 'string' ? Dispatcher.parse(value, instance) : value,
       );
     } else {
       throw new Error('This mocker is not the mockit type.');
@@ -473,7 +465,7 @@ export default class Such {
     },
   ): never | void {
     const { config, parse, setting } = params;
-    return Parser.addParser(name, config, parse, setting);
+    return Dispatcher.addParser(name, config, parse, setting);
   }
   /**
    *
@@ -536,9 +528,48 @@ export default class Such {
         : argsNum === 1 && typeof opts === 'function'
         ? { generate: opts }
         : opts;
-    const { param, init, generateFn, generate, configOptions } = config;
-    const params = typeof param === 'string' ? Parser.parse(param) : {};
+    const {
+      param,
+      init,
+      generate,
+      validator,
+      configOptions,
+      allowAttrs,
+    } = config;
     const constrName = `To${utils.capitalize(type)}`;
+    // init process
+    const initProcess = function (this: Mockit, genFn?: GeneratorFunction) {
+      if (isNoEmptyObject(configOptions)) {
+        this.configOptions = deepCopy({}, this.configOptions, configOptions);
+      }
+      if (utils.isArray(allowAttrs)) {
+        this.setAllowAttrs(...allowAttrs);
+      }
+      if (isFn(init)) {
+        init.call(this, utils);
+      }
+      const params =
+        typeof param === 'string' ? Dispatcher.parse(param, this) : {};
+      if (isFn(genFn)) {
+        this.reGenerate(genFn);
+      }
+      if (isNoEmptyObject(params)) {
+        this.setParams(params, true);
+      }
+      if (isFn(validator)) {
+        if (isFn(this.validator)) {
+          const origValidator = this.validator;
+          this.validator = function (params) {
+            // execute orig validator
+            origValidator(params);
+            // execute cur validator
+            validator(params);
+          };
+        } else {
+          this.validator = validator;
+        }
+      }
+    };
     if (!ALL_MOCKITS.hasOwnProperty(type)) {
       let klass: TMClass;
       if (argsNum === 2) {
@@ -559,48 +590,20 @@ export default class Such {
           // init
           public init() {
             super.init();
-            if (isNoEmptyObject(configOptions)) {
-              this.configOptions = deepCopy(
-                {},
-                this.configOptions,
-                configOptions,
-              );
-            }
-            if (isFn(init)) {
-              init.call(this, utils);
-            }
-            if (isFn(generateFn)) {
-              this.reGenerate(generateFn);
-            }
-            if (isNoEmptyObject(params)) {
-              this.setParams(params, true);
-            }
-            this.frozen();
+            initProcess.call(this, generate);
           }
         };
       } else {
         klass = class extends Mockit {
           // set constructor name
-          constructor(protected readonly constrName: string = constrName) {
+          constructor() {
             super(constrName);
           }
           // init
           public init() {
-            if (isNoEmptyObject(configOptions)) {
-              this.configOptions = deepCopy(
-                {},
-                this.configOptions,
-                configOptions,
-              );
-            }
-            if (isFn(init)) {
-              init.call(this, utils);
-            }
-            if (isNoEmptyObject(params)) {
-              this.setParams(params, true);
-            }
-            this.frozen();
+            initProcess.call(this);
           }
+          // call generate
           public generate(options: TSuchInject, such: TStaticSuch) {
             return generate.call(this, options, such);
           }

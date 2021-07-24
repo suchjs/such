@@ -2,6 +2,7 @@ import { IParserConfig } from '../types/parser';
 import { encodeSplitor, splitor as confSplitor } from '../data/config';
 import { encodeRegexpChars, isArray } from '../helpers/utils';
 import { TMatchResult, TObj, TStrList } from '../types/common';
+import Mockit from './mockit';
 export interface Tags {
   start: string;
   end: string;
@@ -281,7 +282,7 @@ export class Dispatcher {
    * @param {string} code
    * @memberof Dispatcher
    */
-  public parse(code: string): TObj<TObj> | never {
+  public parse(code: string, mockit?: Mockit): TObj<TObj> | never {
     const len = code.length;
     const { splitor } = this;
     let index = 0;
@@ -308,6 +309,21 @@ export class Dispatcher {
           `the config of "${type}" (${instance.code}) can not be set again.`,
         );
       } else {
+        if (mockit) {
+          const { allowAttrs, constrName } = mockit;
+          if (!allowAttrs.includes(type)) {
+            switch (type) {
+              case '$config':
+                throw new Error(
+                  `the data type "${constrName}" are not allowed to use configuration when parsing '${code}', please check if you have forget to set the type's field "configOptions"`,
+                );
+              default:
+                throw new Error(
+                  `the data type "${constrName}" are not allowed to use '${type}' data attribute when parsing '${code}'`,
+                );
+            }
+          }
+        }
         const curResult = instance.parse() as TObj;
         if (isArray(curResult)) {
           result[type] = curResult;

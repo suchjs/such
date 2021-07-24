@@ -2,6 +2,7 @@ const path = require('path');
 const TerserPlugin = require('terser-webpack-plugin');
 const FileManagerPlugin = require('filemanager-webpack-plugin');
 const version = require('./package.json').version;
+const webpack = require('webpack');
 const resolve = (pathname) => path.resolve(__dirname, pathname);
 const fileName = `such.${version}.min.js`;
 module.exports = {
@@ -31,6 +32,9 @@ module.exports = {
     },
   },
   plugins: [
+    new webpack.DefinePlugin({
+      'process.env.BROWSER': process.env.BROWSER,
+    }),
     new FileManagerPlugin({
       events: {
         onEnd: {

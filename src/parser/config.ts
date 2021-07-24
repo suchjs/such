@@ -2,6 +2,7 @@ import { regexpRule } from 'reregexp';
 import { IParserFactory, IPPConfig } from '../types/parser';
 import { decodeTrans, getExp } from '../helpers/utils';
 import { AParser } from '../core/parser';
+import store from '../data/store';
 
 const parser: IParserFactory = {
   /**
@@ -30,7 +31,7 @@ const parser: IParserFactory = {
           const { $1: key, $3: strValue, $4: plainValue } = RegExp;
           if (config.hasOwnProperty(key)) {
             throw new Error(
-              `the config of "${key}" has exists,do not define again.`,
+              `the config of "${key}" has exists,do not define repeatly.`,
             );
           }
           if (strValue) {
@@ -47,8 +48,13 @@ const parser: IParserFactory = {
               config[key] = Number(value);
             } else if (nativeValues.indexOf(value) > -1) {
               config[key] = getExp(value);
+            } else if (store.vars.hasOwnProperty(value)) {
+              // variable
+              config[key] = store.vars[value];
             } else {
-              this.halt(`wrong param:${param}`);
+              throw new Error(
+                `wrong config key: ${key}, the value '${value}' is not a variable, please assign it first.`,
+              );
             }
           } else {
             config[key] = true;
