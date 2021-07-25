@@ -10,39 +10,41 @@
     <script src="../dist/such.min.js"></script>
     <script>
       (function () {
-        // const data = Such.as({
-        //   errno: ':number[0,1]:%d',
-        //   errmsg: ':string{0,20}',
-        //   url: ':url',
-        //   data: {
-        //     'count?': ':number[1e5,1e6]:%d',
-        //     'list{+0,5}': {
-        //       url: ':url',
-        //       date: ':date:%yyyy-mm-dd HH\\:MM\\:ss',
-        //       price: ':number[100,200]:%.2f',
-        //       color: ':color$rgba',
-        //       isNew: ':boolean',
-        //     },
-        //     'from:{1}': ['a.com', 'b.com'],
-        //   },
-        //   'more{3}': '\\:number',
-        // });
-        // console.log(data);
-
-        // const instance = Such.instance({
-        //   // name字段可有可无
-        //   'title?': ':string:{3,10}',
-        //   // list字段一定为数组，大小为0到5
-        //   'books{+0,5}': {
-        //     date: ':date',
-        //     author: ':string:{10,20}',
-        //   },
-        //   // tags字段非必须，如果存在，就是一个3个字符串组成的数组
-        //   'tags{3}?': ':string:{5,10}',
-        //   // firm字段非必须，如果存在，就从
-        //   'firm:{1}?': ['Netflix', 'Disney'],
-        // });
-        // console.log(instance.a());
+        // 示例1
+        const demo1 = Such.as({
+          errno: ':number[0,1]:%d',
+          errmsg: ':string{0,20}',
+          url: ':url',
+          data: {
+            'count?': ':number[1e5,1e6]:%d',
+            'list{+0,5}': {
+              url: ':url',
+              date: ':date:%yyyy-mm-dd HH\\:MM\\:ss',
+              price: ':number[100,200]:%.2f',
+              color: ':color$rgba',
+              isNew: ':boolean',
+            },
+            'from:{1}': ['a.com', 'b.com'],
+          },
+          'more{3}': '\\:number',
+        });
+        console.log(demo1);
+        // 示例2
+        const demo2 = Such.instance({
+          // name字段可有可无
+          'title?': ':string:{3,10}',
+          // list字段一定为数组，大小为0到5
+          'books{+0,5}': {
+            date: ':date',
+            author: ':string:{10,20}',
+          },
+          // tags字段非必须，如果存在，就是一个3个字符串组成的数组
+          'tags{3}?': ':string:{5,10}',
+          // firm字段非必须，如果存在，就从
+          'firm:{1}?': ['Netflix', 'Disney'],
+        });
+        console.log(demo2.a());
+        // 设置一些数据
         Such.assign('dict', ['a','b']);
         Such.assign('city', {
           '北京市': {
@@ -52,12 +54,16 @@
             '武汉市': ['洪湖区','东西湖区']
           }
         });
-        const instance = Such.instance({
+        // 示例3
+        const demo3 = Such.instance(':dict:#[data=dict]');
+        console.log(demo3.a());
+        // 示例4
+        const demo4 = Such.instance({
           province: ':cascader:#[root=true,data=city]',
           city: ':cascader:&./province',
           area: ':cascader:&./city'
         });
-        console.log(instance.a());
+        console.log(demo4.a());
       })();
     </script>
   </body>

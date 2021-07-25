@@ -1,9 +1,8 @@
-import { TConstructor, TResult, TStrList, TObj } from '../types/common';
-import { IPPConfig, IPPFunc, IPPFuncOptions } from '../types/parser';
+import { TResult, TStrList, TObj } from '../types/common';
+import { IPPConfig, IPPFunc } from '../types/parser';
 import {
   deepCopy,
   getExpValue,
-  isArray,
   isFn,
   isNoEmptyObject,
   isObject,
@@ -12,7 +11,6 @@ import {
 import store from '../data/store';
 import {
   TMConfig,
-  TMConfigRule,
   TMModifierFn,
   TMParams,
   TMAttrs,
@@ -22,6 +20,7 @@ import {
 } from '../types/mockit';
 import { TSuchInject } from '../types/instance';
 import { TStaticSuch } from './such';
+import { PRE_PROCESS, isPreProcessFn, setPreProcessFn } from '../data/mockit';
 
 const { fns: globalFns, vars: globalVars, mockitsCache } = store;
 /**
@@ -73,91 +72,13 @@ export default abstract class Mockit<T = unknown> {
     };
     // intialize
     this.init();
+    // when use 'bind', the function become another handle
     // all mockits allow funcs
-    this.addRule('$func', function ($func: IPPFunc) {
-      if (!$func) {
-        return;
-      }
-      const options = $func.options;
-      for (let i = 0, j = options.length; i < j; i++) {
-        const item: IPPFuncOptions = options[i];
-        const { name, params } = item;
-        params.map((param) => {
-          // if object, valid
-          if (param.variable) {
-            try {
-              if (typeof param.value === 'string') {
-                if (param.value.includes('.') || param.value.includes('[')) {
-                  new Function(
-                    '__CONFIG__',
-                    'return __CONFIG__.' + param.value,
-                  )(globalVars);
-                } else if (!globalVars.hasOwnProperty(param.value)) {
-                  throw new Error(`"${param.value} is not assigned."`);
-                }
-              }
-            } catch (e) {
-              throw new Error(
-                `the modifier function ${name}'s param ${param.value} is not correct:${e.message}`,
-              );
-            }
-          }
-        });
-      }
-    });
-    const { configOptions } = this;
+    this.addRule('$func', setPreProcessFn(PRE_PROCESS.$func.bind(this)));
     // if set configOptions,validate config
-    if (
-      isNoEmptyObject(configOptions) &&
-      !mockitsCache[constrName].rules.includes('$config')
-    ) {
-      // eslint-disable-next-line @typescript-eslint/no-this-alias
-      const $this = this;
-      this.addRule('$config', function ($config: IPPConfig = {}) {
-        const last = deepCopy({}, $config) as IPPConfig;
-        Object.keys(configOptions).map((key: string) => {
-          const cur: TMConfigRule = configOptions[key];
-          let def: unknown;
-          let type: TConstructor | TConstructor[];
-          const typeNames: TStrList = [];
-          let validator = (target: unknown) => {
-            const targetType = typeOf(target);
-            const allTypes = isArray(type) ? type : [type];
-            let flag = false;
-            allTypes.map((Cur) => {
-              const curName = Cur.name;
-              typeNames.push(curName);
-              if (!flag) {
-                flag = targetType === curName;
-              }
-            });
-            return flag;
-          };
-          const hasKey = last.hasOwnProperty(key);
-          if (isObject(cur)) {
-            def = isFn(cur.default) ? cur.default() : cur.default;
-            type = cur.type;
-            validator = isFn<typeof validator>(cur.validator)
-              ? cur.validator
-              : validator;
-          }
-          if (!hasKey) {
-            // set default
-            if (def !== undefined) {
-              last[key] = def;
-            }
-          } else {
-            if (!validator.call($this, last[key])) {
-              throw new Error(
-                `the config of "${key}"'s value ${
-                  last[key]
-                } is not instance of ${typeNames.join(',')}`,
-              );
-            }
-          }
-        });
-        return last;
-      });
+    const { configOptions } = this;
+    if (isNoEmptyObject(configOptions)) {
+      this.addRule('$config', setPreProcessFn(PRE_PROCESS.$config.bind(this)));
     }
     // cached the mockit, frozen all data
     this.frozen();
@@ -346,34 +267,41 @@ export default abstract class Mockit<T = unknown> {
       fns = modifierFns;
     }
     if (target.includes(name)) {
-      throw new Error(`${type} of ${name} already exists`);
-    } else {
-      // when add a rule, auto add the rule name to allowAttrs
-      if (isRuleType && !this.allowAttrs.includes(name)) {
-        this.setAllowAttrs(name);
-      }
-      // add by position
-      if (typeof pos === 'undefined' || pos.trim() === '') {
-        target.push(name);
+      // if has ever added a handle that not PRE_PROCESS handle, ignore the PRE_PROCESS handle
+      // otherwise, override the handle
+      if (PRE_PROCESS.hasOwnProperty(name)) {
+        if (isPreProcessFn(fn)) {
+          return;
+        }
       } else {
-        let prepend = false;
-        if (pos.charAt(0) === '^') {
-          prepend = true;
-          pos = pos.slice(1);
-        }
-        if (pos === '') {
-          target.unshift(name);
+        throw new Error(`${type} of ${name} already exists`);
+      }
+    }
+    // when add a rule, auto add the rule name to allowAttrs
+    if (isRuleType) {
+      this.setAllowAttrs(name);
+    }
+    // add by position
+    if (pos === undefined || pos.trim() === '') {
+      target.push(name);
+    } else {
+      let prepend = false;
+      if (pos.charAt(0) === '^') {
+        prepend = true;
+        pos = pos.slice(1);
+      }
+      if (pos === '') {
+        target.unshift(name);
+      } else {
+        const findIndex = target.indexOf(pos);
+        if (findIndex < 0) {
+          throw new Error(`no exists ${type} name of ${pos}`);
         } else {
-          const findIndex = target.indexOf(pos);
-          if (findIndex < 0) {
-            throw new Error(`no exists ${type} name of ${pos}`);
-          } else {
-            target.splice(findIndex + (prepend ? 0 : 1), 0, name);
-          }
+          target.splice(findIndex + (prepend ? 0 : 1), 0, name);
         }
       }
-      fns[name] = fn;
     }
+    fns[name] = fn;
   }
   /**
    *
@@ -385,12 +313,23 @@ export default abstract class Mockit<T = unknown> {
     const { params, validator } = this;
     const { rules, ruleFns } = mockitsCache[this.constrName];
     const keys = Object.keys(params);
+    const execute = function (name: string, cb: TMRuleFn<unknown>) {
+      const res = cb.call(this, params[name]);
+      if (isObject(res)) {
+        params[name] = res;
+      }
+    };
     rules.map((name: string) => {
       try {
-        const res = ruleFns[name].call(this, params[name]);
-        if (isObject(res)) {
-          params[name] = res;
+        // if a preprocess rule, execute it first
+        if (PRE_PROCESS.hasOwnProperty(name)) {
+          execute(
+            name,
+            PRE_PROCESS[name as keyof typeof PRE_PROCESS].bind(this),
+          );
         }
+        // execute the rule
+        execute(name, ruleFns[name].bind(this));
         const index = keys.indexOf(name);
         if (index > -1) {
           keys.splice(index, 1);
