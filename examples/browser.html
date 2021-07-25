@@ -44,7 +44,19 @@
         // });
         // console.log(instance.a());
         Such.assign('dict', ['a','b']);
-        const instance = Such.instance(":dict:#[data=dict]");
+        Such.assign('city', {
+          '北京市': {
+            '北京市': ['朝阳区','海淀区']
+          },
+          '湖北省': {
+            '武汉市': ['洪湖区','东西湖区']
+          }
+        });
+        const instance = Such.instance({
+          province: ':cascader:#[root=true,data=city]',
+          city: ':cascader:&./province',
+          area: ':cascader:&./city'
+        });
         console.log(instance.a());
       })();
     </script>

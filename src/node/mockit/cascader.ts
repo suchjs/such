@@ -4,9 +4,9 @@ import store from '../../data/store';
 import { getRealPath } from '../utils';
 import { TSuchInject } from '../../types/instance';
 import { TStrList } from '../../types/common';
-const { fileCache } = store;
 
 export default {
+  // config options
   configOptions: {
     root: {
       type: Boolean,
@@ -16,7 +16,11 @@ export default {
       type: Function,
     },
   },
+  // init method
   init(): void {
+    // cascader value need '$path' data attribute
+    // for root node, the $path pointed to the data file
+    // for child node, the $path reference to the parent node
     this.addRule('$path', ($path: IPPPath) => {
       if (!$path) {
         throw new Error('the cascader type must have a path or ref.');
@@ -31,6 +35,7 @@ export default {
    * @returns [unkown]
    */
   generate(options: TSuchInject): unknown | never {
+    const { fileCache } = store;
     const { mocker } = options;
     const { handle, values, lastPath } = makeCascaderData(this.params, mocker);
     const realPath = getRealPath(lastPath);

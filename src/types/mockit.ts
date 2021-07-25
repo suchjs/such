@@ -1,4 +1,4 @@
-import { TConstructor, TObj, TStrList } from './common';
+import { TConstructor, TObj } from './common';
 import {
   IPPConfig,
   IPPFormat,
@@ -41,4 +41,3 @@ export type TMFactoryOptions = {
 };
 export type TMClass = new (...args: unknown[]) => Mockit;
 export type TMClassList = TObj<TMClass>;
-export type TMultiStr = string | TStrList;

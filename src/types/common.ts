@@ -1,6 +1,7 @@
 export type TFunc = (...args: unknown[]) => unknown;
 export type TPath = string;
 export type TStrList = string[];
+export type TMultiStr = string | TStrList;
 export type TResult<T> = T | never;
 export type TMatchResult = Array<string | undefined>;
 export type TObj<T = unknown> = {

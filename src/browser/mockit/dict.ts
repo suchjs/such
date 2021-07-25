@@ -1,9 +1,8 @@
-import { TStrList } from '../../types/common';
+import { TMultiStr, TStrList } from '../../types/common';
 import { IPPConfig } from '../../types/parser';
 import { isArray, makeDictData } from '../../helpers/utils';
 import Mockit from '../../core/mockit';
 
-type TMultiStr = string | TStrList;
 export default class ToDict extends Mockit<TMultiStr> {
   // set constructor name
   constructor() {

@@ -1,10 +1,10 @@
 import { TSuchInject } from '../types/instance';
 import Mockit from '../core/mockit';
 import { makeRandom, validator } from '../helpers/utils';
-export default class ToId extends Mockit<number | number[]> {
+export default class ToIncrement extends Mockit<number | number[]> {
   // set constructor name
   constructor() {
-    super('ToId');
+    super('ToIncrement');
   }
   // init
   public init(): void {
@@ -37,33 +37,36 @@ export default class ToId extends Mockit<number | number[]> {
     };
     const { start, step } = config;
     const { mocker } = options;
-    const storeData = mocker.storeData as { id: number };
+    const key = 'increment';
+    let origValue: number = mocker.store(key) as number;
     if ($length) {
       const { least, most } = $length;
       const result: number[] = [];
       let count = makeRandom(least, most);
       if (count > 0) {
-        if (typeof storeData['id'] !== 'number') {
-          storeData['id'] = start;
+        if (typeof origValue !== 'number') {
+          origValue = start;
           // push the start id
-          result.push(storeData['id']);
+          result.push(start);
           // reduce count
           count--;
         }
         // if count still > 1
         while (count-- > 0) {
-          storeData['id'] += step;
-          result.push(storeData['id']);
+          origValue += step;
+          result.push(origValue);
         }
+        mocker.store(key, origValue);
       }
       return result;
     }
-    if (typeof storeData['id'] === 'number') {
-      storeData['id'] += step;
+    if (typeof origValue === 'number') {
+      origValue += step;
     } else {
-      storeData['id'] = start;
+      origValue = start;
     }
-    return storeData['id'] as number;
+    mocker.store(key, origValue);
+    return origValue;
   }
   public test(): boolean {
     return true;

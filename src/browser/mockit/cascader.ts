@@ -1,5 +1,5 @@
 import { IPPPath } from '../../types/parser';
-import { isArray, typeOf, makeCascaderData } from '../../helpers/utils';
+import { makeCascaderData } from '../../helpers/utils';
 import { TSuchInject } from '../../types/instance';
 import Mockit from '../../core/mockit';
 import { TStrList } from '../../types/common';
@@ -48,13 +48,6 @@ export default class ToCascader extends Mockit<unknown> {
             `the data type 'cascader' must set a 'data' configuration in a root node`,
           );
         }
-        if (!isArray($config.data)) {
-          throw new Error(
-            `the data type 'cascader' must set a 'data' configuration with an array, got "${typeOf(
-              $config.data,
-            )}"`,
-          );
-        }
       } else {
         const pathNum = $path.length;
         if (pathNum === 0) {
@@ -76,8 +69,7 @@ export default class ToCascader extends Mockit<unknown> {
    */
   generate(options: TSuchInject): unknown | never {
     const { mocker } = options;
-    const { $config } = this.params;
-    const { handle, values } = makeCascaderData(this.params, mocker);
+    const { handle, values, $config } = makeCascaderData(this.params, mocker);
     return handle($config.data, values as TStrList);
   }
   // set test

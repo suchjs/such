@@ -1,7 +1,7 @@
 import { dtNameRule, splitor, suchRule } from '../data/config';
 import PathMap, { TFieldPath } from '../helpers/pathmap';
 import * as utils from '../helpers/utils';
-import { addMockitList, ALL_MOCKITS, mockitList } from '../data/mockit';
+import { ALL_MOCKITS } from '../data/mockit';
 import Mockit, { BaseExtendMockit } from './mockit';
 import Dispatcher from '../data/parser';
 import store from '../data/store';
@@ -24,8 +24,6 @@ const {
   isNoEmptyObject,
 } = utils;
 const { alias, aliasTypes } = store;
-// add all mockit list
-addMockitList(mockitList);
 /**
  *
  *
@@ -86,7 +84,7 @@ export class Mocker {
   public readonly isRoot: boolean;
   public readonly mockFn: (dpath: TFieldPath) => unknown;
   public readonly mockit: Mockit;
-  public readonly storeData: TObj = {};
+  protected readonly storeData: TObj = {};
   /**
    * Creates an instance of Mocker.
    * @param {IMockerOptions} options
@@ -338,6 +336,9 @@ export class Mocker {
         };
       }
     }
+    /**
+     * name
+     */
   }
 
   /**
@@ -373,6 +374,36 @@ export class Mocker {
     }
     return (this.result = this.mockFn(dpath));
   }
+  /**
+   *
+   * @param key
+   */
+  public store(key: string): unknown;
+  public store(key: string, value: unknown): void;
+  public store(key: string, ...args: unknown[]): unknown | void {
+    const argsNum = args.length;
+    if (argsNum > 1) {
+      throw new Error(
+        `wrong arguments length called the mocker's method 'store', expect at most 2 but got ${
+          argsNum + 1
+        }`,
+      );
+    }
+    if (argsNum === 1) {
+      const [value] = args;
+      this.storeData[key] = value;
+    } else {
+      return this.storeData[key];
+    }
+  }
+  /**
+   *
+   * @param key [string]
+   * @returns
+   */
+  public hasStore(key: string): boolean {
+    return this.storeData.hasOwnProperty(key);
+  }
 }
 /**
  *
@@ -399,6 +430,12 @@ export default class Such {
         `the type of "${long}" has an alias yet,can not use "${short}" for alias name.`,
       );
     } else {
+      // the short name must obey the dtNameRule
+      if (!dtNameRule.test(short)) {
+        throw new Error(
+          `use a wrong alias short name '${short}', the name should match the regexp '${dtNameRule.toString()}'`,
+        );
+      }
       alias[short] = long;
       aliasTypes.push(long);
     }
@@ -559,11 +596,9 @@ export default class Such {
       if (isFn(validator)) {
         if (isFn(this.validator)) {
           const origValidator = this.validator;
-          this.validator = function (params) {
-            // execute orig validator
-            origValidator(params);
-            // execute cur validator
-            validator(params);
+          // inject orig validator as the last argument
+          this.validator = function (...args: unknown[]) {
+            validator(...args, origValidator);
           };
         } else {
           this.validator = validator;

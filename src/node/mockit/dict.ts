@@ -1,10 +1,8 @@
-import { TStrList } from '../../types/common';
+import { TMultiStr, TStrList } from '../../types/common';
 import { IPPPath, IPPPathItem } from '../../types/parser';
 import store from '../../data/store';
 import { getRealPath } from '../utils';
-import { TMultiStr } from '../../types/mockit';
-import { makeDictData } from 'src/helpers/utils';
-const { fileCache } = store;
+import { makeDictData } from '../../helpers/utils';
 
 export default {
   /**
@@ -37,6 +35,7 @@ export default {
       return getRealPath(item);
     });
     const queues: TStrList[] = [];
+    const { fileCache } = store;
     // all the dict files must preload before generate
     // check if every path is in preload
     for (const filePath of lastPaths) {

@@ -8,7 +8,7 @@ import Such from '../src/index';
       errmsg: ':string{0,20}',
       'count?': ':number[1,2]:#[exclude="max"]',
       'list{+0,5}': {
-        id: ':id:#[step=1.5]',
+        id: ':increment:#[step=1.5]',
         url: ':url',
         date: ':date:%yyyy-mm-dd HH\\:MM\\:ss',
         price: ':number[100,200]:%.2f',
@@ -25,7 +25,7 @@ import Such from '../src/index';
     // eslint-disable-next-line no-console
     console.log(value);
   }
-  const instance = Such.instance(':id{3}');
+  const instance = Such.instance(':increment{3}');
   for (let i = 0; i < 5; i++) {
     const result = instance.a();
     // eslint-disable-next-line no-console

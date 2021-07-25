@@ -1,8 +1,8 @@
-import { TFunc, TObj, TStrList } from '../types/common';
+import { TFunc, TObj, TStrList, TMultiStr } from '../types/common';
 import { TFieldPath } from './pathmap';
 import { IPPPathItem } from '../types/parser';
 import { Mocker } from '../core/such';
-import { TMParams, TMultiStr } from 'src/types/mockit';
+import { TMParams } from '../types/mockit';
 
 /*
  * re export strtotime/dateformat from dateformat
@@ -324,7 +324,7 @@ export const getRefMocker = (
 };
 
 /**
- *
+ * validators
  */
 export const validator = {
   validNumber(type: string, field: string, value: unknown): boolean | never {
@@ -351,7 +351,12 @@ export const validator = {
   },
 };
 
-// default cascader handle
+/**
+ *
+ * @param data
+ * @param values
+ * @returns
+ */
 export const getCascaderValue = (
   data: unknown,
   values: TStrList,
@@ -376,6 +381,12 @@ export const getCascaderValue = (
   }
 };
 
+/**
+ *
+ * @param params [TMParams]
+ * @param mocker [Mocker]
+ * @returns
+ */
 export const makeCascaderData = (
   params: TMParams,
   mocker: Mocker,
@@ -383,6 +394,7 @@ export const makeCascaderData = (
   handle: typeof getCascaderValue;
   lastPath: IPPPathItem;
   values: unknown[];
+  $config: typeof params.$config;
 } => {
   let { $path = [], $config } = params;
   let lastPath = $path[0];
@@ -413,9 +425,15 @@ export const makeCascaderData = (
     handle,
     lastPath,
     values,
+    $config,
   };
 };
 
+/**
+ *
+ * @param params [TMParams]
+ * @returns
+ */
 export const makeDictData = (
   params: TMParams,
 ): ((result: TStrList[]) => TMultiStr) => {

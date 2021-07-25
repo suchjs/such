@@ -4,26 +4,22 @@ import string from '../mockit/string';
 import regexp from '../mockit/regexp';
 import date from '../mockit/date';
 import ref from '../mockit/ref';
-import id from '../mockit/id';
+import increment from '../mockit/increment';
 import { TMClassList } from '../types/mockit';
 
-export const mockitList: TMClassList = {
+// all mockits
+export const ALL_MOCKITS: TMClassList = {
   number,
   string,
   regexp,
   date,
   ref,
-  id,
+  increment,
 };
-// all mockits
-export const ALL_MOCKITS: TMClassList = {};
 
+// add new mockits
 export const addMockitList = (mockitList: TMClassList): void => {
   Object.keys(mockitList).map((key: string) => {
-    if (key.startsWith('_')) {
-      // ignore special mockits name begin with '_'
-      return;
-    }
     ALL_MOCKITS[key] = mockitList[key];
   });
 };
