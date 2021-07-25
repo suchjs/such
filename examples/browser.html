@@ -10,25 +10,23 @@
     <script src="../dist/such.min.js"></script>
     <script>
       (function () {
-        // 示例1
-        const demo1 = Such.as({
+        // // 示例1
+        const demo1 = Such.instance({
           errno: ':number[0,1]:%d',
           errmsg: ':string{0,20}',
           url: ':url',
-          data: {
-            'count?': ':number[1e5,1e6]:%d',
-            'list{+0,5}': {
-              url: ':url',
-              date: ':date:%yyyy-mm-dd HH\\:MM\\:ss',
-              price: ':number[100,200]:%.2f',
-              color: ':color$rgba',
-              isNew: ':boolean',
-            },
-            'from:{1}': ['a.com', 'b.com'],
+          'count?': ':number[1e5,1e6]:%d',
+          'list{+1,5}': {
+            url: ':url',
+            date: ':date:%yyyy-mm-dd HH\\:MM\\:ss',
+            price: ':number[100,200]:%.2f',
+            color: ':color$rgba',
+            isNew: ':boolean',
           },
+          'from:{1}': ['a.com', 'b.com'],
           'more{3}': '\\:number',
         });
-        console.log(demo1);
+        console.log(demo1.a());
         // 示例2
         const demo2 = Such.instance({
           // name字段可有可无

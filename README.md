@@ -63,13 +63,13 @@ A javascript mocking library, both for node & browser, make the data mocking ext
      Such.as(':date[2010,2020]:%yyyy-mm-dd HH\\:MM\\:ss'); // 2015-01-22 20:10:11
      ```
 
-  4. id
+  4. increment
 
      ```javascript
-     // make an autoincreased id
-     Such.as(':id'); // 1  => 2 => 3
-     // config the id with a config property with syntax '#[xxx = xxx]'
-     Such.as(':id#[start=5,step=2]'); // 5 => 7 => 9
+     // make an autoincreased integer
+     Such.as(':increment'); // 1  => 2 => 3
+     // config the increment with a config property with syntax '#[xxx = xxx]'
+     Such.as(':increment#[start=5,step=2]'); // 5 => 7 => 9
      ```
 
   5. regexp
@@ -88,6 +88,23 @@ A javascript mocking library, both for node & browser, make the data mocking ext
        repeat_pwd: ':ref&./pwd',
      }); // {"pwd":"***", repeat_pwd:"***"}
      ```
+
+  7. cascader
+
+  ```javascript
+  // make a cascader value
+  Such.as({
+    country: ':cascader:&<dataDir>/countries.json:#[root=true]',
+    city: ':cascader:&./country',
+  });
+  ```
+
+  8. dict
+
+  ```javascript
+  // make a dict item value
+  Such.as(':dict:&<dataDir>/dict.txt');
+  ```
 
 - ### More ability in Nodejs
 

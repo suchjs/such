@@ -21,8 +21,11 @@ const makeDate = (param: string | number): Date | never => {
 };
 export default class ToDate extends Mockit<string | Date> {
   // set constructor name
-  constructor() {
-    super('ToDate');
+  // keep the name in parameter
+  // don't short for `super('ToDate')`
+  // the constrName may not make sence, need check the ts
+  constructor(public readonly constrName: string = 'ToDate') {
+    super(constrName);
   }
   // init
   public init(): void {

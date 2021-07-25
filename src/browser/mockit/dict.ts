@@ -5,8 +5,8 @@ import Mockit from '../../core/mockit';
 
 export default class ToDict extends Mockit<TMultiStr> {
   // set constructor name
-  constructor() {
-    super('ToDict');
+  constructor(public readonly constrName: string = 'ToDict') {
+    super(constrName);
   }
   /**
    * init

@@ -45,6 +45,8 @@ export default abstract class Mockit<T = unknown> {
   /**
    * create an instance of Mockit.
    * constructor
+   * pay attention the constrName value
+   * the built-in type should use a same style
    * @memberof Mockit
    */
   constructor(public readonly constrName: string) {

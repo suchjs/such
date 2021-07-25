@@ -3,8 +3,8 @@ import Mockit from '../core/mockit';
 import { makeRandom, validator } from '../helpers/utils';
 export default class ToIncrement extends Mockit<number | number[]> {
   // set constructor name
-  constructor() {
-    super('ToIncrement');
+  constructor(public readonly constrName: string = 'ToIncrement') {
+    super(constrName);
   }
   // init
   public init(): void {
