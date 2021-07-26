@@ -30,9 +30,10 @@ export default class ToString extends Mockit<string> {
       }
       // https://www.regular-expressions.info/unicode.html#prop
       const { range } = $size;
-      if (range.length < 2) {
+      const total = range.length;
+      if (total < 2) {
         throw new Error(
-          `The count param should have 2 params,but got ${range.length}`,
+          `The count param should have 2 params,but got ${total}`,
         );
       }
       // validate code range
@@ -40,49 +41,67 @@ export default class ToString extends Mockit<string> {
       const isFirstUni = uniRule.test(first);
       const result: number[][] = [];
       const maxCodeNum = 0x10ffff;
-      if (isFirstUni || numRule.test(first)) {
+      const uniRangeRule = /^\\u([0-9a-fA-F]{4}|[0-9a-fA-F]{6})\-\\u([0-9a-fA-F]{4}|[0-9A-Fa-f]{6})$/;
+      const numRangeRule = /^(\d+)\-(\d+)$/;
+      let isNormalRange = false;
+      let index = 0;
+      // if a normal range, has a format '[min, max]'
+      // allowed syntax:
+      // 1. all are numbers: [65,90]
+      // 2. all are unicode: [\\u41,\\u5a]
+      // mixed number and unicode are forbidden, such as [65,\\u5a]
+      // once the ranges have more than 3 arguments
+      // or there is at least one `range`, the single number or unicode now is just a number or unicode
+      // it's not a part of range, nor the min or the max
+      // e.g. [65,90-100]: contains 65,90 to 100, not 65 to 90 and 90 to 100
+      if (total === 2 && (isFirstUni || numRule.test(first))) {
         let firstNum: number;
         let secondNum: number;
-        if (range.length > 2) {
-          throw new Error(
-            `the count of range should have just 2 params,if you want support some specail point code,you can set the param like this,[${first}-${first},...]`,
-          );
+        let isUniRange = false;
+        if (isFirstUni) {
+          firstNum = hex2num(RegExp.$1);
+          isUniRange = true;
+          if (uniRule.test(second)) {
+            isNormalRange = true;
+            secondNum = hex2num(RegExp.$1);
+          }
         } else {
-          if (isFirstUni) {
-            firstNum = hex2num(RegExp.$1);
-            if (!uniRule.test(second)) {
-              throw new Error(
-                `the max param "${second}" should use unicode too.`,
-              );
-            } else {
-              secondNum = hex2num(RegExp.$1);
-            }
-          } else {
-            firstNum = Number(first);
-            if (!numRule.test(second)) {
-              throw new Error(`the max param "${second}" is not a number.`);
-            } else {
-              secondNum = Number(second);
-            }
+          firstNum = Number(first);
+          if (numRule.test(second)) {
+            secondNum = Number(second);
+            isNormalRange = true;
           }
         }
-        if (secondNum < firstNum) {
-          throw new Error(
-            `the min param '${first}' is big than the max param '${second}'`,
-          );
-        } else {
-          if (secondNum > maxCodeNum) {
+        // normal range
+        if (isNormalRange) {
+          if (secondNum < firstNum) {
             throw new Error(
-              `the max param's unicode point is big than the max point (${second} > '0x10ffff')`,
+              `the min param '${first}' is big than the max param '${second}'`,
             );
           } else {
-            result.push([firstNum, secondNum]);
+            if (secondNum > maxCodeNum) {
+              throw new Error(
+                `the max param's unicode point is big than the max point (${second} > '0x10ffff')`,
+              );
+            } else {
+              result.push([firstNum, secondNum]);
+            }
+          }
+        } else {
+          if (!numRangeRule.test(second) && !uniRangeRule.test(second)) {
+            throw new Error(
+              `the max param '${second}' must be a ${
+                isUniRange ? 'unicode' : 'number'
+              } like the min param '${first}'`,
+            );
+          } else {
+            index++;
           }
         }
-      } else {
-        const uniRangeRule = /^\\u([0-9a-fA-F]{4}|[0-9a-fA-F]{6})\-\\u([0-9a-fA-F]{4}|[0-9A-Fa-f]{6})$/;
-        const numRangeRule = /^(\d+)\-(\d+)$/;
-        range.map((code: string, index: number) => {
+      }
+      if (!isNormalRange) {
+        for (; index < total; index++) {
+          const code = range[index] as string;
           let match: TMatchResult | null = null;
           let firstNum: number;
           let secondNum: number;
@@ -93,9 +112,12 @@ export default class ToString extends Mockit<string> {
           } else if ((match = code.match(numRangeRule))) {
             firstNum = Number(match[1]);
             secondNum = Number(match[2]);
-          } else if (index > 0 && (match = code.match(numRule))) {
+          } else if ((match = code.match(numRule))) {
             isRange = false;
             firstNum = secondNum = Number(match[0]);
+          } else if ((match = code.match(uniRule))) {
+            isRange = false;
+            firstNum = secondNum = hex2num(match[0]);
           } else {
             throw new Error(
               `the param of index ${index}(${code}) is a wrong range or number.`,
@@ -105,21 +127,21 @@ export default class ToString extends Mockit<string> {
             throw new Error(
               `the param of index ${index}'s range is wrong.(${match[1]} > ${match[2]})`,
             );
-          }
-          if (secondNum > maxCodeNum) {
+          } else if (secondNum > maxCodeNum) {
             throw new Error(
               `the param of index ${index}'s code point(${secondNum}) is big than 0x10ffff`,
             );
           } else {
             result.push([firstNum, secondNum]);
           }
-        });
+        }
       }
       return {
         range: result,
       };
     });
   }
+  // generate
   public generate(): string {
     const params = this.params;
     const { $length } = params;
@@ -138,6 +160,7 @@ export default class ToString extends Mockit<string> {
     }
     return result;
   }
+  // test
   public test(): boolean {
     return true;
   }

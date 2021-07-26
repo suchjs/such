@@ -1,16 +1,23 @@
 {
   "name": "suchjs",
-  "version": "1.0.0-beta.7",
-  "description": "A javascript data mocking library, extendedable and powerful, written in typescript.",
+  "version": "1.0.0-beta.8",
+  "description": "A library for generating faker data, extendable and powerful, make mocking data as you want easily.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "author": "jxz_211@163.com",
   "keywords": [
+    "faker",
+    "faker-generator",
+    "faker-data",
+    "simulation",
+    "data-simulation",
     "mock",
     "mocking",
-    "generate",
-    "random",
-    "data"
+    "data-generation",
+    "random-data",
+    "random-generation",
+    "nodejs",
+    "typescript"
   ],
   "license": "MIT",
   "devDependencies": {
