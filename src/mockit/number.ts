@@ -56,8 +56,8 @@ export default class ToNumber extends Mockit<number> {
         );
       }
       let [min, max] = range;
-      min = min.toString().trim();
-      max = max.toString().trim();
+      min = (min as string).trim();
+      max = (max as string).trim();
       if (min === '' && max === '') {
         throw new Error(`the min param and max param can not both undefined`);
       }

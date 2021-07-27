@@ -42,7 +42,6 @@ export default abstract class Mockit<T = unknown> {
   protected isValidOk = false;
   protected hasValid = false;
   protected invalidKeys: TStrList = [];
-  protected everValidParams: TObj<TObj> = {};
   /**
    * create an instance of Mockit.
    * constructor
@@ -314,12 +313,16 @@ export default abstract class Mockit<T = unknown> {
    * @memberof Mockit
    */
   private validParams(): boolean {
-    const { params, validator, everValidParams } = this;
+    const { params, validator } = this;
     const { rules, ruleFns } = mockitsCache[this.constrName];
     const keys = Object.keys(params);
     const execute = function (name: string, cb: TMRuleFn<unknown>) {
+      const transformedKey = '__TRANSFORMED__';
       // if the rule name has ever validated, ignore this rule
-      if (everValidParams[name] && everValidParams[name] === params[name]) {
+      if (
+        isObject(params[name]) &&
+        params[name].hasOwnProperty(transformedKey)
+      ) {
         return;
       }
       // validate the rule
@@ -327,8 +330,8 @@ export default abstract class Mockit<T = unknown> {
       // if the rule return an object, override the original value by the return result
       // set the rule as an ever validated rule
       if (isObject(res)) {
+        res[transformedKey] = true;
         params[name] = res;
-        everValidParams[name] = res;
       }
     };
     rules.map((name: string) => {

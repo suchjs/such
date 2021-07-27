@@ -32,11 +32,13 @@ import Such from '../src/index';
   //   console.log(result);
   // }
   // dict
-  const dict = Such.instance(':dict:&<dataDir>/dict.txt');
-  // eslint-disable-next-line no-console
-  console.log(dict.a());
+  // const dict = Such.instance(':dict:&<dataDir>/dict.txt');
+  // // eslint-disable-next-line no-console
+  // console.log(dict.a());
   // // lowercase
   const color$hex = Such.instance(':color$hsl');
   // eslint-disable-next-line no-console
   console.log(color$hex.a());
+  console.log(color$hex.a());
+  // console.log(color$hex.a());
 })();
