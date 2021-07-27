@@ -10,8 +10,8 @@ import {
 import Mockit from '../core/mockit';
 const makeDate = (param: string | number): Date | never => {
   let date: Date;
-  if (!isNaN(param as number)) {
-    date = new Date(param as number);
+  if (typeof param === 'number') {
+    date = new Date(param);
   } else if (strRule.test(param as string)) {
     date = strtotime(RegExp.$2);
   } else {
@@ -41,17 +41,17 @@ export default class ToDate extends Mockit<string | Date> {
         );
       } else {
         const [start, end] = range;
-        const startdate: Date | never = makeDate(start);
-        const enddate: Date | never = makeDate(end);
-        const starttime = startdate.getTime();
-        const endtime = enddate.getTime();
-        if (endtime < starttime) {
+        const startDate: Date | never = makeDate(start);
+        const endDate: Date | never = makeDate(end);
+        const startTime = startDate.getTime();
+        const endTime = endDate.getTime();
+        if (endTime < startTime) {
           throw new Error(
             `the time range of start time ${start} is big than end time ${end}.`,
           );
         } else {
           return {
-            range: [starttime, endtime],
+            range: [startTime, endTime],
           };
         }
       }
@@ -59,9 +59,7 @@ export default class ToDate extends Mockit<string | Date> {
     // $format rule
     this.addRule('$format', function ($format: IPPFormat) {
       if (!$format) {
-        return {
-          format: 'yyyy-mm-dd',
-        };
+        return;
       }
       // nothing
       let { format } = $format;
@@ -87,7 +85,9 @@ export default class ToDate extends Mockit<string | Date> {
       }
     ).range as number[];
     const time = makeRandom(range[0], range[1]);
-    return new Date(time);
+    const date = new Date();
+    date.setTime(time);
+    return date;
   }
   public test(): boolean {
     return true;

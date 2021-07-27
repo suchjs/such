@@ -2,14 +2,13 @@ import { TMatchResult, TStrList } from '../types/common';
 import { IPPSize } from '../types/parser';
 import { makeRandom } from '../helpers/utils';
 import Mockit from '../core/mockit';
-const uniRule = /^\\u((?:[0-9a-fA-F]{4}|[0-9a-fA-F]{6}))$/;
+const uniRule = /^\\u([0-9a-fA-F]{1,6})$/;
 const numRule = /^\d+$/;
 const hex2num = (hex: string): number => {
-  return Number('0x' + hex);
+  return parseInt(hex, 16);
 };
 /**
  * mock a string
- * mock字符串
  * @export
  * @class ToString
  * @extends {Mockit<string>}
@@ -32,19 +31,17 @@ export default class ToString extends Mockit<string> {
       const { range } = $size;
       const total = range.length;
       if (total < 2) {
-        throw new Error(
-          `The count param should have 2 params,but got ${total}`,
-        );
+        throw new Error(`The '$size' should have 2 arguments,but got ${total}`);
       }
       // validate code range
       const [first, second] = range as TStrList;
-      const isFirstUni = uniRule.test(first);
       const result: number[][] = [];
       const maxCodeNum = 0x10ffff;
-      const uniRangeRule = /^\\u([0-9a-fA-F]{4}|[0-9a-fA-F]{6})\-\\u([0-9a-fA-F]{4}|[0-9A-Fa-f]{6})$/;
+      const uniRangeRule = /^\\u([0-9a-fA-F]{1,6})\-\\u([0-9a-fA-F]{1,6})$/;
       const numRangeRule = /^(\d+)\-(\d+)$/;
       let isNormalRange = false;
       let index = 0;
+      let isFirstUni = false;
       // if a normal range, has a format '[min, max]'
       // allowed syntax:
       // 1. all are numbers: [65,90]
@@ -54,7 +51,10 @@ export default class ToString extends Mockit<string> {
       // or there is at least one `range`, the single number or unicode now is just a number or unicode
       // it's not a part of range, nor the min or the max
       // e.g. [65,90-100]: contains 65,90 to 100, not 65 to 90 and 90 to 100
-      if (total === 2 && (isFirstUni || numRule.test(first))) {
+      if (
+        total === 2 &&
+        ((isFirstUni = uniRule.test(first)) || numRule.test(first))
+      ) {
         let firstNum: number;
         let secondNum: number;
         let isUniRange = false;
@@ -117,7 +117,7 @@ export default class ToString extends Mockit<string> {
             firstNum = secondNum = Number(match[0]);
           } else if ((match = code.match(uniRule))) {
             isRange = false;
-            firstNum = secondNum = hex2num(match[0]);
+            firstNum = secondNum = hex2num(match[1]);
           } else {
             throw new Error(
               `the param of index ${index}(${code}) is a wrong range or number.`,

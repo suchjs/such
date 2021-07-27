@@ -455,10 +455,10 @@ export default class Such {
     };
     const lastConf: TSuchSettings = {};
     const such = Such as TStaticSuch & TNodeSuch;
-    if (config.extends && typeof such.loadConf === 'function') {
+    if (config.extends && typeof such.loadExtend === 'function') {
       const confFiles =
         typeof config.extends === 'string' ? [config.extends] : config.extends;
-      const confs = such.loadConf(confFiles);
+      const confs = such.loadExtend(confFiles);
       confs.map((conf: TSuchSettings) => {
         delete conf.extends;
         deepCopy(lastConf, conf);

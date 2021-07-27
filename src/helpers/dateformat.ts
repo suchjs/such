@@ -244,20 +244,16 @@ const strToDate = (
  * @returns [Date|never] return a Date object from the date
  */
 export const strtotime = (date: unknown): Date | never => {
-  if (!isNaN(date as number)) {
-    return new Date(+date);
+  if (typeof date === 'number') {
+    return new Date(date);
   } else if (typeof date === 'string') {
     let result: Date;
     try {
+      result = strToDate(date);
+    } catch (e) {
       result = new Date(date);
       if (isNaN(+result)) {
         throw new Error('invalid date');
-      }
-    } catch (e) {
-      try {
-        result = strToDate(date);
-      } catch (e) {
-        throw e;
       }
     }
     return result;

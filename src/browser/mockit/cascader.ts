@@ -23,9 +23,6 @@ export default class ToCascader extends Mockit<unknown> {
       },
       data: {
         type: Object,
-        default() {
-          return {};
-        },
       },
     };
     // allow $path parse

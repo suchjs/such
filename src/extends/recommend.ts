@@ -34,15 +34,17 @@ const confs: TSuchSettings = {
         const { $config = {} } = this.params;
         const { lowercase, argb } = $config;
         let hexValue: number;
+        let len = 6;
         if (!argb) {
           hexValue = Such.utils.makeRandom(0x000000, 0xffffff);
         } else {
+          len = 8;
           hexValue = Such.utils.makeRandom(0x00000000, 0xffffffff);
         }
         if (!lowercase) {
-          return `#${hexValue.toString(16).toUpperCase()}`;
+          return `#${hexValue.toString(16).toUpperCase().padStart(len, '0')}`;
         }
-        return `#${hexValue.toString(16)}`;
+        return `#${hexValue.toString(16).padStart(len, '0')}`;
       },
     },
     color$rgb(): string {

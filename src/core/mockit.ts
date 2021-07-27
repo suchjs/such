@@ -42,6 +42,7 @@ export default abstract class Mockit<T = unknown> {
   protected isValidOk = false;
   protected hasValid = false;
   protected invalidKeys: TStrList = [];
+  protected everValidParams: TObj<TObj> = {};
   /**
    * create an instance of Mockit.
    * constructor
@@ -147,6 +148,7 @@ export default abstract class Mockit<T = unknown> {
       };
       isInit = init;
     }
+    // reset the validate info
     this.resetValidInfo();
     // when init, copy the params into init params
     if (isInit) {
@@ -312,13 +314,21 @@ export default abstract class Mockit<T = unknown> {
    * @memberof Mockit
    */
   private validParams(): boolean {
-    const { params, validator } = this;
+    const { params, validator, everValidParams } = this;
     const { rules, ruleFns } = mockitsCache[this.constrName];
     const keys = Object.keys(params);
     const execute = function (name: string, cb: TMRuleFn<unknown>) {
+      // if the rule name has ever validated, ignore this rule
+      if (everValidParams[name] && everValidParams[name] === params[name]) {
+        return;
+      }
+      // validate the rule
       const res = cb.call(this, params[name]);
+      // if the rule return an object, override the original value by the return result
+      // set the rule as an ever validated rule
       if (isObject(res)) {
         params[name] = res;
+        everValidParams[name] = res;
       }
     };
     rules.map((name: string) => {
@@ -326,7 +336,7 @@ export default abstract class Mockit<T = unknown> {
         // if a preprocess rule, execute it first
         if (PRE_PROCESS.hasOwnProperty(name)) {
           execute(
-            name,
+            `__${name}__`,
             PRE_PROCESS[name as keyof typeof PRE_PROCESS].bind(this),
           );
         }

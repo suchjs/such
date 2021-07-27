@@ -15,9 +15,6 @@ export default class ToDict extends Mockit<TMultiStr> {
     this.configOptions = {
       data: {
         type: Array,
-        default(): Array<string> {
-          return [];
-        },
       },
     };
     // in browser, get data from config
