@@ -41,4 +41,8 @@ import Such from '../src/index';
   console.log(color$hex.a());
   console.log(color$hex.a());
   // console.log(color$hex.a());
+  const list = Such.instance({
+    'a{3}': [':boolean', ':string'],
+  });
+  console.log(list.a());
 })();
