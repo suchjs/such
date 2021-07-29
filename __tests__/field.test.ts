@@ -92,4 +92,33 @@ describe('test filed', () => {
       }
     }
   });
+  // test all
+  test('test all key config', () => {
+    const list = Such.instance({
+      'a:{+0,3}?': ['hello', true],
+    });
+    let optionalATimes = 0;
+    for (let i = 0; i < 100; i++) {
+      const value = list.a() as { a?: Array<boolean> | Array<string> };
+      if (value.hasOwnProperty('a')) {
+        expect(Array.isArray(value.a)).toBeTruthy();
+        if (value.a.length) {
+          if (typeof value.a[0] === 'string') {
+            const flag = (value.a as string[]).every(
+              (item) => typeof item === 'string',
+            );
+            expect(flag).toBeTruthy();
+          } else {
+            const flag = (value.a as boolean[]).every(
+              (item) => typeof item === 'boolean',
+            );
+            expect(flag).toBeTruthy();
+          }
+        }
+      } else {
+        optionalATimes++;
+      }
+    }
+    expect(optionalATimes > 0).toBeTruthy();
+  });
 });

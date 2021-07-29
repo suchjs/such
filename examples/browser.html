@@ -11,21 +11,21 @@
     <script>
       (function () {
         // // // 示例1
-        // const demo1 = Such.instance({
-        //   errno: ':number[0,1]:%d',
-        //   errmsg: ':string{0,20}',
-        //   url: ':url',
-        //   'count?': ':number[1e5,1e6]:%d',
-        //   'list{+1,5}': {
-        //     url: ':url',
-        //     date: ':date:%yyyy-mm-dd HH\\:MM\\:ss',
-        //     price: ':number[100,200]:%.2f',
-        //     color: ':color$rgba',
-        //     isNew: ':boolean',
-        //   },
-        //   'from:{1}': ['a.com', 'b.com'],
-        //   'more{3}': '\\:number',
-        // });
+        const demo1 = Such.instance({
+          errno: ':number[0,1]:%d',
+          errmsg: ':string{0,20}',
+          url: ':url',
+          'count?': ':number[1e5,1e6]:%d',
+          'list{+1,5}': {
+            url: ':url',
+            date: ':date:%yyyy-mm-dd HH\\:MM\\:ss',
+            price: ':number[100,200]:%.2f',
+            color: ':color$rgba',
+            isNew: ':boolean',
+          },
+          'from:{1}': ['a.com', 'b.com'],
+          'more{3}': '\\:number',
+        });
         // console.log(demo1.a());
         // // 示例2
         // const demo2 = Such.instance({
@@ -48,14 +48,14 @@
         const demo3 = Such.instance(':dict:#[data=dict]');
         console.log(demo3.a());
         // 示例4
-        // Such.assign('city', {
-        //   '北京市': {
-        //     '北京市': ['朝阳区','海淀区']
-        //   },
-        //   '湖北省': {
-        //     '武汉市': ['洪湖区','东西湖区']
-        //   }
-        // });
+        Such.assign('city', {
+          北京市: {
+            北京市: ['朝阳区', '海淀区'],
+          },
+          湖北省: {
+            武汉市: ['洪湖区', '东西湖区'],
+          },
+        });
         // const demo4 = Such.instance({
         //   province: ':cascader:#[root=true,data=city]',
         //   city: ':cascader:&./province',

@@ -1,6 +1,6 @@
 {
   "name": "suchjs",
-  "version": "1.0.0-beta.9",
+  "version": "1.0.0",
   "description": "A library for generating faker data, extendable and powerful, make mocking data as you want easily.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
