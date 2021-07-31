@@ -9,6 +9,7 @@ import {
   IPPSize,
 } from './parser';
 import Mockit from '../core/mockit';
+import { Template } from '../core/such';
 export type TMModifierFn<T> = (res: T) => T | string | never;
 export type TMRuleFn<T = unknown> = (cur: T) => T | void;
 export type TMParamsValidFn = (params: TMParams) => void | never;
@@ -29,6 +30,7 @@ export type TMParams = {
   $length?: IPPLength;
   $size?: IPPSize;
   $regexp?: IPPRegexp;
+  $template?: Template;
 };
 export type TMAttrs = string[];
 export type TMFactoryOptions = {

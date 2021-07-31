@@ -5,12 +5,14 @@ import regexp from '../mockit/regexp';
 import date from '../mockit/date';
 import ref from '../mockit/ref';
 import increment from '../mockit/increment';
+import template from '../mockit/template';
 import { TMClassList, TMConfigRule } from '../types/mockit';
 import { IPPConfig, IPPFunc, IPPFuncOptions } from '../types/parser';
 import store from './store';
 import { deepCopy, isArray, isFn, isObject, typeOf } from '../helpers/utils';
 import { TConstructor, TObj, TStrList } from '../types/common';
 import Mockit from '../core/mockit';
+import { tmplMockitName } from './config';
 const { vars: globalVars } = store;
 // all mockits
 export const ALL_MOCKITS: TMClassList = {
@@ -20,6 +22,7 @@ export const ALL_MOCKITS: TMClassList = {
   date,
   ref,
   increment,
+  [tmplMockitName]: template,
 };
 
 // add new mockits

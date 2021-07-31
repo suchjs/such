@@ -1,8 +1,15 @@
-import { dtNameRule, splitor, suchRule } from '../data/config';
+import {
+  dtNameRule,
+  splitor,
+  suchRule,
+  templateSplitor,
+  tmplMockitName,
+} from '../data/config';
 import PathMap, { TFieldPath } from '../helpers/pathmap';
 import * as utils from '../helpers/utils';
 import { ALL_MOCKITS } from '../data/mockit';
 import Mockit, { BaseExtendMockit } from './mockit';
+import ToTemplate from '../mockit/template';
 import Dispatcher from '../data/parser';
 import store from '../data/store';
 import { TFunc, TObj } from '../types/common';
@@ -283,14 +290,24 @@ export class Mocker {
           const match = target.match(suchRule);
           const type = match && match[1];
           if (type) {
+            // check if alias type, if true, point to the real type
             const lastType = alias[type] ? alias[type] : type;
+            // if the type is in mockit list, generate a mockit
+            // otherwise, take it as a normal string
             if (ALL_MOCKITS.hasOwnProperty(lastType)) {
               this.type = lastType;
               const klass = ALL_MOCKITS[lastType];
               const instance = new klass();
-              const meta = target.replace(match[0], '').replace(/^\s*:\s*/, '');
+              let meta = target.replace(match[0], '');
               if (meta !== '') {
-                const params = Dispatcher.parse(meta, instance);
+                // remote the prefix splitor
+                if (meta.startsWith(splitor)) {
+                  meta = meta.slice(splitor.length);
+                }
+                // parase params then set
+                const params = Dispatcher.parse(meta, {
+                  mockit: instance,
+                });
                 instance.setParams(params);
               }
               this.mockit = instance;
@@ -305,6 +322,26 @@ export class Mocker {
                 );
               isMockFnOk = true;
             }
+          } else if (target.startsWith(templateSplitor)) {
+            const content = target.slice(templateSplitor.length);
+            // check if the content is empty
+            if (content === '') {
+              throw new Error(
+                `The path ${
+                  path.length ? '(' + path.join('/') + ')' : 'of root'
+                } use an empty template literal "${templateSplitor}"`,
+              );
+            }
+            const template = Such.template(content, path);
+            // set the mockit as template mockit
+            this.mockit = template.mockit;
+            this.mockFn = (dpath: TFieldPath) =>
+              template.a({
+                datas,
+                dpath,
+                mocker: this,
+              });
+            isMockFnOk = true;
           } else {
             // string, but begin with translated splitor
             const transKey = '\\' + splitor;
@@ -351,7 +388,11 @@ export class Mocker {
     if (this.mockit) {
       const instance = this.mockit;
       return instance.setParams(
-        typeof value === 'string' ? Dispatcher.parse(value, instance) : value,
+        typeof value === 'string'
+          ? Dispatcher.parse(value, {
+              mockit: instance,
+            })
+          : value,
       );
     } else {
       throw new Error('This mocker is not the mockit type.');
@@ -405,6 +446,128 @@ export class Mocker {
     return this.storeData.hasOwnProperty(key);
   }
 }
+
+/**
+ * Template Class
+ */
+interface TemplateInstance {
+  [index: number]: {
+    value: unknown;
+    result: unknown;
+  };
+}
+export class Template {
+  private segments: Array<string | Mockit> = [];
+  private instances: TemplateInstance = {};
+  private instanceIndex = 0;
+  public meta = '';
+  public mockit: Mockit;
+  private options: TSuchInject = {
+    datas: null,
+    dpath: [],
+    mocker: null,
+  };
+  /**
+   * constructor
+   */
+  constructor(public readonly context = '') {
+    // nothing to do
+  }
+  /**
+   * add a string segment
+   * @param seg [string]
+   */
+  public addString(seg: string): void {
+    this.segments.push(seg);
+  }
+  /**
+   *
+   * @param instance
+   * @param optional
+   */
+  public addInstance(instance: Mockit): void {
+    this.segments.push(instance);
+    this.instances[this.instanceIndex++] = {
+      value: undefined,
+      result: '',
+    };
+  }
+  /**
+   *
+   * @param meta
+   */
+  public end(meta = ''): void {
+    meta = meta.trim();
+    const klass = (ALL_MOCKITS[tmplMockitName] as unknown) as typeof ToTemplate;
+    const instance = new klass();
+    // set the template object
+    instance.setTemplate(this);
+    // set params for mockit if meta not empty
+    if (meta !== '') {
+      this.meta = meta;
+      const params = Dispatcher.parse(meta, {
+        mockit: instance,
+      });
+      instance.setParams(params);
+    }
+    // set the mockit, and params
+    this.mockit = instance;
+  }
+  /**
+   *
+   * @returns
+   */
+  public a(
+    options: TSuchInject = {
+      datas: null,
+      dpath: [],
+      mocker: null,
+    },
+  ): unknown {
+    if (!this.mockit) {
+      throw new Error(`the template's mockit object is not initialized yet!`);
+    }
+    return this.mockit.make(options, Such);
+  }
+  /**
+   * @return string
+   */
+  public value(): string {
+    const { instances } = this;
+    let index = 0;
+    const result = this.segments.reduce(
+      (result: string, item: string | Mockit) => {
+        if (typeof item === 'string') {
+          result += item;
+        } else {
+          const instance = instances[index++];
+          // it's a mockit instance, generate a value
+          const value = item.make(this.options, Such);
+          // set the value
+          instance.value = value;
+          // check the value type
+          if (typeof value === 'string') {
+            instance.result = value;
+          } else if (value === undefined || value === null) {
+            instance.result = '';
+          } else {
+            try {
+              // try use toString
+              instance.result = value.toString();
+            } catch (e) {
+              instance.result = '';
+            }
+          }
+          result += instance.result;
+        }
+        return result;
+      },
+      '',
+    ) as string;
+    return result;
+  }
+}
+
 /**
  *
  *
@@ -440,8 +603,8 @@ export default class Such {
       aliasTypes.push(long);
     }
   }
-
   /**
+   * load a config data
    * @static
    * @param {TSuchSettings} config
    * @memberof Such
@@ -484,7 +647,7 @@ export default class Such {
   }
   /**
    *
-   *
+   * add a parser
    * @static
    * @param {string} name
    * @param {ParserConfig} config
@@ -506,7 +669,7 @@ export default class Such {
   }
   /**
    *
-   *
+   * generate a fake data result
    * @static
    * @param {*} target
    * @memberof Such
@@ -516,7 +679,7 @@ export default class Such {
   }
   /**
    *
-   *
+   * create a such instance
    * @static
    * @param {unknown} target
    * @param {IAsOptions} [options]
@@ -528,7 +691,7 @@ export default class Such {
   }
   /**
    *
-   *
+   * assign variables for configuration
    * @static
    * @param {string} name
    * @param {*} value
@@ -586,7 +749,11 @@ export default class Such {
         init.call(this, utils);
       }
       const params =
-        typeof param === 'string' ? Dispatcher.parse(param, this) : {};
+        typeof param === 'string'
+          ? Dispatcher.parse(param, {
+              mockit: this,
+            })
+          : {};
       if (isFn(genFn)) {
         this.reGenerate(genFn);
       }
@@ -652,6 +819,175 @@ export default class Such {
       throw new Error(`the type "${type}" has been defined yet.`);
     }
   }
+  /**
+   *
+   * @param tpl
+   * @returns
+   */
+  public static template(code: string, path?: TFieldPath): Template {
+    const template = new Template();
+    const total = code.length;
+    const symbol = '`';
+    const tsSymbol = templateSplitor.charAt(0);
+    const tsLen = templateSplitor.length;
+    let curIndex = 0;
+    let result = '';
+    while (curIndex < total) {
+      const ch = code.charAt(curIndex);
+      if (ch === symbol) {
+        // add the previous result into template
+        // reset the result
+        if (result !== '') {
+          template.addString(result);
+          result = '';
+        }
+        // store the index for error index
+        const storeIndex = curIndex;
+        const params = {};
+        let mockit: Mockit;
+        let meta = '';
+        let type = '';
+        // parse mockit until end
+        while (curIndex++ < total) {
+          const curCh = code.charAt(curIndex);
+          if (curCh === symbol) {
+            if (mockit) {
+              // if the mockit has initial
+              // need parse again
+            } else {
+              const match = meta.match(suchRule);
+              if (
+                match &&
+                (type = match[1]) &&
+                ALL_MOCKITS.hasOwnProperty(type)
+              ) {
+                mockit = new ALL_MOCKITS[type]();
+                meta = meta.replace(match[0], '');
+                if (meta === '') {
+                  // no params, only data type name
+                  break;
+                } else if (meta.startsWith(splitor)) {
+                  // has a splitor
+                  meta = meta.slice(splitor.length);
+                }
+              } else {
+                if (type) {
+                  // no type matched
+                  throw new Error(
+                    `[index:${storeIndex}] The data type expression in template literal \`${meta}\` can't match any of the exists data type.`,
+                  );
+                } else {
+                  // not match a data type
+                  throw new Error(
+                    `[index:${storeIndex}] The data type expression "${meta}" in template literal is not a correct syntax match the data type rule: ${suchRule.toString()}`,
+                  );
+                }
+              }
+            }
+            // parse params
+            const curParams = Dispatcher.parse(meta, {
+              mockit,
+              greedy: true,
+            });
+            if (curParams.hasOwnProperty('errorIndex')) {
+              // parse error, return a wrapper data with 'errorIndex'
+              // need parse to next symbol
+              const errorIndex = (curParams.errorIndex as unknown) as number;
+              // remove the parsed string and add the symbol back
+              if (errorIndex > 0) {
+                meta = meta.slice(errorIndex) + symbol;
+              }
+              // merge the params
+              delete curParams.errorIndex;
+              Object.assign(params, curParams);
+              // add back to meta string
+              meta += curCh;
+            } else {
+              // all parased ok, set meta empty
+              meta = '';
+              // merge the params
+              Object.assign(params, curParams);
+              break;
+            }
+          } else {
+            meta += curCh;
+          }
+        }
+        // no mockit
+        if (!mockit) {
+          throw new Error(
+            `[index:${storeIndex}] The data type expression "${symbol}${meta}" in template literal is not complete correctly, lack of the end symbol "${symbol}"`,
+          );
+        }
+        // check if the meta is empty
+        if (meta !== '') {
+          throw new Error(
+            `[index:${storeIndex}] The data type expression with type :${type} in template literal, its' data attributes string "${symbol}${meta}" is lack of the end symbol "${symbol}" or can't parsed correctly.`,
+          );
+        }
+        // set params if params is not empty
+        if (isNoEmptyObject(params)) {
+          mockit.setParams(params);
+        }
+        // add the mockit to segments
+        template.addInstance(mockit);
+      } else if (ch === '\\') {
+        curIndex++;
+        if (curIndex < total) {
+          const next = code.charAt(curIndex);
+          if (next === symbol || next === splitor) {
+            result += next;
+          } else {
+            result += ch + next;
+          }
+        } else {
+          // take a normal slash
+          result += ch;
+          break;
+        }
+      } else {
+        if (
+          ch === tsSymbol &&
+          code.slice(curIndex, curIndex + tsLen) === templateSplitor
+        ) {
+          if (curIndex === 0) {
+            // no content
+            throw new Error(
+              `[index:${
+                path ? tsLen : 0
+              }] The template literal must set a none empty content before "${templateSplitor}"${
+                path
+                  ? '(in path ' +
+                    (path.length > 0 ? path.join('/') : 'root') +
+                    ')'
+                  : ''
+              }`,
+            );
+          }
+          // meet the end splitor
+          // jump to the index after it, use `tsLen` not `tsLen - 1`
+          curIndex += tsLen;
+          break;
+        } else {
+          // normal string
+          result += ch;
+        }
+      }
+      curIndex++;
+    }
+    // if the result is not empty
+    if (result !== '') {
+      template.addString(result);
+    }
+    // if there's still string in the last
+    if (curIndex < total) {
+      template.end(code.slice(curIndex));
+    } else {
+      template.end();
+    }
+    return template;
+  }
+
   public readonly target: unknown;
   public readonly options: IAsOptions;
   public readonly mocker: Mocker;

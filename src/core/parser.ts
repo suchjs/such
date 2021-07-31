@@ -150,6 +150,7 @@ type TParseUntilResult = {
   };
   total: number;
 };
+
 /**
  * dispatcher: detect the characters and decide which parser should be used.
  * @export
@@ -277,20 +278,50 @@ export class Dispatcher {
     };
   }
   /**
+   *
+   * @param result
+   * @param errorIndex
+   * @returns
+   */
+  private makeWrapperData(result: TObj<TObj>, errorIndex: number): TObj<TObj> {
+    class Wrapper {
+      constructor(public readonly errorIndex: number) {}
+    }
+    Object.assign(Wrapper.prototype, result);
+    return (new Wrapper(errorIndex) as unknown) as TObj<TObj>;
+  }
+  /**
    * dispatcher parse all the code
-   * 调配器调用parse方法来解析所有的字符串，内部通过调用parser的parse方法来实现
    * @param {string} code
    * @memberof Dispatcher
    */
-  public parse(code: string, mockit?: Mockit): TObj<TObj> | never {
+  public parse(
+    code: string,
+    options: {
+      mockit?: Mockit;
+      greedy?: boolean;
+    } = {},
+  ): TObj<TObj> | never {
     const len = code.length;
     const { splitor } = this;
+    const { mockit, greedy } = options;
     let index = 0;
     let curCode = code;
     const exists: TObj = {};
     const result: TObj<TObj> = {};
     while (index < len) {
-      const res = this.parseUntilFind(curCode);
+      let res;
+      if (greedy) {
+        // when set greedy
+        // return a wrapper data
+        try {
+          res = this.parseUntilFind(curCode);
+        } catch (e) {
+          return this.makeWrapperData(result, index);
+        }
+      } else {
+        res = this.parseUntilFind(curCode);
+      }
       const { data, total } = res;
       index += total;
       if (index < len && splitor !== code.charAt(index)) {

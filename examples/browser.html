@@ -7,7 +7,8 @@
     <title>Suchjs browser test</title>
   </head>
   <body>
-    <script src="../dist/such.min.js"></script>
+    <!-- <script src="../dist/such.min.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/gh/suchjs/such@master/dist/such.min.js"></script>
     <script>
       (function () {
         // // // 示例1
@@ -44,24 +45,78 @@
         // console.log(demo2.a());
         // // 设置一些数据
         // 示例3
-        Such.assign('dict', ['a', 'b']);
-        const demo3 = Such.instance(':dict:#[data=dict]');
-        console.log(demo3.a());
-        // 示例4
-        Such.assign('city', {
-          北京市: {
-            北京市: ['朝阳区', '海淀区'],
-          },
-          湖北省: {
-            武汉市: ['洪湖区', '东西湖区'],
-          },
-        });
+        // Such.assign('dict', ['a', 'b']);
+        // const demo3 = Such.instance(':dict:#[data=dict]');
+        // console.log(demo3.a());
+        // // 示例4
+        // Such.assign('city', {
+        //   北京市: {
+        //     北京市: ['朝阳区', '海淀区'],
+        //   },
+        //   湖北省: {
+        //     武汉市: ['洪湖区', '东西湖区'],
+        //   },
+        // });
         // const demo4 = Such.instance({
         //   province: ':cascader:#[root=true,data=city]',
         //   city: ':cascader:&./province',
         //   area: ':cascader:&./city'
         // });
         // console.log(demo4.a());
+        Such.assign('city', {
+          北京市: {
+            北京市: ['朝阳区', '东城区', '西城区'],
+          },
+          湖北省: {
+            武汉市: ['洪湖区', '东西湖区', '黄陂区'],
+          },
+          山东省: {
+            青岛市: ['市北区', '四方区', '黄岛区'],
+          },
+          上海市: {
+            上海市: ['闵行区', '普陀区', '静安区'],
+          },
+        });
+        Such.define('mobile', 'regexp', '/(\\+86\\-)?(?<service>1[3-8][0-9])\\d{8}/');
+        // 创建模拟实例
+        const instance = Such.instance({
+          errno: ':int:[0,1]',
+          errmsg: ':string{0,20}:@concat("_hahaha")',
+          'count?': ':number[1e5,1e6]:%d',
+          'list{2,5}': {
+            id: ':increment',
+            range: ':increment:#[start=0]:{3}',
+            position: {
+              province: ':cascader:#[root=true,data=city]',
+              city: ':cascader:&./province',
+              area: ':cascader:&./city',
+              address: ':ref:&./province,./city,./area:@join("-")',
+            },
+            regexp: ':regexp:/\\$[a-z]w*/',
+            email: ':email:#[domain="163.com"]',
+            mobile: ':mobile',
+            date: ':date:["+1 days","+1 years"]:%yyyy-mm-dd HH\\:MM\\:ss',
+            number: ':number:[100,200]:%.2f',
+            colors: {
+              hex: ':color$hex',
+              rgb: ':color$rgb',
+              rgba: ':color$rgba',
+              hsl: ':color$hsl',
+              hsla: ':color$hsla'
+            },
+            bool: ':bool',
+            'childs{+1,3}': {
+              pid: ':ref:&../id',
+              mobile: ':mobile:#[service="135"]',
+            },
+          },
+          'oneof{1}': ['hehe.com', 'haha.com'],
+          'no-translate': '\\:number',
+          
+        });
+        // 生成模拟数据
+        const value = instance.a();
+        console.log(JSON.stringify(value, null, 4));
       })();
     </script>
   </body>

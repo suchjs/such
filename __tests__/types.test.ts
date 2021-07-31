@@ -339,6 +339,115 @@ describe('test built-in types', () => {
       expect(COUNTRIES[country].includes(value.city)).toBeTruthy();
     }
   });
+  // template literal
+  test('template literal', () => {
+    /* ------------- wrong template literal ---------------- */
+    expect(() => {
+      // empty literal
+      return Such.as(':::');
+    }).toThrow();
+    expect(() => {
+      // still empty literal, one is the start, another is end
+      return Such.as('::::::');
+    }).toThrow();
+    expect(() => {
+      // still empty literal
+      return Such.as('::::::{1}');
+    }).toThrow();
+    expect(() => {
+      // not end
+      return Such.as(':::`');
+    }).toThrow();
+    expect(() => {
+      // end but no value
+      return Such.as(':::``');
+    }).toThrow();
+    expect(() => {
+      // wrong data type syntax
+      return Such.as(':::`abc`');
+    }).toThrow();
+    expect(() => {
+      // wrong data type
+      return Such.as(':::`:abc`');
+    }).toThrow();
+    expect(() => {
+      // data type name ok, but not end
+      return Such.as(':::`:string{1,2}');
+    }).toThrow();
+    expect(() => {
+      // data type ok, but string not allowed config
+      return Such.as(':::`:string:{1,2}:#[v]`');
+    }).toThrow();
+    expect(() => {
+      // the first backtick is translate, so the next will be a wrong syntax
+      return Such.as(':::\\`:string:{1,2}`');
+    }).toThrow();
+    expect(() => {
+      // with more data attributes, the data attributes not ok
+      return Such.as(':::`:string:{1,2}`:::{1');
+    }).toThrow();
+    /* ------------- normal template literal ---------------- */
+    // call template method use an empty string without a splitor is just ok
+    expect(Such.template('').a() === '').toBeTruthy();
+    // escaped values
+    expect(Such.as(':::\\`') === '`').toBeTruthy();
+    expect(Such.as(':::\\`\\:::') === '`:::').toBeTruthy();
+    expect(Such.as(':::abc\\`\\::::{2}') === 'abc`:abc`:').toBeTruthy();
+    // just string
+    expect(Such.as(':::abc') === 'abc').toBeTruthy();
+    expect(Such.as(':::abc:::') === 'abc').toBeTruthy();
+    expect(Such.as(':::abc:::{2}') === 'abcabc').toBeTruthy();
+    // mixed content
+    expect(
+      !isNaN(
+        ((Such.as(':::abc`:number`') as string).replace(
+          'abc',
+          '',
+        ) as unknown) as number,
+      ),
+    ).toBeTruthy();
+    expect(
+      !isNaN(
+        ((Such.as(':::`:number`abc') as string).replace(
+          'abc',
+          '',
+        ) as unknown) as number,
+      ),
+    ).toBeTruthy();
+    // use a backtick in the data attribute, must parse correctly
+    expect(
+      !isNaN(
+        ((Such.as(':::abc`:number:#[v="```"]`') as string).replace(
+          'abc',
+          '',
+        ) as unknown) as number,
+      ),
+    ).toBeTruthy();
+    // two number
+    const twoNumbers = Such.as(
+      ':::`:number[100,200]:%d``:number:[100,200]:%d`',
+    ) as string;
+    expect(twoNumbers.length).toEqual(6);
+    expect(
+      twoNumbers.split('').every((item: unknown) => !isNaN(item as number)),
+    ).toBeTruthy();
+    // with escape
+    const twoNumbersWithEscape = Such.as(
+      ':::`:number[100,200]:%d`\\``:number:[100,200]:%d`',
+    ) as string;
+    expect(twoNumbersWithEscape.length).toEqual(7);
+    expect(
+      twoNumbersWithEscape
+        .split('`')
+        .every((item: unknown) => !isNaN(item as number)),
+    ).toBeTruthy();
+    // with length
+    const numberAndString = Such.as(':::`:number`|`:string{5}`') as string;
+    expect(numberAndString.includes('|')).toBeTruthy();
+    const [num, str] = numberAndString.split('|');
+    expect(!isNaN((num as unknown) as number)).toBeTruthy();
+    expect(str.length).toEqual(5);
+  });
 });
 
 describe('test built-in recommend types', () => {
