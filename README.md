@@ -1,8 +1,20 @@
 <h1 align="center">Suchjs</h1>
 
+<h2 align="center">
+  
+  ![Suchjs Logo](./source/image/logo.png)
+
+</h2>
+
+<h2 align="center">
+
 [![npm version](https://badge.fury.io/js/suchjs.svg)](https://badge.fury.io/js/suchjs)&nbsp;&nbsp;[![Build Status](https://travis-ci.com/suchjs/such.svg?branch=master)](https://travis-ci.com/suchjs/such)&nbsp;&nbsp;[![Coverage Status](https://coveralls.io/repos/github/suchjs/such/badge.svg?branch=master)](https://coveralls.io/github/suchjs/such?branch=master)
 
+</h2>
+
+<h3>
 A extendable and powerful library for generating fake data, both for nodejs & browser, mock data as you want easily.
+</h3>
 
 ## Document
 
