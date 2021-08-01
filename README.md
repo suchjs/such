@@ -1,12 +1,11 @@
 <h1 align="center">Suchjs</h1>
 
-<h2 align="center">
+<div align="center">
   
   ![Suchjs Logo](./source/image/logo.png)
 
-</h2>
-
-<div style="text-align: center">
+</div>
+<div align="center">
 
 [![npm version](https://badge.fury.io/js/suchjs.svg)](https://badge.fury.io/js/suchjs)&nbsp;&nbsp;[![Build Status](https://travis-ci.com/suchjs/such.svg?branch=master)](https://travis-ci.com/suchjs/such)&nbsp;&nbsp;[![Coverage Status](https://coveralls.io/repos/github/suchjs/such/badge.svg?branch=master)](https://coveralls.io/github/suchjs/such?branch=master)
 
