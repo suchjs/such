@@ -94,4 +94,9 @@ import Such from '../src/browser';
   // // 生成模拟数据
   // const value = instance.a();
   // console.log(value);
+  const instance = Such.instance({
+    first: 'haha',
+    second: ':::`:string``:ref:&/${3}``:number`',
+  });
+  console.log(instance.a());
 })();

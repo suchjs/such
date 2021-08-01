@@ -1,6 +1,7 @@
 import { makeRandom } from '../helpers/utils';
 import Mockit from '../core/mockit';
 import { Template } from '../core/such';
+import { TSuchInject } from '../types/instance';
 /**
  * mock a string
  * @export
@@ -24,11 +25,11 @@ export default class ToTemplate extends Mockit<string> {
     this.setAllowAttrs('$length');
   }
   // generate
-  public generate(): string {
+  public generate(options: TSuchInject): string {
     const { $template } = this;
     const params = this.params;
     const { $length } = params;
-    const result = $template.value();
+    const result = $template.value(options);
     if ($length) {
       const least = Number($length.least);
       const most = Number($length.most);

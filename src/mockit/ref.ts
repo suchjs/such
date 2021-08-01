@@ -3,6 +3,7 @@ import { IPPPath, IPPPathItem } from '../types/parser';
 import { getRefMocker } from '../helpers/utils';
 import { Mocker } from '../core/such';
 import Mockit from '../core/mockit';
+import { tmplRefRule } from '../data/config';
 export default class ToRef extends Mockit<unknown> {
   // set constructor name
   constructor(public readonly constrName: string = 'ToRef') {
@@ -23,13 +24,73 @@ export default class ToRef extends Mockit<unknown> {
    * @returns [unkown]
    */
   public generate(options: TSuchInject): unknown {
-    const { mocker } = options;
+    const { mocker, template } = options;
     const { $path } = this.params;
     const result: unknown[] = [];
-    $path.map((item: IPPPathItem) => {
-      const refMocker = getRefMocker(item, mocker as Mocker);
-      result.push(refMocker && refMocker.result);
-    });
+    if (template) {
+      // template literal
+      if (mocker) {
+        $path.map((item: IPPPathItem) => {
+          let finded = false;
+          let isTmplRef = false;
+          if ((isTmplRef = tmplRefRule.test(item.fullpath))) {
+            const index = Number(RegExp.$1);
+            const data = template.getRefValue(index);
+            if (data) {
+              result.push(data.result);
+              finded = true;
+            }
+          }
+          if (!finded) {
+            const refMocker = getRefMocker(item, mocker as Mocker);
+            if (refMocker) {
+              result.push(refMocker.result);
+              finded = true;
+            }
+          }
+          if (!finded) {
+            throw new Error(
+              `The ':ref' type's reference path "${
+                item.fullpath
+              }" in template literal can't be found ${
+                isTmplRef ? 'neithor in the inner template nor ' : ''
+              }in the data paths.`,
+            );
+          }
+        });
+      } else {
+        // just call Such.template
+        $path.map((item: IPPPathItem) => {
+          if (tmplRefRule.test(item.fullpath)) {
+            const index = Number(RegExp.$1);
+            const data = template.getRefValue(index);
+            if (data) {
+              result.push(data.result);
+            } else {
+              throw new Error(
+                `The ':ref' type's reference path "${item.fullpath}" in template literal is not found.`,
+              );
+            }
+          }
+        });
+      }
+    } else if (mocker) {
+      // only mocker
+      $path.map((item: IPPPathItem) => {
+        const refMocker = getRefMocker(item, mocker as Mocker);
+        if (refMocker) {
+          result.push(refMocker.result);
+        } else {
+          throw new Error(
+            `The ':ref' type's reference path "${item.fullpath}" is not found in the data paths.`,
+          );
+        }
+      });
+    } else {
+      throw new Error(
+        `The ':ref' data type need a mocker object or a template object in a template literal.`,
+      );
+    }
     return $path.length === 1 ? result[0] : result;
   }
   public test(): boolean {

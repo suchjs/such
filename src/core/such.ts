@@ -12,7 +12,7 @@ import Mockit, { BaseExtendMockit } from './mockit';
 import ToTemplate from '../mockit/template';
 import Dispatcher from '../data/parser';
 import store from '../data/store';
-import { TFunc, TObj } from '../types/common';
+import { TFunc, TObj, ValueOf } from '../types/common';
 import { TMClass, TMFactoryOptions } from '../types/mockit';
 import { TNodeSuch, TSuchSettings } from '../types/node';
 import { IParserConfig } from '../types/parser';
@@ -340,6 +340,7 @@ export class Mocker {
                 datas,
                 dpath,
                 mocker: this,
+                template,
               });
             isMockFnOk = true;
           } else {
@@ -459,14 +460,8 @@ interface TemplateInstance {
 export class Template {
   private segments: Array<string | Mockit> = [];
   private instances: TemplateInstance = {};
-  private instanceIndex = 0;
   public meta = '';
   public mockit: Mockit;
-  private options: TSuchInject = {
-    datas: null,
-    dpath: [],
-    mocker: null,
-  };
   /**
    * constructor
    */
@@ -487,10 +482,14 @@ export class Template {
    */
   public addInstance(instance: Mockit): void {
     this.segments.push(instance);
-    this.instances[this.instanceIndex++] = {
-      value: undefined,
-      result: '',
-    };
+  }
+  /**
+   *
+   * @param index [number]
+   * @returns the reference instance's values
+   */
+  public getRefValue(index: number): ValueOf<TemplateInstance> {
+    return this.instances[index];
   }
   /**
    *
@@ -522,6 +521,7 @@ export class Template {
       datas: null,
       dpath: [],
       mocker: null,
+      template: this,
     },
   ): unknown {
     if (!this.mockit) {
@@ -532,17 +532,29 @@ export class Template {
   /**
    * @return string
    */
-  public value(): string {
-    const { instances } = this;
+  public value(
+    options: TSuchInject = {
+      datas: null,
+      dpath: [],
+      mocker: null,
+      template: this,
+    },
+  ): string {
     let index = 0;
+    // clear the instances
+    // so every time get the values only generated
+    this.instances = {};
     const result = this.segments.reduce(
       (result: string, item: string | Mockit) => {
         if (typeof item === 'string') {
           result += item;
         } else {
-          const instance = instances[index++];
+          const instance = (this.instances[index++] = {
+            value: undefined as unknown,
+            result: '',
+          });
           // it's a mockit instance, generate a value
-          const value = item.make(this.options, Such);
+          const value = item.make(options, Such);
           // set the value
           instance.value = value;
           // check the value type
@@ -832,6 +844,7 @@ export default class Such {
     const tsLen = templateSplitor.length;
     let curIndex = 0;
     let result = '';
+    let hasEndSymbol = false;
     while (curIndex < total) {
       const ch = code.charAt(curIndex);
       if (ch === symbol) {
@@ -851,6 +864,7 @@ export default class Such {
         while (curIndex++ < total) {
           const curCh = code.charAt(curIndex);
           if (curCh === symbol) {
+            hasEndSymbol = true;
             if (mockit) {
               // if the mockit has initial
               // need parse again
@@ -921,8 +935,17 @@ export default class Such {
         }
         // check if the meta is empty
         if (meta !== '') {
+          const maybes = [
+            `lack of the end symbol "${symbol}"`,
+            "can't parsed correctly",
+          ];
+          if (hasEndSymbol) {
+            maybes.reverse();
+          }
           throw new Error(
-            `[index:${storeIndex}] The data type expression with type :${type} in template literal, its' data attributes string "${symbol}${meta}" is lack of the end symbol "${symbol}" or can't parsed correctly.`,
+            `[index:${storeIndex}] The data type expression with type :${type} in template literal, its' data attributes string "${symbol}${meta}", ${maybes.join(
+              ' or ',
+            )} .`,
           );
         }
         // set params if params is not empty

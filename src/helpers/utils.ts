@@ -1,4 +1,4 @@
-import { TFunc, TObj, TStrList, TMultiStr } from '../types/common';
+import { TFunc, TObj, TStrList, TMultiStr, TPath } from '../types/common';
 import { TFieldPath } from './pathmap';
 import { IPPPathItem } from '../types/parser';
 import { Mocker } from '../core/such';
@@ -267,6 +267,37 @@ export const isRelativePath = (
     i++;
   }
   return i === len;
+};
+
+/**
+ *
+ * @param pathname [TPath] the path need be parsed
+ * @returns parsed path with segments
+ */
+export const parsePathSeg = (pathname: TPath = ''): Array<TPath> => {
+  const result: Array<TPath> = [];
+  let isInTranslate = false;
+  let seg = '';
+  for (let i = 0, total = pathname.length; i < total; i++) {
+    const ch = pathname.charAt(i);
+    if (isInTranslate) {
+      isInTranslate = false;
+      seg += ch;
+    } else {
+      if (ch === '\\') {
+        isInTranslate = true;
+      } else if (ch === '/') {
+        result.push(seg);
+        seg = '';
+      } else {
+        seg += ch;
+      }
+    }
+  }
+  if (seg !== '') {
+    result.push(seg);
+  }
+  return result;
 };
 
 /**

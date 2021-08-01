@@ -1,12 +1,18 @@
 import { IParserFactory, IPPPath, IPPPathItem } from '../types/parser';
 import { AParser } from '../core/parser';
+import { encodeSplitor } from '../data/config';
+import { parsePathSeg } from '../helpers/utils';
 const parser: IParserFactory = {
   config: {
     startTag: ['&'],
     endTag: [],
     separator: ',',
-    pattern: /^(\.{1,2}(?:\/\.\.)*|<\w+?>)?((?:\/(?:[^.\/\\<>*?:,]|\.(?![.\/,]|$))+)+)/,
-    rule: /^&(?:(?:\.{1,2}(?:\/\.\.)*|<\w+?>)?(?:\/(?:[^.\/\\<>*?:,]|\.(?![.\/,]|$))+)+(?=(,)|:|$)\1?)+/,
+    pattern: new RegExp(
+      `^(\\.{1,2}(?:\\/\\.\\.)*|<\\w+?>)?((?:/(?:\\\\.?|[^\\/.,${encodeSplitor}]|\\.(?![.\\/,${encodeSplitor}]|$))+)+)`,
+    ),
+    rule: new RegExp(
+      `^&(?:(?:\\.{1,2}(?:\\/\\.\\.)*|<\\w+?>)?(?:\\/(?:\\\\.?|[^\\/.,${encodeSplitor}]|\\.(?![.\\/,${encodeSplitor}]|$))+)+(?=(,)|${encodeSplitor}|$)\\1?)+`,
+    ),
   },
   parse(this: AParser): IPPPath | never {
     const { patterns, code } = this.info();
@@ -26,7 +32,7 @@ const parser: IParserFactory = {
       }
       const cur: IPPPathItem = {
         relative,
-        path: curPath.split('/').slice(1),
+        path: parsePathSeg(curPath).slice(1),
         depth,
         fullpath,
         variable,

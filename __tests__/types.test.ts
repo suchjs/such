@@ -240,6 +240,52 @@ describe('test built-in types', () => {
   });
   // test ref
   test(':ref', () => {
+    // wrong ref
+    expect(() => {
+      //  without a path
+      return Such.as({
+        a: 1,
+        b: ':ref',
+      });
+    }).toThrow();
+    expect(() => {
+      // with a path not exists
+      return Such.as({
+        a: 1,
+        b: ':ref:&/c',
+      });
+    }).toThrow();
+    expect(() => {
+      // with a path not exists
+      return Such.as({
+        a: 1,
+        b: ':ref:&./a,./c',
+      });
+    }).toThrow();
+    expect(() => {
+      // with a path before the reference fied
+      return Such.as({
+        b: ':ref:&./a',
+        a: 1,
+      });
+    }).toThrow();
+    expect(() => {
+      // in a template
+      return Such.as({
+        a: 1,
+        b: ':::`:string``:ref:&/${2}`',
+      });
+    }).toThrow();
+    expect(() => {
+      // in a template
+      const instance = Such.instance({
+        a: 1,
+        b: ':::`:string``:ref:&/${2}``:number`',
+      });
+      for (let i = 0; i < 10; i++) {
+        instance.a();
+      }
+    }).toThrow();
     // make a ref
     const ref = {
       a: 'hello',
@@ -266,13 +312,14 @@ describe('test built-in types', () => {
       c: string[];
     };
     expect(multiRefData.c).toEqual([multiRef.a, multiRef.b]);
-    // wrong ref without a path
-    expect(() => {
-      return Such.as({
-        a: 1,
-        b: ':ref',
-      });
-    }).toThrow();
+    // make a template ref
+    const tmplRef = {
+      a: 'hello',
+      b: 'world',
+      c: ':::`:ref:&./a`:`:regexp:/abc/`;`:ref:&./b`:`:ref:&/${1}`;',
+    };
+    const tmplRefData = Such.as(tmplRef) as typeof tmplRef;
+    expect(tmplRefData.c === `${tmplRef.a}:abc;${tmplRef.b}:abc;`).toBeTruthy();
   });
   // test a regexp
   test(':regexp', () => {
@@ -444,7 +491,9 @@ describe('test built-in types', () => {
     // with length
     const numberAndString = Such.as(':::`:number`|`:string{5}`') as string;
     expect(numberAndString.includes('|')).toBeTruthy();
-    const [num, str] = numberAndString.split('|');
+    const numAndStrSegs = numberAndString.split('|');
+    expect(numAndStrSegs.length).toEqual(2);
+    const [num, str] = numAndStrSegs;
     expect(!isNaN((num as unknown) as number)).toBeTruthy();
     expect(str.length).toEqual(5);
   });

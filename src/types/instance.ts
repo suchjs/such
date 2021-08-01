@@ -1,10 +1,11 @@
 import PathMap, { TFieldPath } from '../helpers/pathmap';
-import { Mocker } from '../core/such';
+import { Mocker, Template } from '../core/such';
 import Mockit from '../core/mockit';
 export interface TSuchInject {
   datas: PathMap<unknown>;
   dpath: TFieldPath;
   mocker: Mocker;
+  template?: Template;
 }
 /**
  *
