@@ -11,9 +11,8 @@
 
 </div>
 
-<p>
-A extendable and powerful library for generating fake data, both for nodejs & browser, mock data as you want easily.
-</p>
+
+A extendable and powerful library for generating fake data, both for nodejs & browser, mock data as you want easily, see the demos in the [official site](https://www.suchjs.com/?local=en-US).
 
 ## Document
 
