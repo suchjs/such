@@ -2,6 +2,11 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v1.1.2] - 2021-08-3
+
+### Added
+
+- Add syntax like `<name>:data-type` in template literal, so the `:ref` type can use `&/${name}` to reference the named data type's value.
 
 ## [v1.1.1] - 2021-08-1
 
@@ -11,7 +16,7 @@ Suchjs add changelog since `v1.0.0`.
 
 ### Changed
 
-- Change the `path` parser, now allow special characters such as `,` , `:` , `/` etc. use a translate slash to escape the path name. 
+- Change the `path` parser, now allow special characters such as `,` , `:` , `/` etc. use a translate slash to escape the path name.
 
 - The `:ref` data type's path `data attribute` will cause an error if the path is not exists in currently.
 
@@ -26,7 +31,3 @@ Suchjs add changelog since `v1.0.0`.
 - Add `Such.template` static method for generating `template literal` string.
 
 - Add `ToTemplete` mockit, so you can use `Such.as(":::abc")` to call the `Such.template` method for generating.
-
-
-
-

@@ -8,4 +8,8 @@ export const strRule = /^(["'])((?:(?!\1)[^\\]|\\.)*)\1$/;
 // define your own data type's name rule
 export const dtNameRule = /^[a-zA-Z_$][\w$]*$/;
 export const tmplMockitName = 'template';
-export const tmplRefRule = /^\/\$\{([1-9]\d+|[0-9])\}$/;
+const tmplNamedContext = '[a-zA-Z_]\\w*';
+export const tmplNamedRule = new RegExp(`^<(${tmplNamedContext})>`);
+export const tmplRefRule = new RegExp(
+  `^\\/\\$\\{([1-9]\\d+|[0-9]|${tmplNamedContext})\\}$`,
+);

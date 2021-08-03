@@ -1,6 +1,6 @@
 import { TSuchInject } from '../types/instance';
 import { IPPPath, IPPPathItem } from '../types/parser';
-import { getRefMocker } from '../helpers/utils';
+import { getRefMocker, isArray } from '../helpers/utils';
 import { Mocker } from '../core/such';
 import Mockit from '../core/mockit';
 import { tmplRefRule } from '../data/config';
@@ -34,10 +34,16 @@ export default class ToRef extends Mockit<unknown> {
           let finded = false;
           let isTmplRef = false;
           if ((isTmplRef = tmplRefRule.test(item.fullpath))) {
-            const index = Number(RegExp.$1);
+            const index = RegExp.$1;
             const data = template.getRefValue(index);
             if (data) {
-              result.push(data.result);
+              if (isArray(data)) {
+                data.map((item) => {
+                  result.push(item.result);
+                });
+              } else {
+                result.push(data.result);
+              }
               finded = true;
             }
           }
@@ -62,10 +68,17 @@ export default class ToRef extends Mockit<unknown> {
         // just call Such.template
         $path.map((item: IPPPathItem) => {
           if (tmplRefRule.test(item.fullpath)) {
-            const index = Number(RegExp.$1);
+            const index = RegExp.$1;
             const data = template.getRefValue(index);
             if (data) {
-              result.push(data.result);
+              // check if array data when the index is a name
+              if (isArray(data)) {
+                data.map((item) => {
+                  result.push(item.result);
+                });
+              } else {
+                result.push(data.result);
+              }
             } else {
               throw new Error(
                 `The ':ref' type's reference path "${item.fullpath}" in template literal is not found.`,
@@ -91,7 +104,7 @@ export default class ToRef extends Mockit<unknown> {
         `The ':ref' data type need a mocker object or a template object in a template literal.`,
       );
     }
-    return $path.length === 1 ? result[0] : result;
+    return $path.length === 1 && result.length === 1 ? result[0] : result;
   }
   public test(): boolean {
     return true;

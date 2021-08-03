@@ -96,7 +96,7 @@ import Such from '../src/browser';
   // console.log(value);
   const instance = Such.instance({
     first: 'haha',
-    second: ':::`:string``:ref:&/${3}``:number`',
+    second: ':::`<mystr>:string``:ref:&/${1}``:number``:ref:&/${mystr}`',
   });
   console.log(instance.a());
 })();

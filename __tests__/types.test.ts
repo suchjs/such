@@ -286,6 +286,16 @@ describe('test built-in types', () => {
         instance.a();
       }
     }).toThrow();
+    expect(() => {
+      // in a template with named
+      const instance = Such.instance({
+        a: 1,
+        b: ':::`:string``:ref:&/${mystr}``:number`',
+      });
+      for (let i = 0; i < 10; i++) {
+        instance.a();
+      }
+    }).toThrow();
     // make a ref
     const ref = {
       a: 'hello',
@@ -320,6 +330,17 @@ describe('test built-in types', () => {
     };
     const tmplRefData = Such.as(tmplRef) as typeof tmplRef;
     expect(tmplRefData.c === `${tmplRef.a}:abc;${tmplRef.b}:abc;`).toBeTruthy();
+    // make a template ref with named
+    const namedTmplRef = {
+      a: 'hello',
+      b: 'world',
+      c:
+        ':::`<say>:ref:&./a`,`<say>:ref:&./b`!`<helloworld>:ref:&/${say}:@join(",")`!`:ref:&/${helloworld}`!',
+    };
+    const namedTmplRefData = Such.as(namedTmplRef) as typeof namedTmplRef;
+    expect(
+      namedTmplRefData.c === `${namedTmplRef.a},${namedTmplRef.b}!`.repeat(3),
+    ).toBeTruthy();
   });
   // test a regexp
   test(':regexp', () => {
@@ -432,6 +453,14 @@ describe('test built-in types', () => {
     expect(() => {
       // with more data attributes, the data attributes not ok
       return Such.as(':::`:string:{1,2}`:::{1');
+    }).toThrow();
+    expect(() => {
+      // with wrong named
+      return Such.as(':::`<1>:string:{1,2}`');
+    }).toThrow();
+    expect(() => {
+      // named ok, but the next data type is not ok
+      return Such.as(':::`<a1>a:string:{1,2}`');
     }).toThrow();
     /* ------------- normal template literal ---------------- */
     // call template method use an empty string without a splitor is just ok

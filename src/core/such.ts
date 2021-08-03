@@ -4,6 +4,7 @@ import {
   suchRule,
   templateSplitor,
   tmplMockitName,
+  tmplNamedRule,
 } from '../data/config';
 import PathMap, { TFieldPath } from '../helpers/pathmap';
 import * as utils from '../helpers/utils';
@@ -12,7 +13,7 @@ import Mockit, { BaseExtendMockit } from './mockit';
 import ToTemplate from '../mockit/template';
 import Dispatcher from '../data/parser';
 import store from '../data/store';
-import { TFunc, TObj, ValueOf } from '../types/common';
+import { TFunc, TObj } from '../types/common';
 import { TMClass, TMFactoryOptions } from '../types/mockit';
 import { TNodeSuch, TSuchSettings } from '../types/node';
 import { IParserConfig } from '../types/parser';
@@ -448,18 +449,28 @@ export class Mocker {
   }
 }
 
+interface TemplateData {
+  value: unknown;
+  result: unknown;
+}
+interface TemplateIndexData {
+  [index: number]: TemplateData;
+}
+interface TemplateIndexHash {
+  [index: number]: string;
+}
+interface TemplateNamedData {
+  [index: string]: TemplateData | TemplateData[];
+}
 /**
  * Template Class
  */
-interface TemplateInstance {
-  [index: number]: {
-    value: unknown;
-    result: unknown;
-  };
-}
 export class Template {
   private segments: Array<string | Mockit> = [];
-  private instances: TemplateInstance = {};
+  private indexData: TemplateIndexData = {};
+  private indexHash: TemplateIndexHash = {};
+  private namedData: TemplateNamedData = {};
+  private index = 0;
   public meta = '';
   public mockit: Mockit;
   /**
@@ -480,16 +491,23 @@ export class Template {
    * @param instance
    * @param optional
    */
-  public addInstance(instance: Mockit): void {
+  public addInstance(instance: Mockit, refName = ''): void {
     this.segments.push(instance);
+    if (refName) {
+      this.indexHash[this.index] = refName;
+    }
+    this.index++;
   }
   /**
    *
    * @param index [number]
    * @returns the reference instance's values
    */
-  public getRefValue(index: number): ValueOf<TemplateInstance> {
-    return this.instances[index];
+  public getRefValue(index: string): TemplateData | TemplateData[] {
+    if (!isNaN((index as unknown) as number)) {
+      return this.indexData[Number(index)];
+    }
+    return this.namedData[index];
   }
   /**
    *
@@ -541,36 +559,56 @@ export class Template {
     },
   ): string {
     let index = 0;
-    // clear the instances
+    // clear the indexData and namedData
     // so every time get the values only generated
-    this.instances = {};
+    const namedData: TemplateNamedData = {};
+    this.indexData = {};
+    this.namedData = namedData;
     const result = this.segments.reduce(
       (result: string, item: string | Mockit) => {
         if (typeof item === 'string') {
           result += item;
         } else {
-          const instance = (this.instances[index++] = {
+          const instanceData = (this.indexData[index] = {
             value: undefined as unknown,
             result: '',
           });
+          // check if has ref name
+          const refName = this.indexHash[index];
+          if (refName) {
+            if (!namedData.hasOwnProperty(refName)) {
+              namedData[refName] = instanceData;
+            } else {
+              // multiple same name
+              if (utils.isArray(namedData[refName])) {
+                (namedData[refName] as TemplateData[]).push(instanceData);
+              } else {
+                namedData[refName] = [
+                  namedData[refName] as TemplateData,
+                  instanceData,
+                ];
+              }
+            }
+          }
+          index++;
           // it's a mockit instance, generate a value
           const value = item.make(options, Such);
           // set the value
-          instance.value = value;
+          instanceData.value = value;
           // check the value type
           if (typeof value === 'string') {
-            instance.result = value;
+            instanceData.result = value;
           } else if (value === undefined || value === null) {
-            instance.result = '';
+            instanceData.result = '';
           } else {
             try {
               // try use toString
-              instance.result = value.toString();
+              instanceData.result = value.toString();
             } catch (e) {
-              instance.result = '';
+              instanceData.result = '';
             }
           }
-          result += instance.result;
+          result += instanceData.result;
         }
         return result;
       },
@@ -860,6 +898,7 @@ export default class Such {
         let mockit: Mockit;
         let meta = '';
         let type = '';
+        let refName = '';
         // parse mockit until end
         while (curIndex++ < total) {
           const curCh = code.charAt(curIndex);
@@ -869,7 +908,14 @@ export default class Such {
               // if the mockit has initial
               // need parse again
             } else {
-              const match = meta.match(suchRule);
+              let match = null;
+              // if is named, get the ref name and remove the characters
+              if ((match = meta.match(tmplNamedRule)) !== null) {
+                refName = match[1];
+                meta = meta.slice(match[0].length);
+              }
+              // check if match the such rule
+              match = meta.match(suchRule);
               if (
                 match &&
                 (type = match[1]) &&
@@ -953,7 +999,7 @@ export default class Such {
           mockit.setParams(params);
         }
         // add the mockit to segments
-        template.addInstance(mockit);
+        template.addInstance(mockit, refName);
       } else if (ch === '\\') {
         curIndex++;
         if (curIndex < total) {
