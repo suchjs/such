@@ -521,10 +521,10 @@ describe('test built-in types', () => {
     const numberAndString = Such.as(':::`:number`|`:string{5}`') as string;
     expect(numberAndString.includes('|')).toBeTruthy();
     const numAndStrSegs = numberAndString.split('|');
-    expect(numAndStrSegs.length).toEqual(2);
-    const [num, str] = numAndStrSegs;
+    expect(numAndStrSegs.length >= 2).toBeTruthy();
+    const [num, ...strs] = numAndStrSegs;
     expect(!isNaN((num as unknown) as number)).toBeTruthy();
-    expect(str.length).toEqual(5);
+    expect(strs.join('').length).toEqual(5);
   });
 });
 

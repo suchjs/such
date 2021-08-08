@@ -18,6 +18,7 @@ import { TMClass, TMFactoryOptions } from '../types/mockit';
 import { TNodeSuch, TSuchSettings } from '../types/node';
 import { IParserConfig } from '../types/parser';
 import {
+  IAInstanceOptions,
   IAsOptions,
   IMockerKeyRule,
   IMockerOptions,
@@ -32,6 +33,98 @@ const {
   isNoEmptyObject,
 } = utils;
 const { alias, aliasTypes } = store;
+/**
+ *
+ * @param instanceOptions [IAInstanceOptions]
+ * @param path [TFieldPath]
+ * @returns boolean
+ */
+const makeOptional = (
+  instanceOptions: IAInstanceOptions,
+  path: TFieldPath,
+): boolean => {
+  const strPath = `/${path.join('/')}`;
+  const instanceConfig = instanceOptions?.keys ?? {};
+  const curConfig = instanceConfig[strPath];
+  let hasMax = false;
+  let needReturn = false;
+  let needOptional = true;
+  if (
+    curConfig &&
+    (curConfig.hasOwnProperty('min') ||
+      (hasMax = curConfig.hasOwnProperty('max')))
+  ) {
+    const min = curConfig.min || 0;
+    const max = hasMax ? curConfig.max : 1;
+    if (min === max) {
+      needOptional = false;
+      // not needOptional
+      if (max === 0) {
+        // must not exists
+        needReturn = true;
+      } else {
+        // must exists
+        needReturn = false;
+      }
+    }
+  }
+  // check if need isOptional
+  if (needOptional) {
+    needReturn = isOptional();
+  }
+  return needReturn;
+};
+/**
+ *
+ * @param instanceOptions [IAInstanceOptions]
+ * @param path [TFieldPath]
+ * @param config [IMockerKeyRule]
+ * @returns
+ */
+const makeMinAndMax = (
+  instanceOptions: IAInstanceOptions,
+  path: TFieldPath,
+  config: IMockerKeyRule,
+): Pick<IMockerKeyRule, 'min' | 'max'> | never => {
+  let { min, max } = config;
+  const strPath = `/${path.join('/')}`;
+  const instanceConfig = instanceOptions?.keys ?? {};
+  const curConfig = instanceConfig[strPath] || {};
+  const hasMin = curConfig.hasOwnProperty('min');
+  const hasMax = curConfig.hasOwnProperty('max');
+  if (hasMin || hasMax) {
+    if (typeof min === 'number' || typeof max === 'number') {
+      const curMin = hasMin ? curConfig.min : min;
+      const curMax = hasMax ? curConfig.max : max;
+      min = min || 0;
+      max = max || min;
+      let wrongKey;
+      let wrongValue;
+      if (curMin < min || curMin > max) {
+        wrongKey = 'min';
+        wrongValue = curMin;
+      } else if (curMax < min || curMax > max) {
+        wrongKey = 'max';
+        wrongValue = curMax;
+      }
+      if (wrongKey) {
+        throw new Error(
+          `The path '${strPath}' in IAInstanceOptions's keys field use a wrong '${wrongKey}' value '${wrongValue}', it's not between the original min(${min}) and max(${max}).`,
+        );
+      }
+      min = curMin;
+      max = curMax;
+    } else {
+      throw new Error(
+        `The path '${strPath}' in IAInstanceOptions's keys field used in a path without 'min' and 'max'.`,
+      );
+    }
+  }
+  return {
+    min,
+    max,
+  };
+};
 /**
  *
  *
@@ -86,6 +179,7 @@ export class Mocker {
   public readonly type: string;
   public readonly instances?: PathMap<Mocker>;
   public readonly datas?: PathMap<unknown>;
+  private instanceOptions?: IAInstanceOptions;
   public readonly root: Mocker;
   public readonly parent: Mocker;
   public readonly dataType: string;
@@ -120,9 +214,9 @@ export class Mocker {
       this.root = parent.root;
     }
     const dataType = typeOf(target).toLowerCase();
-    const { min, max, oneOf, alwaysArray } = this.config;
+    const { oneOf, alwaysArray } = this.config;
     const { instances, datas } = this.root;
-    const hasLength = !isNaN(min);
+    const hasLength = !isNaN(this.config.min);
     this.dataType = dataType;
     if (utils.isArray(target)) {
       // when target is array
@@ -171,7 +265,17 @@ export class Mocker {
             instance instanceof Mocker
               ? (_i: number) => instance as Mocker
               : (i: number) => (instance as Mocker[])[i];
-          total = typeof total === 'number' ? total : makeRandom(min, max);
+          total =
+            typeof total === 'number'
+              ? total
+              : (() => {
+                  const { min, max } = makeMinAndMax(
+                    this.root.instanceOptions,
+                    this.path,
+                    this.config,
+                  );
+                  return makeRandom(min, max);
+                })();
           for (let i = 0; i < total; i++) {
             const cur = makeInstance(i);
             const curDpath = dpath.concat(i);
@@ -205,6 +309,11 @@ export class Mocker {
           } else {
             // e.g {"a:{0,5}":["amd","cmd","umd"]}
             resultFn = (dpath: TFieldPath, instance: Mocker) => {
+              const { min, max } = makeMinAndMax(
+                this.root.instanceOptions,
+                this.path,
+                this.config,
+              );
               const total = makeRandom(min, max);
               if (total <= 1) {
                 return makeOptional(dpath, instance, total);
@@ -220,7 +329,16 @@ export class Mocker {
           // e.g {"a[1,3]":["amd","cmd","umd"]}
           // e.g {"a{0,3}":["amd","cmd","umd"]}
           const makeRandArrFn = (dpath: TFieldPath, total?: number) => {
-            total = !isNaN(total) ? Number(total) : makeRandom(min, max);
+            total = !isNaN(total)
+              ? Number(total)
+              : (() => {
+                  const { min, max } = makeMinAndMax(
+                    this.root.instanceOptions,
+                    this.path,
+                    this.config,
+                  );
+                  return makeRandom(min, max);
+                })();
             const targets = Array.from({
               length: total,
             }).map(() => {
@@ -228,12 +346,18 @@ export class Mocker {
             });
             return makeArrFn(dpath, targets, total);
           };
+          const { min } = this.config;
           if (alwaysArray || min > 1) {
             this.mockFn = (dpath: TFieldPath) => {
               return makeRandArrFn(dpath);
             };
           } else {
             this.mockFn = (dpath: TFieldPath) => {
+              const { min, max } = makeMinAndMax(
+                this.root.instanceOptions,
+                this.path,
+                this.config,
+              );
               const total = makeRandom(min, max);
               if (total <= 1) {
                 return makeOptional(dpath, getInstance(), total);
@@ -249,39 +373,45 @@ export class Mocker {
         const oTarget = target as TObj;
         // parse key
         const keys = Object.keys(oTarget).map((i: string) => {
-          const val = oTarget[i];
-          const { key, config: conf } = Mocker.parseKey(i);
+          const target = oTarget[i];
+          const { key, config } = Mocker.parseKey(i);
           return {
             key,
-            target: val,
-            config: conf,
+            target,
+            config,
           };
         });
         this.mockFn = (dpath: TFieldPath) => {
           const result: TObj = {};
           const prevPath = this.path;
           keys.map((item) => {
-            const { key, config: conf, target: tar } = item;
-            const { optional } = conf;
+            const { key, config, target } = item;
+            const { optional } = config;
             const nowPath = prevPath.concat(key);
             const nowDpath = dpath.concat(key);
-            if (optional && isOptional()) {
+            if (optional) {
+              const needReturn = makeOptional(
+                this.root.instanceOptions,
+                nowPath,
+              );
               // optional data
-            } else {
-              let instance = instances.get(nowPath);
-              if (!(instance instanceof Mocker)) {
-                instance = new Mocker({
-                  target: tar,
-                  config: conf,
-                  path: nowPath,
-                  parent: this,
-                });
-                instances.set(nowPath, instance);
+              if (needReturn) {
+                return;
               }
-              const value = instance.mock(nowDpath);
-              result[key] = value;
-              datas.set(nowDpath, value);
             }
+            let instance = instances.get(nowPath);
+            if (!(instance instanceof Mocker)) {
+              instance = new Mocker({
+                target,
+                config,
+                path: nowPath,
+                parent: this,
+              });
+              instances.set(nowPath, instance);
+            }
+            const value = instance.mock(nowDpath);
+            result[key] = value;
+            datas.set(nowDpath, value);
           });
           return result;
         };
@@ -362,6 +492,11 @@ export class Mocker {
         // if the key set the config of length
         const origMockFn = this.mockFn;
         this.mockFn = (dpath: TFieldPath) => {
+          const { min, max } = makeMinAndMax(
+            this.root.instanceOptions,
+            this.path,
+            this.config,
+          );
           const total = makeRandom(min, max);
           if (!alwaysArray && total <= 1) {
             return origMockFn(dpath);
@@ -411,8 +546,12 @@ export class Mocker {
   public mock(dpath: TFieldPath): unknown {
     if (this.isRoot) {
       const { optional } = this.config;
-      if (optional && isOptional()) {
-        return;
+      if (optional) {
+        // check if has instance config
+        const needReturn = makeOptional(this.instanceOptions, []);
+        if (needReturn) {
+          return;
+        }
       }
     }
     return (this.result = this.mockFn(dpath));
@@ -446,6 +585,13 @@ export class Mocker {
    */
   public hasStore(key: string): boolean {
     return this.storeData.hasOwnProperty(key);
+  }
+  /**
+   *
+   * @param instanceOptions
+   */
+  public setInstanceOptions(instanceOptions?: IAInstanceOptions): void {
+    this.instanceOptions = instanceOptions;
   }
 }
 
@@ -1090,7 +1236,7 @@ export default class Such {
    * @returns
    * @memberof Such
    */
-  public a(): unknown {
+  public a(instanceOptions?: IAInstanceOptions): unknown {
     if (!this.initail) {
       // set initial true
       this.initail = true;
@@ -1098,6 +1244,7 @@ export default class Such {
       // clear the data
       this.datas.clear();
     }
+    this.mocker.setInstanceOptions(instanceOptions);
     return this.mocker.mock([]);
   }
 }

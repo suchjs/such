@@ -95,8 +95,17 @@ import Such from '../src/browser';
   // const value = instance.a();
   // console.log(value);
   const instance = Such.instance({
-    first: 'haha',
-    second: ':::`<mystr>:string``:ref:&/${1}``:number``:ref:&/${mystr}`',
+    'a{2,5}': 'haha',
   });
   console.log(instance.a());
+  console.log(
+    instance.a({
+      keys: {
+        '/a': {
+          min: 3,
+          max: 3,
+        },
+      },
+    }),
+  );
 })();

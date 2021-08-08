@@ -28,6 +28,15 @@ export interface IMockerKeyRule {
   oneOf?: boolean;
   alwaysArray?: boolean;
 }
+
+/**
+ *
+ */
+export interface IAInstanceOptions {
+  keys?: {
+    [index: string]: Pick<IMockerKeyRule, 'min' | 'max'>;
+  };
+}
 /**
  *
  *

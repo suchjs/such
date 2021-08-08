@@ -3,12 +3,11 @@
 /local/
 /__tests__/
 /dist/
-/node_modules/
 /coverage
 /examples
 
-# files
-browser.ts
+# npm
+node_modules/
 
 # system temp file
 .DS_Store

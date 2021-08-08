@@ -121,4 +121,157 @@ describe('test filed', () => {
     }
     expect(optionalATimes > 0).toBeTruthy();
   });
+  // test keys options
+  test('test instance keys option ', () => {
+    const opt = {
+      'a?': 'a is optinal',
+    };
+    const totalTimes = 100;
+    const optInstance = Such.instance(opt);
+    // normal without options
+    let hasATimes = 0;
+    for (let i = 0; i < totalTimes; i++) {
+      const data = optInstance.a() as typeof opt;
+      if (data.hasOwnProperty('a')) {
+        hasATimes++;
+      }
+    }
+    expect(hasATimes > 0 && hasATimes < 100).toBeTruthy();
+    // with options
+    // use max 0 to set never appear
+    hasATimes = 0;
+    for (let i = 0; i < totalTimes; i++) {
+      const data = optInstance.a({
+        keys: {
+          '/a': {
+            max: 0,
+          },
+        },
+      }) as typeof opt;
+      if (data.hasOwnProperty('a')) {
+        hasATimes++;
+      }
+    }
+    expect(hasATimes).toEqual(0);
+    // use min 1 to set must appear
+    hasATimes = 0;
+    for (let i = 0; i < totalTimes; i++) {
+      const data = optInstance.a({
+        keys: {
+          '/a': {
+            min: 1,
+          },
+        },
+      }) as typeof opt;
+      if (data.hasOwnProperty('a')) {
+        hasATimes++;
+      }
+    }
+    expect(hasATimes).toEqual(totalTimes);
+    // min and max
+    const minMax = {
+      'a{2,5}': '2 to 5 times',
+    };
+    const minMaxInstance = Such.instance(minMax);
+    // normal without min and max
+    let thanMinTimes = 0;
+    for (let i = 0; i < totalTimes; i++) {
+      const data = minMaxInstance.a() as {
+        a: string[];
+      };
+      expect(Array.isArray(data.a)).toBeTruthy();
+      expect(data.a.length >= 2 && data.a.length <= 5).toBeTruthy();
+      if (data.a.length > 2) {
+        thanMinTimes++;
+      }
+    }
+    expect(thanMinTimes > 0).toBeTruthy();
+    // wrong min and max key rule
+    expect(() => {
+      return minMaxInstance.a({
+        keys: {
+          '/a': {
+            // the min is great than the original max
+            min: 6,
+          },
+        },
+      });
+    }).toThrow();
+    expect(() => {
+      return minMaxInstance.a({
+        keys: {
+          '/a': {
+            // the min is less than the original max
+            min: 1,
+          },
+        },
+      });
+    }).toThrow();
+    expect(() => {
+      return minMaxInstance.a({
+        keys: {
+          '/a': {
+            // the max is less than the original min
+            max: 1,
+          },
+        },
+      });
+    }).toThrow();
+    expect(() => {
+      return minMaxInstance.a({
+        keys: {
+          '/a': {
+            // the max is great than the original min
+            max: 7,
+          },
+        },
+      });
+    }).toThrow();
+    // use a min and max key rule
+    for (let i = 0; i < totalTimes; i++) {
+      const data = minMaxInstance.a({
+        keys: {
+          '/a': {
+            // set the min equal max
+            min: 3,
+            max: 3,
+          },
+        },
+      }) as {
+        a: string[];
+      };
+      expect(Array.isArray(data.a)).toBeTruthy();
+      expect(data.a.length === 3).toBeTruthy();
+    }
+    // set the max as original min
+    for (let i = 0; i < totalTimes; i++) {
+      const data = minMaxInstance.a({
+        keys: {
+          '/a': {
+            // set the min equal max
+            max: 2,
+          },
+        },
+      }) as {
+        a: string[];
+      };
+      expect(Array.isArray(data.a)).toBeTruthy();
+      expect(data.a.length === 2).toBeTruthy();
+    }
+    // set the max as original min
+    for (let i = 0; i < totalTimes; i++) {
+      const data = minMaxInstance.a({
+        keys: {
+          '/a': {
+            // set the min equal max
+            min: 5,
+          },
+        },
+      }) as {
+        a: string[];
+      };
+      expect(Array.isArray(data.a)).toBeTruthy();
+      expect(data.a.length === 5).toBeTruthy();
+    }
+  });
 });
