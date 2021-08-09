@@ -95,15 +95,15 @@ import Such from '../src/browser';
   // const value = instance.a();
   // console.log(value);
   const instance = Such.instance({
-    'a{2,5}': 'haha',
+    'a?': 'haha',
   });
-  console.log(instance.a());
+  // console.log(instance.a());
   console.log(
     instance.a({
       keys: {
         '/a': {
-          min: 3,
-          max: 3,
+          min: 1,
+          max: 0,
         },
       },
     }),

@@ -39,32 +39,41 @@ const { alias, aliasTypes } = store;
  * @param path [TFieldPath]
  * @returns boolean
  */
-const makeOptional = (
+const getOptional = (
   instanceOptions: IAInstanceOptions,
   path: TFieldPath,
-): boolean => {
+): boolean | never => {
   const strPath = `/${path.join('/')}`;
   const instanceConfig = instanceOptions?.keys ?? {};
   const curConfig = instanceConfig[strPath];
-  let hasMax = false;
   let needReturn = false;
   let needOptional = true;
-  if (
-    curConfig &&
-    (curConfig.hasOwnProperty('min') ||
-      (hasMax = curConfig.hasOwnProperty('max')))
-  ) {
-    const min = curConfig.min || 0;
-    const max = hasMax ? curConfig.max : 1;
-    if (min === max) {
-      needOptional = false;
-      // not needOptional
-      if (max === 0) {
-        // must not exists
-        needReturn = true;
-      } else {
-        // must exists
-        needReturn = false;
+  if (curConfig) {
+    const hasMin = curConfig.hasOwnProperty('min');
+    const hasMax = curConfig.hasOwnProperty('max');
+    if (hasMin || hasMax) {
+      const min = hasMin ? curConfig.min : 0;
+      const max = hasMax ? curConfig.max : 1;
+      if (min > max) {
+        throw new Error(
+          `The data path of '${strPath}' in instance options's keys use a wrong optional config with min ${min} bigger than max ${max}`,
+        );
+      }
+      if (max > 1) {
+        throw new Error(
+          `The data path of '${strPath}' in instance options's keys use a wrong optional config with max ${max} bigger than 1`,
+        );
+      }
+      if (min === max) {
+        needOptional = false;
+        // not needOptional
+        if (max === 0) {
+          // must not exists
+          needReturn = true;
+        } else {
+          // must exists
+          needReturn = false;
+        }
       }
     }
   }
@@ -81,7 +90,7 @@ const makeOptional = (
  * @param config [IMockerKeyRule]
  * @returns
  */
-const makeMinAndMax = (
+const getMinAndMax = (
   instanceOptions: IAInstanceOptions,
   path: TFieldPath,
   config: IMockerKeyRule,
@@ -107,16 +116,23 @@ const makeMinAndMax = (
         wrongKey = 'max';
         wrongValue = curMax;
       }
+      // check if the min and max are all between orig min and max
       if (wrongKey) {
         throw new Error(
-          `The path '${strPath}' in IAInstanceOptions's keys field use a wrong '${wrongKey}' value '${wrongValue}', it's not between the original min(${min}) and max(${max}).`,
+          `The data path of '${strPath}' in instance options's keys field use a wrong '${wrongKey}' value '${wrongValue}', it's not in the range of the original array length min(${min}) and max(${max}).`,
+        );
+      }
+      // check if min is bigger than max
+      if (curMin > curMax) {
+        throw new Error(
+          `The data path of '${strPath}' in instance options's keys field use a wrong min value ${curMin} that is bigger than max value ${curMax}.`,
         );
       }
       min = curMin;
       max = curMax;
     } else {
       throw new Error(
-        `The path '${strPath}' in IAInstanceOptions's keys field used in a path without 'min' and 'max'.`,
+        `The data path of '${strPath}' in instance options's keys field is not an array field with length.`,
       );
     }
   }
@@ -269,7 +285,7 @@ export class Mocker {
             typeof total === 'number'
               ? total
               : (() => {
-                  const { min, max } = makeMinAndMax(
+                  const { min, max } = getMinAndMax(
                     this.root.instanceOptions,
                     this.path,
                     this.config,
@@ -309,7 +325,7 @@ export class Mocker {
           } else {
             // e.g {"a:{0,5}":["amd","cmd","umd"]}
             resultFn = (dpath: TFieldPath, instance: Mocker) => {
-              const { min, max } = makeMinAndMax(
+              const { min, max } = getMinAndMax(
                 this.root.instanceOptions,
                 this.path,
                 this.config,
@@ -332,7 +348,7 @@ export class Mocker {
             total = !isNaN(total)
               ? Number(total)
               : (() => {
-                  const { min, max } = makeMinAndMax(
+                  const { min, max } = getMinAndMax(
                     this.root.instanceOptions,
                     this.path,
                     this.config,
@@ -353,7 +369,7 @@ export class Mocker {
             };
           } else {
             this.mockFn = (dpath: TFieldPath) => {
-              const { min, max } = makeMinAndMax(
+              const { min, max } = getMinAndMax(
                 this.root.instanceOptions,
                 this.path,
                 this.config,
@@ -390,7 +406,7 @@ export class Mocker {
             const nowPath = prevPath.concat(key);
             const nowDpath = dpath.concat(key);
             if (optional) {
-              const needReturn = makeOptional(
+              const needReturn = getOptional(
                 this.root.instanceOptions,
                 nowPath,
               );
@@ -492,7 +508,7 @@ export class Mocker {
         // if the key set the config of length
         const origMockFn = this.mockFn;
         this.mockFn = (dpath: TFieldPath) => {
-          const { min, max } = makeMinAndMax(
+          const { min, max } = getMinAndMax(
             this.root.instanceOptions,
             this.path,
             this.config,
@@ -548,7 +564,7 @@ export class Mocker {
       const { optional } = this.config;
       if (optional) {
         // check if has instance config
-        const needReturn = makeOptional(this.instanceOptions, []);
+        const needReturn = getOptional(this.instanceOptions, []);
         if (needReturn) {
           return;
         }

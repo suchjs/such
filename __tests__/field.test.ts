@@ -168,6 +168,29 @@ describe('test filed', () => {
       }
     }
     expect(hasATimes).toEqual(totalTimes);
+    // wrong optional
+    expect(() => {
+      return optInstance.a({
+        keys: {
+          '/a': {
+            // the min is great than the max
+            min: 1,
+            max: 0,
+          },
+        },
+      });
+    }).toThrow();
+    expect(() => {
+      return optInstance.a({
+        keys: {
+          '/a': {
+            // the max is great than 1
+            min: 0,
+            max: 2,
+          },
+        },
+      });
+    }).toThrow();
     // min and max
     const minMax = {
       'a{2,5}': '2 to 5 times',
@@ -223,6 +246,17 @@ describe('test filed', () => {
           '/a': {
             // the max is great than the original min
             max: 7,
+          },
+        },
+      });
+    }).toThrow();
+    expect(() => {
+      return minMaxInstance.a({
+        keys: {
+          '/a': {
+            // the min is great than the max
+            max: 3,
+            min: 4,
           },
         },
       });

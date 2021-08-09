@@ -2,6 +2,11 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v1.2.1] - 2021-08-9
+
+### Changed
+
+- Check the instanceOptions parameter more strictly in the method `a(instanceOptions)`, wrong `min` and `max` value will cause an error.
 ## [v1.2.0] - 2021-08-9
 
 ### Added
