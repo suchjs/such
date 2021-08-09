@@ -2,6 +2,16 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v1.2.0] - 2021-08-9
+
+### Added
+
+- Add the keys config options for the such instance's method `a(instanceOptions: IAInstanceOptions)`, so you can across the options to control thoes fields are optional appear or not, and narrow thoes array fields has a range length to a small range length or a specified length.
+
+### Changed
+
+- Remove the `browser.ts` from the `.npmignore`, now in browser you can install the package and import from `suchjs/lib/browser` to get suchjs as a module.
+
 ## [v1.1.2] - 2021-08-3
 
 ### Added
