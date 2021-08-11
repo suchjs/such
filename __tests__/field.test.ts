@@ -153,6 +153,21 @@ describe('test filed', () => {
       }
     }
     expect(hasATimes).toEqual(0);
+    // use exist
+    hasATimes = 0;
+    for (let i = 0; i < totalTimes; i++) {
+      const data = optInstance.a({
+        keys: {
+          '/a': {
+            exist: false,
+          },
+        },
+      }) as typeof opt;
+      if (data.hasOwnProperty('a')) {
+        hasATimes++;
+      }
+    }
+    expect(hasATimes).toEqual(0);
     // use min 1 to set must appear
     hasATimes = 0;
     for (let i = 0; i < totalTimes; i++) {
@@ -160,6 +175,21 @@ describe('test filed', () => {
         keys: {
           '/a': {
             min: 1,
+          },
+        },
+      }) as typeof opt;
+      if (data.hasOwnProperty('a')) {
+        hasATimes++;
+      }
+    }
+    expect(hasATimes).toEqual(totalTimes);
+    // use exist
+    hasATimes = 0;
+    for (let i = 0; i < totalTimes; i++) {
+      const data = optInstance.a({
+        keys: {
+          '/a': {
+            exist: true,
           },
         },
       }) as typeof opt;
@@ -244,7 +274,7 @@ describe('test filed', () => {
       return minMaxInstance.a({
         keys: {
           '/a': {
-            // the max is great than the original min
+            // the max is great than the original max
             max: 7,
           },
         },
@@ -307,5 +337,162 @@ describe('test filed', () => {
       expect(Array.isArray(data.a)).toBeTruthy();
       expect(data.a.length === 5).toBeTruthy();
     }
+    // both has min and max
+    const optMinMax = {
+      'a{2,5}?': 'optional and array',
+    };
+    const optMinMaxInstance = Such.instance(optMinMax);
+    expect(() => {
+      return optMinMaxInstance.a({
+        keys: {
+          '/a': {
+            // the max is bigger than the original max
+            max: 7,
+          },
+        },
+      });
+    }).toThrow();
+    expect(() => {
+      return optMinMaxInstance.a({
+        keys: {
+          '/a': {
+            // the min is less than the original min
+            min: 1,
+          },
+        },
+      });
+    }).toThrow();
+    expect(() => {
+      return optMinMaxInstance.a({
+        keys: {
+          '/a': {
+            // the max is less than the original min
+            max: 1,
+          },
+        },
+      });
+    }).toThrow();
+    expect(() => {
+      return optMinMaxInstance.a({
+        keys: {
+          '/a': {
+            // the min is bigger than the original max
+            min: 7,
+          },
+        },
+      });
+    }).toThrow();
+    expect(() => {
+      return optMinMaxInstance.a({
+        keys: {
+          '/a': {
+            exist: false,
+            // the min is bigger than the original max
+            min: 7,
+          },
+        },
+      });
+    }).toThrow();
+    expect(() => {
+      return optMinMaxInstance.a({
+        keys: {
+          '/a': {
+            exist: true,
+            // the min is bigger than the original max
+            min: 7,
+          },
+        },
+      });
+    }).toThrow();
+    // use both exist and min and max
+    hasATimes = 0;
+    for (let i = 0; i < totalTimes; i++) {
+      const data = optMinMaxInstance.a({
+        keys: {
+          '/a': {
+            exist: false,
+          },
+        },
+      }) as typeof opt;
+      if (data.hasOwnProperty('a')) {
+        hasATimes++;
+      }
+    }
+    expect(hasATimes).toEqual(0);
+    // exist true
+    hasATimes = 0;
+    for (let i = 0; i < totalTimes; i++) {
+      const data = optMinMaxInstance.a({
+        keys: {
+          '/a': {
+            exist: true,
+          },
+        },
+      }) as typeof opt;
+      if (data.hasOwnProperty('a')) {
+        hasATimes++;
+      }
+    }
+    expect(hasATimes).toEqual(totalTimes);
+    // both
+    hasATimes = 0;
+    for (let i = 0; i < totalTimes; i++) {
+      const data = optMinMaxInstance.a({
+        keys: {
+          '/a': {
+            exist: true,
+            min: 3,
+            max: 3,
+          },
+        },
+      }) as {
+        a?: string[];
+      };
+      if (data.hasOwnProperty('a') && data.a.length === 3) {
+        hasATimes++;
+      }
+    }
+    expect(hasATimes).toEqual(totalTimes);
+    // both
+    hasATimes = 0;
+    for (let i = 0; i < totalTimes; i++) {
+      const data = optMinMaxInstance.a({
+        keys: {
+          '/a': {
+            exist: false,
+            min: 3,
+            max: 3,
+          },
+        },
+      }) as {
+        a?: string[];
+      };
+      if (data.hasOwnProperty('a')) {
+        hasATimes++;
+      }
+    }
+    expect(hasATimes).toEqual(0);
+    // keys
+    const instance = Such.instance({
+      'a{2,5}?': 'a',
+      'b:{1}': [
+        {
+          'c?': 'c',
+        },
+        {
+          'd{2,3}': 'd',
+        },
+      ],
+    });
+    const ruleKeys = instance.keys();
+    expect(ruleKeys.hasOwnProperty('/a')).toBeTruthy();
+    expect(ruleKeys['/a'].optional).toBeTruthy();
+    expect(ruleKeys['/a'].min).toEqual(2);
+    expect(ruleKeys['/a'].max).toEqual(5);
+    expect(ruleKeys['/b'].min).toEqual(1);
+    expect(ruleKeys['/b'].max).toEqual(1);
+    expect(ruleKeys['/b/0/c'].optional).toBeTruthy();
+    expect(ruleKeys['/b/1/d'].min).toEqual(2);
+    expect(ruleKeys['/b/1/d'].max).toEqual(3);
   });
 });

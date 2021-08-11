@@ -231,7 +231,7 @@ export const deepCopy = <T = unknown>(target: T, ...args: unknown[]): T => {
  * @param keys [string[]]
  * @returns [object] get the pointed `keys` of the `obj` and remove them from `obj`
  */
-export const shifTObj = <T = TObj>(
+export const shiftObj = <T = TObj>(
   obj: T,
   keys: Array<keyof T>,
 ): Partial<T> => {
@@ -243,6 +243,21 @@ export const shifTObj = <T = TObj>(
   return res;
 };
 
+/**
+ *
+ * @param obj [TObj]
+ * @param keys [string[]]
+ * @returns get the keys and values from the obj if the key exist
+ */
+export const pickObj = <T = TObj>(obj: T, keys: Array<keyof T>): Partial<T> => {
+  const res: Partial<T> = {};
+  keys.map((key) => {
+    if (obj.hasOwnProperty(key)) {
+      res[key] = obj[key];
+    }
+  });
+  return res;
+};
 /**
  *
  * @param first [TFieldPath]
@@ -268,6 +283,13 @@ export const isRelativePath = (
   }
   return i === len;
 };
+
+/**
+ *
+ * @param path [TFieldPath]
+ * @returns [string] return the path's string value
+ */
+export const path2str = (path: TFieldPath): string => `/${path.join('/')}`;
 
 /**
  *

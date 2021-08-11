@@ -29,12 +29,17 @@ export interface IMockerKeyRule {
   alwaysArray?: boolean;
 }
 
+export interface IMockerPathRuleKeys {
+  [index: string]: Pick<IMockerKeyRule, 'min' | 'max' | 'optional'>;
+}
 /**
  *
  */
 export interface IAInstanceOptions {
   keys?: {
-    [index: string]: Pick<IMockerKeyRule, 'min' | 'max'>;
+    [index: string]: Pick<IMockerKeyRule, 'min' | 'max'> & {
+      exist?: boolean;
+    };
   };
 }
 /**

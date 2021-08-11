@@ -13,7 +13,7 @@ import Mockit, { BaseExtendMockit } from './mockit';
 import ToTemplate from '../mockit/template';
 import Dispatcher from '../data/parser';
 import store from '../data/store';
-import { TFunc, TObj } from '../types/common';
+import { TFunc, TObj, ValueOf } from '../types/common';
 import { TMClass, TMFactoryOptions } from '../types/mockit';
 import { TNodeSuch, TSuchSettings } from '../types/node';
 import { IParserConfig } from '../types/parser';
@@ -22,6 +22,7 @@ import {
   IAsOptions,
   IMockerKeyRule,
   IMockerOptions,
+  IMockerPathRuleKeys,
   TSuchInject,
 } from '../types/instance';
 const {
@@ -42,37 +43,62 @@ const { alias, aliasTypes } = store;
 const getOptional = (
   instanceOptions: IAInstanceOptions,
   path: TFieldPath,
+  config: IMockerKeyRule,
 ): boolean | never => {
-  const strPath = `/${path.join('/')}`;
+  const strPath = utils.path2str(path);
   const instanceConfig = instanceOptions?.keys ?? {};
   const curConfig = instanceConfig[strPath];
+  let needCheckCount = false;
   let needReturn = false;
   let needOptional = true;
   if (curConfig) {
+    // when exist is set
     const hasMin = curConfig.hasOwnProperty('min');
     const hasMax = curConfig.hasOwnProperty('max');
-    if (hasMin || hasMax) {
-      const min = hasMin ? curConfig.min : 0;
-      const max = hasMax ? curConfig.max : 1;
-      if (min > max) {
-        throw new Error(
-          `The data path of '${strPath}' in instance options's keys use a wrong optional config with min ${min} bigger than max ${max}`,
-        );
+    const hasLength = config.hasOwnProperty('min');
+    // if has length, and current config has min or max
+    // then maybe need check count
+    needCheckCount = hasLength && (hasMin || hasMax);
+    if (typeof curConfig.exist === 'boolean') {
+      needOptional = false;
+      // when not exist, just return
+      if (curConfig.exist) {
+        needReturn = false;
+        // because it's not return
+        // so will check count by the mock process
+        // here no need to check count again
+        needCheckCount = false;
+      } else {
+        needReturn = true;
       }
-      if (max > 1) {
-        throw new Error(
-          `The data path of '${strPath}' in instance options's keys use a wrong optional config with max ${max} bigger than 1`,
-        );
-      }
-      if (min === max) {
-        needOptional = false;
-        // not needOptional
-        if (max === 0) {
-          // must not exists
-          needReturn = true;
-        } else {
-          // must exists
-          needReturn = false;
+    } else if (!hasLength) {
+      // if the field set min, it's maybe an array field
+      // don't set min or max instead of exist
+      // ignore the min and max if config has min
+      // no need check count because not hasLength
+      if (hasMin || hasMax) {
+        const min = hasMin ? curConfig.min : 0;
+        const max = hasMax ? curConfig.max : 1;
+        if (min > max) {
+          throw new Error(
+            `The data path of '${strPath}' in instance options's keys use a wrong optional config with min ${min} bigger than max ${max}`,
+          );
+        }
+        if (max > 1) {
+          throw new Error(
+            `The data path of '${strPath}' in instance options's keys use a wrong optional config with max ${max} bigger than 1`,
+          );
+        }
+        if (min === max) {
+          needOptional = false;
+          // not needOptional
+          if (max === 0) {
+            // must not exists
+            needReturn = true;
+          } else {
+            // must exists
+            needReturn = false;
+          }
         }
       }
     }
@@ -80,6 +106,11 @@ const getOptional = (
   // check if need isOptional
   if (needOptional) {
     needReturn = isOptional();
+  }
+  // when need return, and need check count
+  // then check the min and max value
+  if (needReturn && needCheckCount) {
+    getMinAndMax(instanceOptions, path, config);
   }
   return needReturn;
 };
@@ -159,7 +190,7 @@ export class Mocker {
     key: string,
   ): {
     key: string;
-    config: TObj;
+    config: IMockerKeyRule;
   } {
     const rule = /(:?)(?:\{(\+?[01]|[1-9]\d*)(?:,([1-9]\d*))?})?(\??)$/;
     let match: Array<string | undefined>;
@@ -188,6 +219,8 @@ export class Mocker {
       config,
     };
   }
+  private instanceOptions?: IAInstanceOptions;
+  protected readonly storeData: TObj = {};
   public result: unknown;
   public readonly target: unknown;
   public readonly config: IMockerKeyRule = {};
@@ -195,14 +228,12 @@ export class Mocker {
   public readonly type: string;
   public readonly instances?: PathMap<Mocker>;
   public readonly datas?: PathMap<unknown>;
-  private instanceOptions?: IAInstanceOptions;
   public readonly root: Mocker;
   public readonly parent: Mocker;
   public readonly dataType: string;
   public readonly isRoot: boolean;
   public readonly mockFn: (dpath: TFieldPath) => unknown;
   public readonly mockit: Mockit;
-  protected readonly storeData: TObj = {};
   /**
    * Creates an instance of Mocker.
    * @param {IMockerOptions} options
@@ -342,7 +373,6 @@ export class Mocker {
             return resultFn(dpath, instance);
           };
         } else {
-          // e.g {"a[1,3]":["amd","cmd","umd"]}
           // e.g {"a{0,3}":["amd","cmd","umd"]}
           const makeRandArrFn = (dpath: TFieldPath, total?: number) => {
             total = !isNaN(total)
@@ -409,6 +439,7 @@ export class Mocker {
               const needReturn = getOptional(
                 this.root.instanceOptions,
                 nowPath,
+                config,
               );
               // optional data
               if (needReturn) {
@@ -564,7 +595,7 @@ export class Mocker {
       const { optional } = this.config;
       if (optional) {
         // check if has instance config
-        const needReturn = getOptional(this.instanceOptions, []);
+        const needReturn = getOptional(this.instanceOptions, [], this.config);
         if (needReturn) {
           return;
         }
@@ -1218,15 +1249,17 @@ export default class Such {
     }
     return template;
   }
-
+  /**
+   * instance properties
+   */
   public readonly target: unknown;
   public readonly options: IAsOptions;
   public readonly mocker: Mocker;
   public readonly instances: PathMap<Mocker>;
   public readonly mockits: PathMap<TObj>;
   public readonly datas: PathMap<unknown>;
-  public readonly paths: PathMap<TFieldPath>;
   private initail = false;
+  private ruleKeys: IMockerPathRuleKeys;
   /**
    * constructor of such
    * @param target [unkown] the target need to be mocking
@@ -1234,6 +1267,7 @@ export default class Such {
    */
   constructor(target: unknown, options?: IAsOptions) {
     this.target = target;
+    this.options = options;
     this.instances = new PathMap(false);
     this.datas = new PathMap(true);
     this.mocker = new Mocker(
@@ -1262,6 +1296,45 @@ export default class Such {
     }
     this.mocker.setInstanceOptions(instanceOptions);
     return this.mocker.mock([]);
+  }
+
+  /**
+   *
+   * @returns
+   */
+  public keys(): IMockerPathRuleKeys {
+    if (this.ruleKeys) {
+      return this.ruleKeys;
+    }
+    const { target, ruleKeys = {} } = this;
+    const keys = ['optional', 'min', 'max'] as (keyof ValueOf<
+      IMockerPathRuleKeys
+    >)[];
+    const loop = (obj: unknown, path: TFieldPath) => {
+      if (utils.isObject(obj)) {
+        for (const curKey in obj) {
+          if (obj.hasOwnProperty(curKey)) {
+            const { config, key } = Mocker.parseKey(curKey);
+            const info = utils.pickObj(config, keys);
+            const nowPath = path.concat(key);
+            // if has info
+            if (isNoEmptyObject(info)) {
+              ruleKeys[utils.path2str(nowPath)] = info;
+            }
+            // recursive
+            loop(obj[curKey], nowPath);
+          }
+        }
+      } else if (utils.isArray(obj)) {
+        obj.forEach((value, index) => {
+          loop(value, path.concat(index));
+        });
+      }
+    };
+    // loop the target
+    loop(target, []);
+    // return the rulekeys
+    return ruleKeys;
   }
 }
 

@@ -2,6 +2,14 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v1.2.2] - 2021-08-12
+
+### Changed
+
+- Add the `exist` to the path value in the instaceOptions keys, so you need use `exist` if the field is optional and also has a count.
+### Added
+
+- Add `keys()` method for such instance, so you can get the path of keys which has an `optional` or count `min` and `max` config.
 ## [v1.2.1] - 2021-08-9
 
 ### Changed

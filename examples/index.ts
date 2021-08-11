@@ -95,17 +95,26 @@ import Such from '../src/browser';
   // const value = instance.a();
   // console.log(value);
   const instance = Such.instance({
-    'a?': 'haha',
+    'a{2,5}?': 'haha',
+    'b{1}': {
+      'c?': 'haha',
+      d: [
+        {
+          'e?': 'ee',
+          'f{3,4}': 'ff',
+        },
+      ],
+    },
   });
   // console.log(instance.a());
-  console.log(
-    instance.a({
-      keys: {
-        '/a': {
-          min: 1,
-          max: 0,
-        },
-      },
-    }),
-  );
+  // console.log(
+  //   instance.a({
+  //     keys: {
+  //       '/a': {
+  //         min: 1,
+  //       },
+  //     },
+  //   }),
+  // );
+  console.log(instance.keys());
 })();
