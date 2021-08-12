@@ -387,8 +387,8 @@ describe('test filed', () => {
         keys: {
           '/a': {
             exist: false,
-            // the min is bigger than the original max
-            min: 7,
+            // the exist is false, no need to set min or max
+            min: 3,
           },
         },
       });
@@ -460,8 +460,6 @@ describe('test filed', () => {
         keys: {
           '/a': {
             exist: false,
-            min: 3,
-            max: 3,
           },
         },
       }) as {

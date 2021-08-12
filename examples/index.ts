@@ -107,14 +107,15 @@ import Such from '../src/browser';
     },
   });
   // console.log(instance.a());
-  // console.log(
-  //   instance.a({
-  //     keys: {
-  //       '/a': {
-  //         min: 1,
-  //       },
-  //     },
-  //   }),
-  // );
-  console.log(instance.keys());
+  console.log(
+    instance.a({
+      keys: {
+        '/a': {
+          max: 3,
+          min: 4,
+        },
+      },
+    }),
+  );
+  // console.log(instance.keys());
 })();

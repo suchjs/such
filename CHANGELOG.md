@@ -2,19 +2,28 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v1.2.3] - 2021-08-12
+
+### Changed
+
+- Add the `checkKeys()` method, so every time you called the `a()` method with an instance options with keys will trigger a `check`, all the keys config will be strictly checked one by one.
+
 ## [v1.2.2] - 2021-08-12
 
 ### Changed
 
 - Add the `exist` to the path value in the instaceOptions keys, so you need use `exist` if the field is optional and also has a count.
+
 ### Added
 
 - Add `keys()` method for such instance, so you can get the path of keys which has an `optional` or count `min` and `max` config.
+
 ## [v1.2.1] - 2021-08-9
 
 ### Changed
 
 - Check the instanceOptions parameter more strictly in the method `a(instanceOptions)`, wrong `min` and `max` value will cause an error.
+
 ## [v1.2.0] - 2021-08-9
 
 ### Added

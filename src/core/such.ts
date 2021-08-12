@@ -28,10 +28,15 @@ import {
 const {
   isFn,
   isOptional,
+  isObject,
+  isArray,
+  isNoEmptyObject,
   makeRandom,
   typeOf,
   deepCopy,
-  isNoEmptyObject,
+  pickObj,
+  path2str,
+  capitalize,
 } = utils;
 const { alias, aliasTypes } = store;
 /**
@@ -45,59 +50,37 @@ const getOptional = (
   path: TFieldPath,
   config: IMockerKeyRule,
 ): boolean | never => {
-  const strPath = utils.path2str(path);
-  const instanceConfig = instanceOptions?.keys ?? {};
-  const curConfig = instanceConfig[strPath];
-  let needCheckCount = false;
+  const strPath = path2str(path);
+  const instanceConfig = instanceOptions?.keys;
   let needReturn = false;
   let needOptional = true;
-  if (curConfig) {
-    // when exist is set
-    const hasMin = curConfig.hasOwnProperty('min');
-    const hasMax = curConfig.hasOwnProperty('max');
-    const hasLength = config.hasOwnProperty('min');
-    // if has length, and current config has min or max
-    // then maybe need check count
-    needCheckCount = hasLength && (hasMin || hasMax);
-    if (typeof curConfig.exist === 'boolean') {
-      needOptional = false;
-      // when not exist, just return
-      if (curConfig.exist) {
-        needReturn = false;
-        // because it's not return
-        // so will check count by the mock process
-        // here no need to check count again
-        needCheckCount = false;
-      } else {
-        needReturn = true;
-      }
-    } else if (!hasLength) {
-      // if the field set min, it's maybe an array field
-      // don't set min or max instead of exist
-      // ignore the min and max if config has min
-      // no need check count because not hasLength
-      if (hasMin || hasMax) {
-        const min = hasMin ? curConfig.min : 0;
-        const max = hasMax ? curConfig.max : 1;
-        if (min > max) {
-          throw new Error(
-            `The data path of '${strPath}' in instance options's keys use a wrong optional config with min ${min} bigger than max ${max}`,
-          );
-        }
-        if (max > 1) {
-          throw new Error(
-            `The data path of '${strPath}' in instance options's keys use a wrong optional config with max ${max} bigger than 1`,
-          );
-        }
-        if (min === max) {
-          needOptional = false;
-          // not needOptional
-          if (max === 0) {
-            // must not exists
-            needReturn = true;
-          } else {
-            // must exists
-            needReturn = false;
+  if (instanceConfig) {
+    const curConfig = instanceConfig[strPath];
+    if (curConfig) {
+      if (typeof curConfig.exist === 'boolean') {
+        needOptional = false;
+        // when not exist, just return
+        needReturn = !curConfig.exist;
+      } else if (!config.hasOwnProperty('min')) {
+        const hasMin = curConfig.hasOwnProperty('min');
+        const hasMax = curConfig.hasOwnProperty('max');
+        // if the field set min, it's maybe an array field
+        // don't set min or max instead of exist
+        // ignore the min and max if config has min
+        // no need check count because not hasLength
+        if (hasMin || hasMax) {
+          const min = hasMin ? curConfig.min : 0;
+          const max = hasMax ? curConfig.max : 1;
+          if (min === max) {
+            needOptional = false;
+            // not needOptional
+            if (max === 0) {
+              // must not exists
+              needReturn = true;
+            } else {
+              // must exists
+              needReturn = false;
+            }
           }
         }
       }
@@ -106,11 +89,6 @@ const getOptional = (
   // check if need isOptional
   if (needOptional) {
     needReturn = isOptional();
-  }
-  // when need return, and need check count
-  // then check the min and max value
-  if (needReturn && needCheckCount) {
-    getMinAndMax(instanceOptions, path, config);
   }
   return needReturn;
 };
@@ -128,43 +106,16 @@ const getMinAndMax = (
 ): Pick<IMockerKeyRule, 'min' | 'max'> | never => {
   let { min, max } = config;
   const strPath = `/${path.join('/')}`;
-  const instanceConfig = instanceOptions?.keys ?? {};
-  const curConfig = instanceConfig[strPath] || {};
-  const hasMin = curConfig.hasOwnProperty('min');
-  const hasMax = curConfig.hasOwnProperty('max');
-  if (hasMin || hasMax) {
-    if (typeof min === 'number' || typeof max === 'number') {
-      const curMin = hasMin ? curConfig.min : min;
-      const curMax = hasMax ? curConfig.max : max;
-      min = min || 0;
-      max = max || min;
-      let wrongKey;
-      let wrongValue;
-      if (curMin < min || curMin > max) {
-        wrongKey = 'min';
-        wrongValue = curMin;
-      } else if (curMax < min || curMax > max) {
-        wrongKey = 'max';
-        wrongValue = curMax;
+  const instanceConfig = instanceOptions?.keys;
+  if (instanceConfig) {
+    const curConfig = instanceConfig[strPath];
+    if (curConfig) {
+      if (curConfig.hasOwnProperty('min')) {
+        min = curConfig.min;
       }
-      // check if the min and max are all between orig min and max
-      if (wrongKey) {
-        throw new Error(
-          `The data path of '${strPath}' in instance options's keys field use a wrong '${wrongKey}' value '${wrongValue}', it's not in the range of the original array length min(${min}) and max(${max}).`,
-        );
+      if (curConfig.hasOwnProperty('max')) {
+        max = curConfig.max;
       }
-      // check if min is bigger than max
-      if (curMin > curMax) {
-        throw new Error(
-          `The data path of '${strPath}' in instance options's keys field use a wrong min value ${curMin} that is bigger than max value ${curMax}.`,
-        );
-      }
-      min = curMin;
-      max = curMax;
-    } else {
-      throw new Error(
-        `The data path of '${strPath}' in instance options's keys field is not an array field with length.`,
-      );
     }
   }
   return {
@@ -265,7 +216,7 @@ export class Mocker {
     const { instances, datas } = this.root;
     const hasLength = !isNaN(this.config.min);
     this.dataType = dataType;
-    if (utils.isArray(target)) {
+    if (isArray(target)) {
       // when target is array
       const totalIndex = target.length - 1;
       const getInstance = (mIndex?: number): Mocker => {
@@ -773,7 +724,7 @@ export class Template {
               namedData[refName] = instanceData;
             } else {
               // multiple same name
-              if (utils.isArray(namedData[refName])) {
+              if (isArray(namedData[refName])) {
                 (namedData[refName] as TemplateData[]).push(instanceData);
               } else {
                 namedData[refName] = [
@@ -881,7 +832,7 @@ export default class Such {
       const fnName = fnHashs.hasOwnProperty(key) ? fnHashs[key] : key;
       Object.keys(conf).map((name: keyof typeof conf) => {
         const fn = such[fnName as keyof TStaticSuch] as TFunc;
-        const args = utils.isArray(conf[name])
+        const args = isArray(conf[name])
           ? conf[name]
           : ([conf[name]] as Parameters<typeof fn>);
         fn(name, ...args);
@@ -979,13 +930,13 @@ export default class Such {
       configOptions,
       allowAttrs,
     } = config;
-    const constrName = `To${utils.capitalize(type)}`;
+    const constrName = `To${capitalize(type)}`;
     // init process
     const initProcess = function (this: Mockit, genFn?: GeneratorFunction) {
       if (isNoEmptyObject(configOptions)) {
         this.configOptions = deepCopy({}, this.configOptions, configOptions);
       }
-      if (utils.isArray(allowAttrs)) {
+      if (isArray(allowAttrs)) {
         this.setAllowAttrs(...allowAttrs);
       }
       if (isFn(init)) {
@@ -1294,13 +1245,17 @@ export default class Such {
       // clear the data
       this.datas.clear();
     }
+    // always set instance optiosn
     this.mocker.setInstanceOptions(instanceOptions);
+    // if has keys, check the keys
+    this.checkKeys(instanceOptions?.keys);
+    // mock the value
     return this.mocker.mock([]);
   }
-
   /**
-   *
-   * @returns
+   * get the optional or length fields's config
+   * @returns {IMockerPathRuleKeys}
+   * @memberof Such
    */
   public keys(): IMockerPathRuleKeys {
     if (this.ruleKeys) {
@@ -1310,22 +1265,23 @@ export default class Such {
     const keys = ['optional', 'min', 'max'] as (keyof ValueOf<
       IMockerPathRuleKeys
     >)[];
+    // loop the fields
     const loop = (obj: unknown, path: TFieldPath) => {
-      if (utils.isObject(obj)) {
+      if (isObject(obj)) {
         for (const curKey in obj) {
           if (obj.hasOwnProperty(curKey)) {
             const { config, key } = Mocker.parseKey(curKey);
-            const info = utils.pickObj(config, keys);
+            const info = pickObj(config, keys);
             const nowPath = path.concat(key);
             // if has info
             if (isNoEmptyObject(info)) {
-              ruleKeys[utils.path2str(nowPath)] = info;
+              ruleKeys[path2str(nowPath)] = info;
             }
             // recursive
             loop(obj[curKey], nowPath);
           }
         }
-      } else if (utils.isArray(obj)) {
+      } else if (isArray(obj)) {
         obj.forEach((value, index) => {
           loop(value, path.concat(index));
         });
@@ -1335,6 +1291,110 @@ export default class Such {
     loop(target, []);
     // return the rulekeys
     return ruleKeys;
+  }
+  /**
+   * check the optional or length config of the field is ok or not
+   * @param {IAInstanceOptions.keys} keys
+   * @returns {(void | never)}
+   * @memberof Such
+   */
+  public checkKeys(
+    keys: ValueOf<Pick<IAInstanceOptions, 'keys'>>,
+  ): void | never {
+    // check the keys if the keys is an object not empty
+    if (keys && isNoEmptyObject(keys)) {
+      const fields = this.keys();
+      for (const path in keys) {
+        if (keys.hasOwnProperty(path)) {
+          if (!fields.hasOwnProperty(path)) {
+            throw new Error(
+              `The target's field with a path '${path}' in instanceOptions keys is not optional or having a length with min/max, but you set a config on it.`,
+            );
+          } else {
+            const value = keys[path];
+            const config = fields[path];
+            const hasExist = typeof value.exist === 'boolean';
+            // check optional
+            if (hasExist && config.optional !== true) {
+              throw new Error(
+                `The target's field with a path '${path}' in instanceOptions keys is not optional, but you set the key 'exist' on it.`,
+              );
+            }
+            // check count
+            const hasMin = value.hasOwnProperty('min');
+            const hasMax = value.hasOwnProperty('max');
+            if (hasMin || hasMax) {
+              if (value.exist === false) {
+                // has set the exist false
+                // no need to set min and max
+                throw new Error(
+                  `The target's field with a path '${path}' in instanceOptions keys is set 'exist' be false, no need to set the 'min'/'max' value.`,
+                );
+              }
+              let confMin: number;
+              let confMax: number;
+              if (config.hasOwnProperty('min')) {
+                // first use the config's min and max
+                confMin = config.min;
+                confMax = config.hasOwnProperty('max') ? config.max : confMin;
+              } else {
+                // then if is optional, set the min and max to 0 and 1
+                if (config.optional) {
+                  // if has 'exist', don't use the 'min'/'max' value
+                  if (hasExist) {
+                    throw new Error(
+                      `The target's field with a path '${path}' in instanceOptions keys is not having a length with min/max, you can't set both the 'exist' field and the 'min'/'max'.`,
+                    );
+                  }
+                  confMin = 0;
+                  confMax = 1;
+                } else {
+                  throw new Error(
+                    `The target's field with a path '${path}' in instanceOptions keys is not having a length with min/max, but you set a length on it.`,
+                  );
+                }
+              }
+              const checkMinOrMax = (
+                val: unknown,
+                name: 'min' | 'max',
+              ): void | never => {
+                if (typeof val !== 'number') {
+                  throw new Error(
+                    `The target's field with a path '${path}' in instanceOptions keys set a length with none number ${name} '${val}'.`,
+                  );
+                }
+                if (val > confMax) {
+                  throw new Error(
+                    `The target's field with a path '${path}' in instanceOptions keys set a length with ${name} '${val}' bigger than the field allowed max '${confMax}'.`,
+                  );
+                }
+                if (val < confMin) {
+                  throw new Error(
+                    `The target's field with a path '${path}' in instanceOptions keys set a length with ${name} '${val}' less than the field allowed min '${confMin}'.`,
+                  );
+                }
+              };
+              // check the min
+              if (hasMin) {
+                checkMinOrMax(value.min, 'min');
+              }
+              // check the max
+              if (hasMax) {
+                checkMinOrMax(value.max, 'max');
+                if (hasMin) {
+                  // check the min and max
+                  if (value.min > value.max) {
+                    throw new Error(
+                      `The target's field with a path '${path}' in instanceOptions keys set a length with min '${value.min}' bigger than the max '${value.max}'.`,
+                    );
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
