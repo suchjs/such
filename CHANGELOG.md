@@ -2,6 +2,15 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v1.2.4] - 2021-08-15
+
+### Added
+
+- Add `index` config for the keys of the instance options, so you can use a enum values and get an exactly value by set it.
+  
+### Changed
+
+- Change the `checkKeys()` method also return `oneOf`,`alwaysArray` config of the field.
 ## [v1.2.3] - 2021-08-12
 
 ### Changed

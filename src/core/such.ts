@@ -34,7 +34,6 @@ const {
   makeRandom,
   typeOf,
   deepCopy,
-  pickObj,
   path2str,
   capitalize,
 } = utils;
@@ -105,7 +104,7 @@ const getMinAndMax = (
   config: IMockerKeyRule,
 ): Pick<IMockerKeyRule, 'min' | 'max'> | never => {
   let { min, max } = config;
-  const strPath = `/${path.join('/')}`;
+  const strPath = path2str(path);
   const instanceConfig = instanceOptions?.keys;
   if (instanceConfig) {
     const curConfig = instanceConfig[strPath];
@@ -197,6 +196,7 @@ export class Mocker {
     rootInstances?: PathMap<Mocker>,
     rootDatas?: PathMap<unknown>,
   ) {
+    // set the mocker properties
     const { target, path, config, parent } = options;
     this.target = target;
     this.path = path;
@@ -212,16 +212,43 @@ export class Mocker {
       this.root = parent.root;
     }
     const dataType = typeOf(target).toLowerCase();
+    this.dataType = dataType;
+    // check config and target
     const { oneOf, alwaysArray } = this.config;
     const { instances, datas } = this.root;
     const hasLength = !isNaN(this.config.min);
-    this.dataType = dataType;
+    // use oneOf key rule for the none array field
+    if (oneOf && !isArray(target)) {
+      throw new Error(
+        `The field key of '${path2str(
+          path,
+        )}' use a colon ':' to set a 'oneOf' config, but the value of the field is not an array.`,
+      );
+    }
     if (isArray(target)) {
       // when target is array
       const totalIndex = target.length - 1;
       const getInstance = (mIndex?: number): Mocker => {
         mIndex =
-          typeof mIndex === 'number' ? mIndex : makeRandom(0, totalIndex);
+          typeof mIndex === 'number'
+            ? mIndex
+            : (() => {
+                let keys;
+                // if have keys and a config of current path with index
+                if ((keys = this.root.instanceOptions?.keys)) {
+                  const strPath = path2str(path);
+                  const curConfig = keys[strPath];
+                  if (curConfig && typeof curConfig.index === 'number') {
+                    if (curConfig.index > totalIndex) {
+                      throw new Error(
+                        `The target's field with a path '${strPath}' in instanceOptions keys set a 'index' ${curConfig.index} bigger than the max index ${totalIndex}.`,
+                      );
+                    }
+                    return curConfig.index;
+                  }
+                }
+                return makeRandom(0, totalIndex);
+              })();
         const nowPath = path.concat(mIndex);
         let instance = instances.get(nowPath);
         if (!(instance instanceof Mocker)) {
@@ -1262,20 +1289,16 @@ export default class Such {
       return this.ruleKeys;
     }
     const { target, ruleKeys = {} } = this;
-    const keys = ['optional', 'min', 'max'] as (keyof ValueOf<
-      IMockerPathRuleKeys
-    >)[];
     // loop the fields
     const loop = (obj: unknown, path: TFieldPath) => {
       if (isObject(obj)) {
         for (const curKey in obj) {
           if (obj.hasOwnProperty(curKey)) {
             const { config, key } = Mocker.parseKey(curKey);
-            const info = pickObj(config, keys);
             const nowPath = path.concat(key);
-            // if has info
-            if (isNoEmptyObject(info)) {
-              ruleKeys[path2str(nowPath)] = info;
+            // if has config
+            if (isNoEmptyObject(config)) {
+              ruleKeys[path2str(nowPath)] = config;
             }
             // recursive
             loop(obj[curKey], nowPath);
@@ -1328,7 +1351,7 @@ export default class Such {
                 // has set the exist false
                 // no need to set min and max
                 throw new Error(
-                  `The target's field with a path '${path}' in instanceOptions keys is set 'exist' be false, no need to set the 'min'/'max' value.`,
+                  `The target's field with a path '${path}' in instanceOptions keys has set 'exist' be false, no need to set the 'min'/'max' value again.`,
                 );
               }
               let confMin: number;
@@ -1389,6 +1412,14 @@ export default class Such {
                     );
                   }
                 }
+              }
+            }
+            // check index
+            if (value.hasOwnProperty('index')) {
+              if (!(config.oneOf || config.max === 1)) {
+                throw new Error(
+                  `The target's field with a path '${path}' in instanceOptions keys is not a field with config 'oneOf' or 'max' equal to 1, can't set a 'index' value.`,
+                );
               }
             }
           }

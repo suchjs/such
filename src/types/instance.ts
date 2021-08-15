@@ -30,7 +30,7 @@ export interface IMockerKeyRule {
 }
 
 export interface IMockerPathRuleKeys {
-  [index: string]: Pick<IMockerKeyRule, 'min' | 'max' | 'optional'>;
+  [index: string]: IMockerKeyRule;
 }
 /**
  *
@@ -39,6 +39,7 @@ export interface IAInstanceOptions {
   keys?: {
     [index: string]: Pick<IMockerKeyRule, 'min' | 'max'> & {
       exist?: boolean;
+      index?: number;
     };
   };
 }

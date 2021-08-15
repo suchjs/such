@@ -18,6 +18,65 @@ describe('test filed', () => {
     }
     expect(hasATimes > 0 && notHasATimes > 0).toBeTruthy();
   });
+  // test oneOf
+  test('test oneOf', () => {
+    expect(() => {
+      return Such.as(':string', {
+        config: {
+          oneOf: true,
+        },
+      });
+    }).toThrow();
+    expect(() => {
+      return Such.as({
+        'a:{1}': ':string',
+      });
+    }).toThrow();
+    expect(() => {
+      const instance = Such.instance({
+        'a{2,3}': [true, false],
+      });
+      return instance.a({
+        keys: {
+          '/a': {
+            index: 0,
+          },
+        },
+      });
+    }).toThrow();
+    expect(() => {
+      const instance = Such.instance({
+        'a:{2,3}': [true, false],
+      });
+      return instance.a({
+        keys: {
+          '/a': {
+            index: 2,
+          },
+        },
+      });
+    }).toThrow();
+    expect(() => {
+      const instance = Such.instance({
+        'a:{1}': [true, false],
+      });
+      const totalTimes = 100;
+      let okTimes = 0;
+      for (let i = 0; i < totalTimes; i++) {
+        const result = instance.a({
+          keys: {
+            '/a': {
+              index: 0,
+            },
+          },
+        }) as {
+          a: boolean;
+        };
+        okTimes += +(result.a === true);
+      }
+      return okTimes === totalTimes;
+    }).toBeTruthy();
+  });
   // test length
   test('test list count', () => {
     // when the count of key is 1
@@ -478,7 +537,7 @@ describe('test filed', () => {
           'c?': 'c',
         },
         {
-          'd{2,3}': 'd',
+          'd{+1,3}': 'd',
         },
       ],
     });
@@ -489,8 +548,10 @@ describe('test filed', () => {
     expect(ruleKeys['/a'].max).toEqual(5);
     expect(ruleKeys['/b'].min).toEqual(1);
     expect(ruleKeys['/b'].max).toEqual(1);
+    expect(ruleKeys['/b'].oneOf).toBeTruthy();
     expect(ruleKeys['/b/0/c'].optional).toBeTruthy();
-    expect(ruleKeys['/b/1/d'].min).toEqual(2);
+    expect(ruleKeys['/b/1/d'].min).toEqual(1);
     expect(ruleKeys['/b/1/d'].max).toEqual(3);
+    expect(ruleKeys['/b/1/d'].alwaysArray).toBeTruthy();
   });
 });
