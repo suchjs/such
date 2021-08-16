@@ -94,18 +94,19 @@ import Such from '../src/browser';
   // // 生成模拟数据
   // const value = instance.a();
   // console.log(value);
-  const instance = Such.instance({
-    'a:{4,5}': [true, false],
-  });
-  // console.log(instance.a());
-  console.log(
-    instance.a({
-      keys: {
-        '/a': {
-          index: 0,
-        },
-      },
-    }),
-  );
+  // const instance = Such.instance({
+  //   'a:{4,5}': [true, false],
+  // });
+  // // console.log(instance.a());
+  // console.log(
+  //   instance.a({
+  //     keys: {
+  //       '/a': {
+  //         index: 0,
+  //       },
+  //     },
+  //   }),
+  // );
   // console.log(instance.keys());
+  Such.typedata();
 })();

@@ -996,8 +996,8 @@ export default class Such {
     if (!ALL_MOCKITS.hasOwnProperty(type)) {
       let klass: TMClass;
       if (argsNum === 2) {
-        const baseType = args[0];
-        const BaseClass = ALL_MOCKITS[baseType as string];
+        const baseType = args[0] as string;
+        const BaseClass = ALL_MOCKITS[baseType];
         if (!BaseClass) {
           throw new Error(
             `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
@@ -1006,6 +1006,10 @@ export default class Such {
         klass = class
           extends (BaseClass as typeof BaseExtendMockit)
           implements Mockit {
+          // set chain names
+          public static chainNames = ((BaseClass as unknown) as typeof Mockit).chainNames.concat(
+            baseType,
+          );
           // set constructor name
           constructor() {
             super(constrName);
@@ -1013,6 +1017,7 @@ export default class Such {
           // init
           public init() {
             super.init();
+            // init
             initProcess.call(this, generate);
           }
         };
@@ -1226,6 +1231,23 @@ export default class Such {
       template.end();
     }
     return template;
+  }
+  /**
+   *
+   */
+  public static typedata(): void {
+    for (const name in ALL_MOCKITS) {
+      if (ALL_MOCKITS.hasOwnProperty(name)) {
+        const klass = ALL_MOCKITS[name];
+        const instance = new klass();
+        console.log(
+          name,
+          instance.allowAttrs,
+          ((klass as unknown) as typeof Mockit).chainNames,
+          instance.configOptions,
+        );
+      }
+    }
   }
   /**
    * instance properties

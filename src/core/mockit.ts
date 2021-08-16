@@ -31,6 +31,9 @@ const { fns: globalFns, vars: globalVars, mockitsCache } = store;
  * @template T
  */
 export default abstract class Mockit<T = unknown> {
+  // chain names
+  public static chainNames: string[] = [];
+  // params
   public params: TMParams = {};
   // allowed data attribute
   public readonly allowAttrs: TMAttrs = [];
@@ -85,7 +88,6 @@ export default abstract class Mockit<T = unknown> {
     // cached the mockit, frozen all data
     this.frozen();
   }
-
   /**
    *
    *
