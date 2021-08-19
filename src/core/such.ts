@@ -1010,6 +1010,10 @@ export default class SuchMocker {
   }
 }
 
+/**
+ * BaseExtendMockit
+ * Just for types
+ */
 class BaseExtendMockit extends Mockit {
   init(): void {
     // nothing to do
@@ -1490,3 +1494,11 @@ export class Such {
     return new SuchMocker(target, this, this.namespace, options);
   }
 }
+/**
+ *
+ * @param namespace [string]
+ * @returns Such
+ */
+export const createNsSuch = (namespace: string): Such => {
+  return new Such(namespace);
+};

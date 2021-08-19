@@ -147,3 +147,4 @@ if (lastConfFile) {
 rootSuch.define('dict', ToDict);
 rootSuch.define('cascader', ToCascader);
 export default rootSuch;
+export { createNsSuch } from './core/such';

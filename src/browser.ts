@@ -13,3 +13,4 @@ addMockitList({
 const rootSuch = new Such();
 rootSuch.config(Conf);
 export default rootSuch;
+export { createNsSuch } from './core/such';
