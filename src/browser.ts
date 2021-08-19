@@ -1,5 +1,5 @@
 import { default as Conf } from './extends/recommend';
-import Such from './core/such';
+import { Such } from './core/such';
 // add browser supported type
 import dict from './browser/mockit/dict';
 import cascader from './browser/mockit/cascader';
@@ -10,5 +10,6 @@ addMockitList({
   dict,
   cascader,
 });
-Such.config(Conf);
-export default Such;
+const rootSuch = new Such();
+rootSuch.config(Conf);
+export default rootSuch;

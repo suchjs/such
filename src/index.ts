@@ -3,14 +3,13 @@ import * as path from 'path';
 import { deepCopy, isArray } from './helpers/utils';
 import { getAllFiles, loadAllData, loadTemplate } from './node/utils';
 import store from './data/store';
-import Such from './core/such';
-import { TNodeSuch, TSuchSettings } from './types/node';
+import { Such } from './core/such';
+import { TSuchSettings } from './types/node';
 import { IAsOptions } from './types/instance';
 import { TPath } from './types/common';
 // dict & cascader types for nodejs
 import ToCascader from './node/mockit/cascader';
 import ToDict from './node/mockit/dict';
-const NSuch = Such as typeof Such & TNodeSuch;
 const { config, fileCache } = store;
 // load config files
 const builtRule = /such:([a-zA-Z]+)/;
@@ -36,61 +35,86 @@ function loadExtend(name: string | string[]): TSuchSettings | TSuchSettings[] {
   }
 }
 export { loadExtend };
-NSuch.loadExtend = loadExtend;
-NSuch.loadConf = (configFile: TPath) => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const conf = require(configFile);
-  if (conf.config) {
-    // copy all
-    deepCopy(config, conf.config);
-    (<const>['suchDir', 'dataDir']).map((key) => {
-      if (config[key]) {
-        config[key] = path.resolve(config.rootDir, config[key]);
-      }
-    });
-    const { preload, dataDir } = config;
-    if (dataDir) {
-      // redefine reloadData
-      NSuch.reloadData = () => {
-        store.fileCache = {};
-        return getAllFiles(dataDir).then((files) => {
-          return loadAllData(files);
+/**
+ * Such in nodejs
+ */
+export class NSuch extends Such {
+  public loadExtend = loadExtend;
+  public as(target: unknown, options?: IAsOptions): unknown {
+    if (typeof target === 'string' && path.extname(target) === '.json') {
+      const lastPath = path.resolve(config.suchDir || config.rootDir, target);
+      if (fs.existsSync(lastPath)) {
+        return loadTemplate(lastPath).then((content) => {
+          return super.as(content, options);
         });
-      };
-    }
-    if (preload && dataDir) {
-      if (isArray(preload)) {
-        const allFiles: string[] = preload.map((cur: string) => {
-          return path.resolve(dataDir, cur);
-        });
-        // load data
-        NSuch.loadData = async () => {
-          await loadAllData(allFiles);
-        };
-        NSuch.clearCache = async () => {
-          allFiles.map((key: string) => {
-            delete fileCache[key];
-          });
-          return NSuch.loadData();
-        };
-      } else {
-        // load data
-        NSuch.loadData = async () => {
-          const allFiles = await getAllFiles(dataDir);
-          await loadAllData(allFiles);
-        };
-        NSuch.clearCache = async () => {
-          const allFiles = await getAllFiles(dataDir);
-          allFiles.map((key: string) => {
-            delete fileCache[key];
-          });
-          return NSuch.loadData();
-        };
       }
     }
+    return super.as(target, options);
   }
-  NSuch.config(conf);
-};
+  public loadData(): Promise<unknown> {
+    return Promise.resolve();
+  }
+  public reloadData(): Promise<unknown> {
+    return Promise.resolve();
+  }
+  public clearCache(): Promise<unknown> {
+    return Promise.resolve();
+  }
+  public loadConf(configFile: TPath): void {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const conf = require(configFile);
+    if (conf.config) {
+      // copy all
+      deepCopy(config, conf.config);
+      (<const>['suchDir', 'dataDir']).map((key) => {
+        if (config[key]) {
+          config[key] = path.resolve(config.rootDir, config[key]);
+        }
+      });
+      const { preload, dataDir } = config;
+      if (dataDir) {
+        // redefine reloadData
+        this.reloadData = () => {
+          store.fileCache = {};
+          return getAllFiles(dataDir).then((files) => {
+            return loadAllData(files);
+          });
+        };
+      }
+      if (preload && dataDir) {
+        if (isArray(preload)) {
+          const allFiles: string[] = preload.map((cur: string) => {
+            return path.resolve(dataDir, cur);
+          });
+          // load data
+          this.loadData = async () => {
+            await loadAllData(allFiles);
+          };
+          this.clearCache = async () => {
+            allFiles.map((key: string) => {
+              delete fileCache[key];
+            });
+            return this.loadData();
+          };
+        } else {
+          // load data
+          this.loadData = async () => {
+            const allFiles = await getAllFiles(dataDir);
+            await loadAllData(allFiles);
+          };
+          this.clearCache = async () => {
+            const allFiles = await getAllFiles(dataDir);
+            allFiles.map((key: string) => {
+              delete fileCache[key];
+            });
+            return this.loadData();
+          };
+        }
+      }
+    }
+    this.config(conf);
+  }
+}
 // find static paths
 const tryConfigFile = (...files: string[]) => {
   for (let i = 0, j = files.length; i < j; i++) {
@@ -111,30 +135,12 @@ const lastConfFile = tryConfigFile(
   path.join(process.cwd(), filename),
 );
 config.rootDir = lastConfFile ? path.dirname(lastConfFile) : rootDir;
-// open api for reload data and clear cache
-(<const>['loadData', 'reloadData', 'clearCache']).map((name) => {
-  NSuch[name] = function () {
-    return Promise.resolve();
-  };
-});
+const rootSuch = new NSuch();
 // if has config file, auto load the config file
 if (lastConfFile) {
-  NSuch.loadConf(lastConfFile);
+  rootSuch.loadConf(lastConfFile);
 }
 // add node types
-NSuch.define('dict', ToDict);
-NSuch.define('cascader', ToCascader);
-// redefine such.as,support .json file
-const origSuchas = NSuch.as;
-NSuch.as = function (target: unknown, options?: IAsOptions) {
-  if (typeof target === 'string' && path.extname(target) === '.json') {
-    const lastPath = path.resolve(config.suchDir || config.rootDir, target);
-    if (fs.existsSync(lastPath)) {
-      return loadTemplate(lastPath).then((content) => {
-        return origSuchas(content, options);
-      });
-    }
-  }
-  return origSuchas(target, options);
-};
-export default NSuch;
+rootSuch.define('dict', ToDict);
+rootSuch.define('cascader', ToCascader);
+export default rootSuch;

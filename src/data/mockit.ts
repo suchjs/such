@@ -8,14 +8,14 @@ import increment from '../mockit/increment';
 import template from '../mockit/template';
 import { TMClassList, TMConfigRule } from '../types/mockit';
 import { IPPConfig, IPPFunc, IPPFuncOptions } from '../types/parser';
-import store from './store';
+import globalStore from './store';
 import { deepCopy, isArray, isFn, isObject, typeOf } from '../helpers/utils';
 import { TConstructor, TObj, TStrList } from '../types/common';
 import Mockit from '../core/mockit';
 import { tmplMockitName } from './config';
-const { vars: globalVars } = store;
+const { vars: globalVars } = globalStore;
 // all mockits
-export const ALL_MOCKITS: TMClassList = {
+globalStore.mockits = {
   number,
   string,
   regexp,
@@ -28,7 +28,7 @@ export const ALL_MOCKITS: TMClassList = {
 // add new mockits
 export const addMockitList = (mockitList: TMClassList): void => {
   Object.keys(mockitList).map((key: string) => {
-    ALL_MOCKITS[key] = mockitList[key];
+    globalStore.mockits[key] = mockitList[key];
   });
 };
 
