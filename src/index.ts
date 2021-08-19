@@ -2,7 +2,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { deepCopy, isArray } from './helpers/utils';
 import { getAllFiles, loadAllData, loadTemplate } from './node/utils';
-import store from './data/store';
 import { Such } from './core/such';
 import { TSuchSettings } from './types/node';
 import { IAsOptions } from './types/instance';
@@ -10,7 +9,7 @@ import { TPath } from './types/common';
 // dict & cascader types for nodejs
 import ToCascader from './node/mockit/cascader';
 import ToDict from './node/mockit/dict';
-const { config, fileCache } = store;
+
 // load config files
 const builtRule = /such:([a-zA-Z]+)/;
 // loadExtend method
@@ -41,6 +40,7 @@ export { loadExtend };
 export class NSuch extends Such {
   public loadExtend = loadExtend;
   public as(target: unknown, options?: IAsOptions): unknown {
+    const { config } = this.store;
     if (typeof target === 'string' && path.extname(target) === '.json') {
       const lastPath = path.resolve(config.suchDir || config.rootDir, target);
       if (fs.existsSync(lastPath)) {
@@ -63,6 +63,7 @@ export class NSuch extends Such {
   public loadConf(configFile: TPath): void {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const conf = require(configFile);
+    const { config, fileCache } = this.store;
     if (conf.config) {
       // copy all
       deepCopy(config, conf.config);
@@ -75,7 +76,7 @@ export class NSuch extends Such {
       if (dataDir) {
         // redefine reloadData
         this.reloadData = () => {
-          store.fileCache = {};
+          this.store.fileCache = {};
           return getAllFiles(dataDir).then((files) => {
             return loadAllData(files);
           });
@@ -134,11 +135,13 @@ const lastConfFile = tryConfigFile(
   path.join(rootDir, filename),
   path.join(process.cwd(), filename),
 );
-config.rootDir = lastConfFile ? path.dirname(lastConfFile) : rootDir;
 const rootSuch = new NSuch();
 // if has config file, auto load the config file
 if (lastConfFile) {
   rootSuch.loadConf(lastConfFile);
+  rootSuch.store.config.rootDir = path.dirname(lastConfFile);
+} else {
+  rootSuch.store.config.rootDir = rootDir;
 }
 // add node types
 rootSuch.define('dict', ToDict);

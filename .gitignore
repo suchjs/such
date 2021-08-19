@@ -6,6 +6,7 @@ node_modules/
 
 # build files
 /local
+/lib
 
 # Mac store files
 .DS_Store*

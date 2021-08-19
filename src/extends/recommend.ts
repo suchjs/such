@@ -1,4 +1,5 @@
-import Such from '../core/such';
+import { Such } from '../core/such';
+import { TSuchInject } from '../types/instance';
 import { TSuchSettings } from '../types/node';
 const confs: TSuchSettings = {
   types: {
@@ -16,8 +17,8 @@ const confs: TSuchSettings = {
       'regexp',
       '/(?<user>(?:[a-z0-9]+(?:[-_]?[a-z0-9]+|[a-z0-9]*)))@(?<domain>(?:[a-z0-9]+(?:-?[a-z0-9]+|[a-z0-9]*))\\.(?<ltd>com|cn|com\\.cn|org|net|gov\\.cn|wang|ren|xyz|top|cc|io))/',
     ],
-    boolean(): boolean {
-      return Such.utils.isOptional();
+    boolean(_: TSuchInject, such: Such): boolean {
+      return such.utils.isOptional();
     },
     color$hex: {
       configOptions: {
@@ -30,16 +31,17 @@ const confs: TSuchSettings = {
           default: false,
         },
       },
-      generate(): string {
+      generate(_: TSuchInject, such: Such): string {
         const { $config = {} } = this.params;
         const { lowercase, argb } = $config;
+        const { makeRandom } = such.utils;
         let hexValue: number;
         let len = 6;
         if (!argb) {
-          hexValue = Such.utils.makeRandom(0x000000, 0xffffff);
+          hexValue = makeRandom(0x000000, 0xffffff);
         } else {
           len = 8;
-          hexValue = Such.utils.makeRandom(0x00000000, 0xffffffff);
+          hexValue = makeRandom(0x00000000, 0xffffffff);
         }
         if (!lowercase) {
           return `#${hexValue.toString(16).toUpperCase().padStart(len, '0')}`;
@@ -47,30 +49,30 @@ const confs: TSuchSettings = {
         return `#${hexValue.toString(16).padStart(len, '0')}`;
       },
     },
-    color$rgb(): string {
-      const instance = Such.instance(':int[0,255]');
+    color$rgb(_: TSuchInject, such: Such): string {
+      const instance = such.instance(':int[0,255]');
       return (
         'rgb(' + [instance.a(), instance.a(), instance.a()].join(',') + ')'
       );
     },
-    color$rgba(): string {
-      const instance = Such.instance(':int[0,255]');
-      const opacity = Such.as(':number[0,1]:%.2f');
+    color$rgba(_: TSuchInject, such: Such): string {
+      const instance = such.instance(':int[0,255]');
+      const opacity = such.as(':number[0,1]:%.2f');
       return (
         'rgba(' +
         [instance.a(), instance.a(), instance.a(), opacity || 0].join(',') +
         ')'
       );
     },
-    color$hsl(): string {
-      const highlight = Such.as(':int[0,360]');
-      const instance = Such.instance(':percent');
+    color$hsl(_: TSuchInject, such: Such): string {
+      const highlight = such.as(':int[0,360]');
+      const instance = such.instance(':percent');
       return 'hsl(' + [highlight, instance.a(), instance.a()].join(',') + ')';
     },
-    color$hsla(): string {
-      const highlight = Such.as(':int[0,360]');
-      const instance = Such.instance(':percent');
-      const opacity = Such.as(':number[0,1]:%.2f');
+    color$hsla(_: TSuchInject, such: Such): string {
+      const highlight = such.as(':int[0,360]');
+      const instance = such.instance(':percent');
+      const opacity = such.as(':number[0,1]:%.2f');
       return (
         'hsla(' +
         [highlight, instance.a(), instance.a(), opacity || 0].join(',') +

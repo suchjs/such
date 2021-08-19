@@ -8,11 +8,11 @@ import {
 } from '../data/config';
 import PathMap, { TFieldPath } from '../helpers/pathmap';
 import * as utils from '../helpers/utils';
-import Mockit, { BaseExtendMockit } from './mockit';
+import Mockit from './mockit';
 import ToTemplate from '../mockit/template';
 import Dispatcher from '../data/parser';
 import globalStore, { createNsStore, getNsMockit, Store } from '../data/store';
-import { TFunc, TObj, ValueOf } from '../types/common';
+import { TFunc, TObj, TStrList, ValueOf } from '../types/common';
 import { TMClass, TMFactoryOptions } from '../types/mockit';
 import { TSuchSettings } from '../types/node';
 import { IParserConfig } from '../types/parser';
@@ -24,7 +24,7 @@ import {
   IMockerPathRuleKeys,
   TSuchInject,
 } from '../types/instance';
-import { NSuch } from 'src';
+// import { NSuch } from '../index';
 const {
   isFn,
   isOptional,
@@ -481,7 +481,7 @@ export class Mocker {
                     dpath,
                     mocker: this,
                   },
-                  Such,
+                  this.root.such,
                 );
               isMockFnOk = true;
             }
@@ -654,7 +654,7 @@ export class Template {
   /**
    * constructor
    */
-  constructor(public readonly context = '') {
+  constructor(public readonly context = '', public readonly such: Such) {
     // nothing to do
   }
   /**
@@ -725,7 +725,7 @@ export class Template {
     if (!this.mockit) {
       throw new Error(`the template's mockit object is not initialized yet!`);
     }
-    return this.mockit.make(options, Such);
+    return this.mockit.make(options, this.such);
   }
   /**
    * @return string
@@ -772,7 +772,7 @@ export class Template {
           }
           index++;
           // it's a mockit instance, generate a value
-          const value = item.make(options, Such);
+          const value = item.make(options, this.such);
           // set the value
           instanceData.value = value;
           // check the value type
@@ -1009,12 +1009,24 @@ export default class SuchMocker {
     }
   }
 }
+
+class BaseExtendMockit extends Mockit {
+  init(): void {
+    // nothing to do
+  }
+  test(): boolean {
+    return false;
+  }
+  generate(): void {
+    // nothing to do
+  }
+}
 /**
  *
  */
 export class Such {
   public readonly utils = utils;
-  private readonly store: Store;
+  public readonly store: Store;
   private readonly hasNs: boolean;
   constructor(private readonly namespace?: string) {
     this.hasNs = !!namespace;
@@ -1134,22 +1146,19 @@ export class Such {
     const isDefBuiltin = hasNs
       ? globalStore.mockits.hasOwnProperty(type)
       : false;
-
     if (!mockits.hasOwnProperty(type) && !isDefBuiltin) {
       let klass: TMClass;
       if (argsNum === 2) {
         const baseType = args[0] as string;
-        const BaseClass = hasNs
+        const BaseClass = ((hasNs
           ? globalStore.mockits[baseType] || mockits[baseType]
-          : mockits[baseType];
+          : mockits[baseType]) as unknown) as typeof BaseExtendMockit;
         if (!BaseClass) {
           throw new Error(
             `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
           );
         }
-        klass = class
-          extends (BaseClass as typeof BaseExtendMockit)
-          implements Mockit {
+        klass = class extends BaseClass implements Mockit {
           // set chain names
           public static chainNames = ((BaseClass as unknown) as typeof Mockit).chainNames.concat(
             baseType,
@@ -1232,7 +1241,9 @@ export class Such {
       globals: 'assign',
     };
     const lastConf: TSuchSettings = {};
-    const curSuch = (this as unknown) as NSuch;
+    const curSuch = (this as unknown) as {
+      loadExtend: (files: TStrList) => TSuchSettings[];
+    };
     if (config.extends && typeof curSuch.loadExtend === 'function') {
       const confFiles =
         typeof config.extends === 'string' ? [config.extends] : config.extends;
@@ -1258,7 +1269,7 @@ export class Such {
         const args = utils.isArray(conf[name])
           ? conf[name]
           : ([conf[name]] as Parameters<typeof fn>);
-        fn(name, ...args);
+        fn.apply(this, [name, ...args]);
       });
     });
   }
@@ -1268,7 +1279,7 @@ export class Such {
    * @returns
    */
   public template(code: string, path?: TFieldPath): Template {
-    const template = new Template();
+    const template = new Template(code, this);
     const total = code.length;
     const symbol = '`';
     const tsSymbol = templateSplitor.charAt(0);

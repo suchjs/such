@@ -2,6 +2,7 @@
 import Such from '../src/browser';
 
 (async () => {
+  console.log(Such);
   // await Such.loadData();
   for (let i = 0; i < 1; i++) {
     const value = await Such.as({

@@ -9,7 +9,8 @@ import {
   IPPSize,
 } from './parser';
 import Mockit from '../core/mockit';
-import { Template } from '../core/such';
+import { Such, Template } from '../core/such';
+import { TSuchInject } from './instance';
 export type TMModifierFn<T> = (res: T) => T | string | never;
 export type TMRuleFn<T = unknown> = (cur: T) => T | void;
 export type TMParamsValidFn = (params: TMParams) => void | never;
@@ -37,7 +38,7 @@ export type TMFactoryOptions = {
   param?: string;
   configOptions?: TMConfig;
   init?: () => void;
-  generate: () => unknown;
+  generate: (options?: TSuchInject, such?: Such) => unknown;
   validator?: TMParamsValidFn;
   allowAttrs?: TMAttrs;
 };

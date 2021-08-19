@@ -1,14 +1,15 @@
-import { TResult, TStrList, TObj } from '../types/common';
-import { IPPConfig, IPPFunc } from '../types/parser';
+import { TResult, TStrList, TObj, TConstructor } from '../types/common';
+import { IPPConfig, IPPFunc, IPPFuncOptions } from '../types/parser';
 import {
   deepCopy,
   getExpValue,
+  isArray,
   isFn,
   isNoEmptyObject,
   isObject,
   typeOf,
 } from '../helpers/utils';
-import store from '../data/store';
+import globalStore from '../data/store';
 import {
   TMConfig,
   TMModifierFn,
@@ -17,12 +18,108 @@ import {
   TMRuleFn,
   TMParamsValidFn,
   TMFactoryOptions,
+  TMConfigRule,
 } from '../types/mockit';
 import { TSuchInject } from '../types/instance';
-import { TStaticSuch } from './such';
-import { PRE_PROCESS, isPreProcessFn, setPreProcessFn } from '../data/mockit';
+import type { Such } from './such';
 
-const { fns: globalFns, vars: globalVars, mockitsCache } = store;
+const { fns: globalFns, vars: globalVars, mockitsCache } = globalStore;
+// pre process data and methods
+const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
+  const PRE_PROCESS_STAND = '__pre_process_fn__';
+  const isPreProcessFn = (fn: (...args: unknown[]) => unknown): boolean => {
+    return ((fn as unknown) as TObj).hasOwnProperty(PRE_PROCESS_STAND);
+  };
+  const setPreProcessFn = <T = (...args: unknown[]) => unknown>(fn: T): T => {
+    ((fn as unknown) as TObj)[PRE_PROCESS_STAND] = true;
+    return fn;
+  };
+  // mockit preprocessing
+  const preFuncs = {
+    $func: function ($func: IPPFunc): void {
+      if (!$func) {
+        return;
+      }
+      const options = $func.options;
+      for (let i = 0, j = options.length; i < j; i++) {
+        const item: IPPFuncOptions = options[i];
+        const { name, params } = item;
+        params.map((param) => {
+          // if object, valid
+          if (param.variable) {
+            try {
+              if (typeof param.value === 'string') {
+                if (param.value.includes('.') || param.value.includes('[')) {
+                  new Function(
+                    '__CONFIG__',
+                    'return __CONFIG__.' + param.value,
+                  )(globalVars);
+                } else if (!globalVars.hasOwnProperty(param.value)) {
+                  throw new Error(`"${param.value} is not assigned."`);
+                }
+              }
+            } catch (e) {
+              throw new Error(
+                `the modifier function ${name}'s param ${param.value} is not correct:${e.message}`,
+              );
+            }
+          }
+        });
+      }
+    },
+    $config: function (this: Mockit, $config: IPPConfig = {}): IPPConfig {
+      const last = deepCopy({}, $config) as IPPConfig;
+      const { configOptions } = this;
+      Object.keys(configOptions).map((key: string) => {
+        const cur: TMConfigRule = configOptions[key];
+        let def: unknown;
+        let type: TConstructor | TConstructor[];
+        const typeNames: TStrList = [];
+        let validator = (target: unknown) => {
+          const targetType = typeOf(target);
+          const allTypes = isArray(type) ? type : [type];
+          let flag = false;
+          allTypes.map((cur) => {
+            const curName = cur.name;
+            typeNames.push(curName);
+            if (!flag) {
+              flag = targetType === curName;
+            }
+          });
+          return flag;
+        };
+        const hasKey = last.hasOwnProperty(key);
+        if (isObject(cur)) {
+          def = isFn(cur.default) ? cur.default() : cur.default;
+          type = cur.type;
+          validator = isFn<typeof validator>(cur.validator)
+            ? cur.validator
+            : validator;
+        }
+        if (!hasKey) {
+          // set default
+          if (def !== undefined) {
+            last[key] = def;
+          }
+        } else {
+          if (!validator.call(this, last[key])) {
+            throw new Error(
+              `the config of "${key}"'s value ${
+                last[key]
+              } is not instance of ${typeNames.join(',')}`,
+            );
+          }
+        }
+      });
+      return last;
+    },
+  };
+  return {
+    PRE_PROCESS: preFuncs,
+    isPreProcessFn,
+    setPreProcessFn,
+  };
+})();
 /**
  * abstrct class Mockit
  * @export
@@ -206,7 +303,7 @@ export default abstract class Mockit<T = unknown> {
    * @memberof Mockit
    */
   public reGenerate(
-    fn?: (options?: TSuchInject, such?: TStaticSuch) => TResult<T>,
+    fn?: (options?: TSuchInject, such?: Such) => TResult<T>,
   ): void {
     this.generate = fn;
   }
@@ -217,7 +314,7 @@ export default abstract class Mockit<T = unknown> {
    * @returns {TResult<T>}
    * @memberof Mockit
    */
-  public make(options: TSuchInject, such: TStaticSuch): unknown {
+  public make(options: TSuchInject, such: Such): unknown {
     // validate params, and cache the result
     this.validate();
     // generate a result
@@ -232,7 +329,7 @@ export default abstract class Mockit<T = unknown> {
    * @returns {TResult<T>}
    * @memberof Mockit
    */
-  public abstract generate(options: TSuchInject, such: TStaticSuch): TResult<T>;
+  public abstract generate(options: TSuchInject, such: Such): TResult<T>;
   /**
    *
    *
@@ -452,18 +549,5 @@ export default abstract class Mockit<T = unknown> {
   private runAll(result: unknown, options: TSuchInject): unknown {
     result = this.runModifiers(result, options);
     return this.runFuncs(result, options);
-  }
-}
-// just for type check
-export class BaseExtendMockit extends Mockit {
-  init(): void {
-    // nothing to do
-  }
-  test(): boolean {
-    return false;
-  }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  generate(): any {
-    // nothing to do
   }
 }
