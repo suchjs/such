@@ -1,15 +1,14 @@
 /* eslint-disable no-console */
-import Such from '../src/browser';
+import Such, { createNsSuch } from '../src/browser';
 
 (async () => {
-  console.log(Such);
   // await Such.loadData();
   for (let i = 0; i < 1; i++) {
     const value = await Such.as({
       errno: ':number[0,1]:%d',
       errmsg: ':string{0,20}',
       'count?': ':number[1,2]:#[exclude="max"]',
-      'list{+0,5}': {
+      'list{2,5}': {
         id: ':increment:#[step=1.5]',
         url: ':url',
         date: ':date:%yyyy-mm-dd HH\\:MM\\:ss',
@@ -109,4 +108,23 @@ import Such from '../src/browser';
   //   }),
   // );
   // console.log(instance.keys());
+  const mySuch = createNsSuch('my');
+  mySuch.define('myString', 'string', '{10}');
+  console.log(mySuch.as(':myString'));
+  const hisSuch = createNsSuch('his');
+  console.log(hisSuch.as(':myString'));
+  hisSuch.define('hisString', 'string', '{1}');
+  hisSuch.define('hisNumber', 'number', '[500,1000]');
+  hisSuch.alias('string', 'hisString');
+  console.log(hisSuch.as(':hisString'));
+  console.log(hisSuch.as(':string'));
+  console.log(hisSuch.as(':hisNumber'));
+  console.log(mySuch.as(':hisString'));
+  hisSuch.setExport((type: string): boolean => {
+    return ['hisString'].includes(type);
+  });
+  console.log(mySuch.as(':@his/hisString'));
+  console.log(mySuch.as(':string:{3}'));
+  console.log(mySuch.as(':@his/hisNumber'));
+  console.log(Such.as(':@his/hisString'));
 })();

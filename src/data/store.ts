@@ -97,31 +97,20 @@ export const getNsStore = (namespace: string): Store => {
  * @param thirdNs [string]
  * @returns
  */
+interface INsRealMockit {
+  klass: TMClass;
+  realType: string;
+}
 export const getNsMockit = (
   type: string,
   namespace?: string,
   thirdNs?: string,
-): {
-  klass: TMClass;
-  realType: string;
-} => {
+): INsRealMockit => {
   let curStore: Store;
-  let realType = type;
-  if (!namespace) {
-    // from the root builtin
-    curStore = globalStore;
-  } else if (!thirdNs) {
-    // from self
-    curStore = getNsStore(namespace);
-  } else {
-    // from the third
-    curStore = getNsStore(thirdNs);
-    if (!(curStore && curStore.exportLimit(type))) {
-      curStore = undefined;
-    }
-  }
-  if (curStore) {
-    const { alias, mockits } = curStore;
+  let useSelfNs = false;
+  const handle = (store: Store): INsRealMockit => {
+    const { alias, mockits } = store;
+    let realType = type;
     if (alias.hasOwnProperty(type)) {
       realType = alias[type];
     }
@@ -129,8 +118,42 @@ export const getNsMockit = (
       klass: mockits[realType],
       realType,
     };
+  };
+  let ret: INsRealMockit;
+  if (!namespace) {
+    // from the root builtin
+    ret = handle(globalStore);
+  } else if (!thirdNs || (useSelfNs = thirdNs === namespace)) {
+    // from self
+    curStore = getNsStore(namespace);
+    // use self namespace, always return data from
+    if (useSelfNs) {
+      ret = handle(curStore);
+    } else {
+      // seek self namespace store first
+      if (curStore) {
+        ret = handle(curStore);
+      }
+      // if not found, seek for global
+      if (!ret.klass) {
+        ret = handle(globalStore);
+      }
+    }
+  } else {
+    // from the third
+    curStore = getNsStore(thirdNs);
+    if (curStore && curStore.exportLimit(type)) {
+      ret = handle(curStore);
+    }
   }
+  // if found at last, return
+  if (ret && ret.klass) {
+    return ret;
+  }
+  return {
+    klass: undefined,
+    realType: type,
+  };
 };
 /* The global store */
-
 export default globalStore;

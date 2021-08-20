@@ -9,7 +9,7 @@ import {
   isObject,
   typeOf,
 } from '../helpers/utils';
-import globalStore from '../data/store';
+import globalStore, { getNsStore } from '../data/store';
 import {
   TMConfig,
   TMModifierFn,
@@ -23,7 +23,45 @@ import {
 import { TSuchInject } from '../types/instance';
 import type { Such } from './such';
 
-const { fns: globalFns, vars: globalVars, mockitsCache } = globalStore;
+const { fns: globalFns, vars: globalVars } = globalStore;
+// get namespace assigned values
+const getNsValues = (
+  namespace?: string,
+): {
+  nsFns: typeof globalFns;
+  nsVars: typeof globalVars;
+} => {
+  // set fns as global
+  return !namespace
+    ? {
+        nsFns: globalFns,
+        nsVars: globalVars,
+      }
+    : (() => {
+        const store = getNsStore(namespace);
+        const { fns, vars } = store;
+        return {
+          nsFns: {
+            ...globalFns,
+            ...fns,
+          },
+          nsVars: {
+            ...globalVars,
+            ...vars,
+          },
+        };
+      })();
+};
+// get namespace mockits cache
+const getNsMockitsCache = (
+  namespace?: string,
+): typeof globalStore.mockitsCache => {
+  if (!namespace) {
+    return globalStore.mockitsCache;
+  }
+  const store = getNsStore(namespace);
+  return store && store.mockitsCache;
+};
 // pre process data and methods
 const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
   const PRE_PROCESS_STAND = '__pre_process_fn__';
@@ -149,7 +187,11 @@ export default abstract class Mockit<T = unknown> {
    * the built-in type should use a same style
    * @memberof Mockit
    */
-  constructor(public readonly constrName: string) {
+  constructor(
+    public readonly constrName: string,
+    public readonly namespace?: string,
+  ) {
+    const mockitsCache = getNsMockitsCache(namespace);
     if (mockitsCache[constrName]) {
       const { define } = mockitsCache[constrName];
       if (isObject(define)) {
@@ -283,6 +325,7 @@ export default abstract class Mockit<T = unknown> {
       configOptions,
       allowAttrs,
     } = this;
+    const mockitsCache = getNsMockitsCache(this.namespace);
     mockitsCache[this.constrName].define = deepCopy(
       {},
       {
@@ -357,6 +400,7 @@ export default abstract class Mockit<T = unknown> {
     pos?: string,
   ): never | void {
     const curName = this.constrName;
+    const mockitsCache = getNsMockitsCache(this.namespace);
     const { rules, ruleFns, modifiers, modifierFns } = mockitsCache[curName];
     const isRuleType = type === 'rule';
     let target;
@@ -413,6 +457,7 @@ export default abstract class Mockit<T = unknown> {
    */
   private validParams(): boolean {
     const { params, validator } = this;
+    const mockitsCache = getNsMockitsCache(this.namespace);
     const { rules, ruleFns } = mockitsCache[this.constrName];
     const keys = Object.keys(params);
     const execute = function (name: string, cb: TMRuleFn<unknown>) {
@@ -496,6 +541,7 @@ export default abstract class Mockit<T = unknown> {
    */
   private runModifiers(result: unknown, options: TSuchInject): unknown {
     const { params } = this;
+    const mockitsCache = getNsMockitsCache(this.namespace);
     const { modifiers, modifierFns } = mockitsCache[this.constrName];
     for (let i = 0, j = modifiers.length; i < j; i++) {
       const name = modifiers[i];
@@ -518,16 +564,17 @@ export default abstract class Mockit<T = unknown> {
    */
   private runFuncs(result: unknown, options: TSuchInject): unknown {
     const { $config, $func } = this.params;
+    const { nsFns, nsVars } = getNsValues(this.namespace);
     if ($func) {
       const { queue, params: fnsParams, fns } = $func as IPPFunc;
       for (let i = 0, j = queue.length; i < j; i++) {
         const name = queue[i];
         const fn = fns[i];
-        const args: unknown[] = ((globalFns[name]
-          ? [globalFns[name]]
+        const args: unknown[] = ((nsFns[name]
+          ? [nsFns[name]]
           : []) as unknown[]).concat([
           fnsParams[i],
-          globalVars,
+          nsVars,
           result,
           ($config as IPPConfig) || {},
           getExpValue,

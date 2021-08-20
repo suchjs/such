@@ -11,7 +11,12 @@ import * as utils from '../helpers/utils';
 import Mockit from './mockit';
 import ToTemplate from '../mockit/template';
 import Dispatcher from '../data/parser';
-import globalStore, { createNsStore, getNsMockit, Store } from '../data/store';
+import globalStore, {
+  createNsStore,
+  getNsMockit,
+  getNsStore,
+  Store,
+} from '../data/store';
 import { TFunc, TObj, TStrList, ValueOf } from '../types/common';
 import { TMClass, TMFactoryOptions } from '../types/mockit';
 import { TSuchSettings } from '../types/node';
@@ -451,10 +456,11 @@ export class Mocker {
           const match = target.match(suchRule);
           if (match) {
             // check if alias type, if true, point to the real type
+            const thirdNs = match[1] && match[1].replace(/\/$/, '');
             const { realType, klass } = getNsMockit(
               match[2],
               this.root.namespace,
-              match[1],
+              thirdNs,
             );
             // if the type is in mockit list, generate a mockit
             // otherwise, take it as a normal string
@@ -1025,8 +1031,23 @@ class BaseExtendMockit extends Mockit {
     // nothing to do
   }
 }
+
+const warnIfEverDefinedInBuiltin = (name: string, defType: string) => {
+  // warn if the short alias name or data type name is defined in builtin
+  const { mockits, alias } = globalStore;
+  if (mockits.hasOwnProperty(name) || alias.hasOwnProperty(name)) {
+    // warn that the name in used in builtin
+    // eslint-disable-next-line no-console
+    console.warn(
+      `Warning: The defined ${defType} name "${name}" is a data type that has defined in builtin data types, it will override the builtin type.`,
+    );
+  }
+};
 /**
  *
+ *
+ * @export
+ * @class Such
  */
 export class Such {
   public readonly utils = utils;
@@ -1145,18 +1166,20 @@ export class Such {
         }
       }
     };
-    const { mockits } = this.store;
-    const hasNs = this.hasNs;
-    const isDefBuiltin = hasNs
-      ? globalStore.mockits.hasOwnProperty(type)
-      : false;
-    if (!mockits.hasOwnProperty(type) && !isDefBuiltin) {
+    const { mockits, alias } = this.store;
+    if (!(mockits.hasOwnProperty(type) || alias.hasOwnProperty(type))) {
       let klass: TMClass;
+      const { namespace, hasNs } = this;
+      if (hasNs) {
+        warnIfEverDefinedInBuiltin(type, 'data type');
+      }
       if (argsNum === 2) {
         const baseType = args[0] as string;
+        const realBaseType = alias[baseType] || baseType;
         const BaseClass = ((hasNs
-          ? globalStore.mockits[baseType] || mockits[baseType]
-          : mockits[baseType]) as unknown) as typeof BaseExtendMockit;
+          ? mockits[realBaseType] ||
+            globalStore.mockits[globalStore.alias[baseType] || baseType]
+          : mockits[realBaseType]) as unknown) as typeof BaseExtendMockit;
         if (!BaseClass) {
           throw new Error(
             `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
@@ -1169,7 +1192,7 @@ export class Such {
           );
           // set constructor name
           constructor() {
-            super(constrName);
+            super(constrName, namespace);
           }
           // init
           public init() {
@@ -1184,7 +1207,7 @@ export class Such {
         klass = class extends Mockit {
           // set constructor name
           constructor() {
-            super(constrName);
+            super(constrName, namespace);
           }
           // init
           public init() {
@@ -1212,21 +1235,39 @@ export class Such {
    * @memberof Such
    */
   public alias(short: string, long: string): void | never {
-    // alias can only set for your own defined types
-    const { aliasTypes, alias } = this.store;
-    if (short === '' || long === '' || short === long) {
+    // alias name must be short and not equal to long
+    if (
+      short === '' ||
+      long === '' ||
+      short === long ||
+      short.length > long.length
+    ) {
       throw new Error(`wrong alias params:'${short}' short for '${long}'`);
     }
-    if (aliasTypes.indexOf(long) > -1) {
+    // alias can only set for your own defined types
+    const { aliasTypes, alias, mockits } = this.store;
+    if (aliasTypes.includes(long)) {
       throw new Error(
-        `the type of "${long}" has an alias yet,can not use "${short}" for alias name.`,
+        `The data type of "${long}" has an alias yet, can't use "${short}" for an alias name.`,
       );
     } else {
       // the short name must obey the dtNameRule
       if (!dtNameRule.test(short)) {
         throw new Error(
-          `use a wrong alias short name '${short}', the name should match the regexp '${dtNameRule.toString()}'`,
+          `Use a wrong alias short name '${short}', the name should match the regexp '${dtNameRule.toString()}'`,
         );
+      }
+      if (!mockits.hasOwnProperty(long)) {
+        throw new Error(
+          `You can't set an alias "${short}" for the data type of "${long}" which is not defined${
+            this.hasNs
+              ? ', you can only set alias name for your own defined types'
+              : ''
+          }.`,
+        );
+      }
+      if (this.hasNs) {
+        warnIfEverDefinedInBuiltin(short, 'alias');
       }
       alias[short] = long;
       aliasTypes.push(long);
@@ -1325,10 +1366,11 @@ export class Such {
               // check if match the such rule
               match = meta.match(suchRule);
               if (match) {
+                const thirdNs = match[1] && match[1].replace(/\/$/, '');
                 const { klass: mockitClass } = getNsMockit(
                   match[2],
                   this.namespace,
-                  match[1],
+                  thirdNs,
                 );
                 if (mockitClass) {
                   mockit = new mockitClass();
@@ -1492,6 +1534,17 @@ export class Such {
    */
   public instance(target: unknown, options?: IAsOptions): SuchMocker {
     return new SuchMocker(target, this, this.namespace, options);
+  }
+  /**
+   *
+   *
+   * @memberof Such
+   */
+  public setExport(limitFn: (type: string) => boolean): void {
+    if (this.namespace) {
+      const store = getNsStore(this.namespace);
+      store.exportLimit = limitFn;
+    }
   }
 }
 /**
