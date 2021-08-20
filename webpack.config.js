@@ -28,7 +28,6 @@ module.exports = {
     library: {
       name: 'Such',
       type: 'umd',
-      export: 'default',
     },
   },
   plugins: [
