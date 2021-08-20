@@ -5,6 +5,7 @@ import dict from './browser/mockit/dict';
 import cascader from './browser/mockit/cascader';
 // add mockit list
 import { addMockitList } from './data/mockit';
+import { createNsSuch } from './core/such';
 // add dict/cascader
 addMockitList({
   dict,
@@ -12,5 +13,12 @@ addMockitList({
 });
 const rootSuch = new Such();
 rootSuch.config(Conf);
-export default rootSuch;
-export { createNsSuch } from './core/such';
+
+export default {
+  namespace(ns?: string): Such {
+    if (!ns) {
+      return rootSuch;
+    }
+    return createNsSuch(ns);
+  },
+};
