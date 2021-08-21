@@ -2,7 +2,7 @@ import { regexpRule } from 'reregexp';
 import { IParserFactory, IPPConfig } from '../types/parser';
 import { decodeTrans, getExp } from '../helpers/utils';
 import { AParser } from '../core/parser';
-import store from '../data/store';
+import { Variable } from '../data/config';
 
 const parser: IParserFactory = {
   /**
@@ -12,7 +12,8 @@ const parser: IParserFactory = {
     startTag: ['#['],
     endTag: [']'],
     separator: ',',
-    pattern: /\s*([a-zA-Z_$]+)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|([^\s,\]]+))\s*)?/,
+    pattern:
+      /\s*([a-zA-Z_$]+)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|([^\s,\]]+))\s*)?/,
   },
   /**
    *
@@ -23,7 +24,8 @@ const parser: IParserFactory = {
     const { params } = this.info();
     const config: IPPConfig = {};
     if (params.length) {
-      const rule = /^\s*([a-zA-Z_$]+)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|([^\s,\]]+))\s*)?$/;
+      const rule =
+        /^\s*([a-zA-Z_$]+)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|([^\s,\]]+))\s*)?$/;
       const nativeValues = ['true', 'false', 'null', 'undefined', 'NaN'];
       for (let i = 0, j = params.length; i < j; i++) {
         const param = params[i];
@@ -48,20 +50,16 @@ const parser: IParserFactory = {
               config[key] = Number(value);
             } else if (nativeValues.indexOf(value) > -1) {
               config[key] = getExp(value);
-            } else if (store.vars.hasOwnProperty(value)) {
-              // variable
-              config[key] = store.vars[value];
             } else {
-              throw new Error(
-                `wrong config key: ${key}, the value '${value}' is not a variable, please assign it first.`,
-              );
+              // variable
+              config[key] = new Variable(value);
             }
           } else {
             config[key] = true;
           }
         } else {
           this.halt(
-            `the config params of index ${i} "${param}" is wrong,please check it.`,
+            `[index: ${i}] The configuration of "${param}" is not a valid supported value, please check it.`,
           );
         }
       }

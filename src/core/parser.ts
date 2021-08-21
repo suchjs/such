@@ -288,7 +288,7 @@ export class Dispatcher {
       constructor(public readonly errorIndex: number) {}
     }
     Object.assign(Wrapper.prototype, result);
-    return (new Wrapper(errorIndex) as unknown) as TObj<TObj>;
+    return new Wrapper(errorIndex) as unknown as TObj<TObj>;
   }
   /**
    * dispatcher parse all the code
@@ -341,7 +341,8 @@ export class Dispatcher {
         );
       } else {
         if (mockit) {
-          const { allowAttrs, constrName } = mockit;
+          const { allowAttrs } = mockit;
+          const { constrName } = mockit.getStaticProps();
           if (!allowAttrs.includes(type)) {
             switch (type) {
               case '$config':

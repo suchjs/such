@@ -24,7 +24,11 @@ export interface Store {
   vars: TObj;
   fns: TObj<TFunc>;
   mockits: TMClassList;
-  exportLimit: (nsType: string) => boolean;
+  exports: {
+    vars: TObj;
+    fns: TObj<TFunc>;
+    types: string[];
+  };
   mockitsCache: MockitsCache<unknown>;
   alias: TObj<string>;
   aliasTypes: TStrList;
@@ -51,7 +55,11 @@ const createStore = (): Store => {
   fn.fns = fns;
   fn.vars = vars;
   fn.mockits = {};
-  fn.exportLimit = (_nsType: string) => false;
+  fn.exports = {
+    vars: {},
+    fns: {},
+    types: [],
+  };
   fn.mockitsCache = {};
   fn.alias = {};
   fn.aliasTypes = [];
@@ -142,7 +150,7 @@ export const getNsMockit = (
   } else {
     // from the third
     curStore = getNsStore(thirdNs);
-    if (curStore && curStore.exportLimit(type)) {
+    if (curStore && curStore.exports.types.includes(type)) {
       ret = handle(curStore);
     }
   }

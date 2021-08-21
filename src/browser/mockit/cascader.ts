@@ -6,10 +6,7 @@ import { TStrList } from '../../types/common';
 
 export default class ToCascader extends Mockit<unknown> {
   // set constructor name
-  // must set the field in constructor parameter
-  constructor(public readonly constrName: string = 'ToCascader') {
-    super(constrName);
-  }
+  public static readonly constrName: string = 'ToCascader';
   // init
   public init(): void {
     // config options

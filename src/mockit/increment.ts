@@ -2,26 +2,24 @@ import { TSuchInject } from '../types/instance';
 import Mockit from '../core/mockit';
 import { makeRandom, validator } from '../helpers/utils';
 export default class ToIncrement extends Mockit<number | number[]> {
-  // set constructor name
-  constructor(public readonly constrName: string = 'ToIncrement') {
-    super(constrName);
-  }
+  public static readonly constrName: string = 'ToIncrement';
   // init
   public init(): void {
+    const { constrName } = this.getStaticProps();
     // set config options
     this.configOptions = {
       step: {
         type: Number,
         default: 1,
         validator(value: unknown): boolean | never {
-          return validator.validNumber(this.constrName, 'step', value);
+          return validator.validNumber(constrName, 'step', value);
         },
       },
       start: {
         type: Number,
         default: 1,
         validator(value: unknown): boolean | never {
-          return validator.validNumber(this.constrName, 'start', value);
+          return validator.validNumber(constrName, 'start', value);
         },
       },
     };

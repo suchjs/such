@@ -42,5 +42,5 @@ export type TMFactoryOptions = {
   validator?: TMParamsValidFn;
   allowAttrs?: TMAttrs;
 };
-export type TMClass = new (...args: unknown[]) => Mockit;
+export type TMClass = new (callerNamespace?: string) => Mockit;
 export type TMClassList = TObj<TMClass>;

@@ -22,35 +22,69 @@ import {
 } from '../types/mockit';
 import { TSuchInject } from '../types/instance';
 import type { Such } from './such';
+import { Variable } from '../data/config';
 
 const { fns: globalFns, vars: globalVars } = globalStore;
 // get namespace assigned values
 const getNsValues = (
-  namespace?: string,
+  callerNs: string,
+  ownerNs: string,
 ): {
   nsFns: typeof globalFns;
   nsVars: typeof globalVars;
 } => {
-  // set fns as global
-  return !namespace
-    ? {
-        nsFns: globalFns,
-        nsVars: globalVars,
-      }
-    : (() => {
-        const store = getNsStore(namespace);
-        const { fns, vars } = store;
-        return {
-          nsFns: {
-            ...globalFns,
-            ...fns,
-          },
-          nsVars: {
-            ...globalVars,
-            ...vars,
-          },
-        };
-      })();
+  const isCallerRoot = !callerNs;
+  const isOwnerRoot = !ownerNs;
+  // the root caller call itself
+  if (isCallerRoot && isOwnerRoot) {
+    return {
+      nsFns: globalFns,
+      nsVars: globalVars,
+    };
+  }
+  // the none root caller call the root
+  if (isOwnerRoot) {
+    const { fns, vars } = getNsStore(callerNs);
+    return {
+      nsFns: {
+        ...globalFns,
+        ...fns,
+      },
+      nsVars: {
+        ...globalVars,
+        ...vars,
+      },
+    };
+  }
+  // now call the none root
+  const store = getNsStore(ownerNs);
+  const { fns, vars } = store.exports;
+  if (isCallerRoot) {
+    return {
+      nsFns: {
+        ...fns,
+        ...globalFns,
+      },
+      nsVars: {
+        ...vars,
+        ...globalVars,
+      },
+    };
+  }
+  // none root caller call none root
+  const callerStore = getNsStore(callerNs);
+  return {
+    nsFns: {
+      ...globalFns,
+      ...fns,
+      ...callerStore.fns,
+    },
+    nsVars: {
+      ...globalVars,
+      ...vars,
+      ...callerStore.vars,
+    },
+  };
 };
 // get namespace mockits cache
 const getNsMockitsCache = (
@@ -66,19 +100,21 @@ const getNsMockitsCache = (
 const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
   const PRE_PROCESS_STAND = '__pre_process_fn__';
   const isPreProcessFn = (fn: (...args: unknown[]) => unknown): boolean => {
-    return ((fn as unknown) as TObj).hasOwnProperty(PRE_PROCESS_STAND);
+    return (fn as unknown as TObj).hasOwnProperty(PRE_PROCESS_STAND);
   };
   const setPreProcessFn = <T = (...args: unknown[]) => unknown>(fn: T): T => {
-    ((fn as unknown) as TObj)[PRE_PROCESS_STAND] = true;
+    (fn as unknown as TObj)[PRE_PROCESS_STAND] = true;
     return fn;
   };
   // mockit preprocessing
   const preFuncs = {
-    $func: function ($func: IPPFunc): void {
+    $func: function (this: Mockit, $func: IPPFunc): IPPFunc {
       if (!$func) {
         return;
       }
-      const options = $func.options;
+      // validate params
+      const { options } = $func;
+      const { nsVars } = getNsValues(...this.getCurrentNs());
       for (let i = 0, j = options.length; i < j; i++) {
         const item: IPPFuncOptions = options[i];
         const { name, params } = item;
@@ -91,8 +127,8 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
                   new Function(
                     '__CONFIG__',
                     'return __CONFIG__.' + param.value,
-                  )(globalVars);
-                } else if (!globalVars.hasOwnProperty(param.value)) {
+                  )(nsVars);
+                } else if (!nsVars.hasOwnProperty(param.value)) {
                   throw new Error(`"${param.value} is not assigned."`);
                 }
               }
@@ -106,7 +142,24 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
       }
     },
     $config: function (this: Mockit, $config: IPPConfig = {}): IPPConfig {
-      const last = deepCopy({}, $config) as IPPConfig;
+      const last: IPPConfig = {};
+      const { nsVars } = getNsValues(...this.getCurrentNs());
+      for (const key in $config) {
+        if ($config.hasOwnProperty(key)) {
+          const value = $config[key];
+          if (value instanceof Variable) {
+            const { name } = value;
+            if (!nsVars.hasOwnProperty(name)) {
+              throw new Error(
+                `The configuration of key "${key}" use a variable name "${name}" is not found in the assigned values, you need assign it first.`,
+              );
+            }
+            last[key] = nsVars[name];
+          } else {
+            last[key] = value;
+          }
+        }
+      }
       const { configOptions } = this;
       Object.keys(configOptions).map((key: string) => {
         const cur: TMConfigRule = configOptions[key];
@@ -158,6 +211,7 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
     setPreProcessFn,
   };
 })();
+type TStaticMockit = Partial<typeof Mockit>;
 /**
  * abstrct class Mockit
  * @export
@@ -166,6 +220,8 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
  * @template T
  */
 export default abstract class Mockit<T = unknown> {
+  public static readonly constrName: string;
+  public static readonly namespace?: string;
   // chain names
   public static chainNames: string[] = [];
   // params
@@ -187,10 +243,8 @@ export default abstract class Mockit<T = unknown> {
    * the built-in type should use a same style
    * @memberof Mockit
    */
-  constructor(
-    public readonly constrName: string,
-    public readonly namespace?: string,
-  ) {
+  constructor(protected readonly callerNamespace?: string) {
+    const { namespace, constrName } = this.getStaticProps();
     const mockitsCache = getNsMockitsCache(namespace);
     if (mockitsCache[constrName]) {
       const { define } = mockitsCache[constrName];
@@ -198,7 +252,7 @@ export default abstract class Mockit<T = unknown> {
         Object.keys(define).map((key: keyof TMFactoryOptions) => {
           const value = define[key];
           // force to add defines
-          const self = (this as unknown) as TObj;
+          const self = this as unknown as TObj;
           if (typeOf(value) === 'Object') {
             self[key] = deepCopy({}, value);
           } else {
@@ -325,8 +379,9 @@ export default abstract class Mockit<T = unknown> {
       configOptions,
       allowAttrs,
     } = this;
-    const mockitsCache = getNsMockitsCache(this.namespace);
-    mockitsCache[this.constrName].define = deepCopy(
+    const { namespace, constrName } = this.getStaticProps();
+    const mockitsCache = getNsMockitsCache(namespace);
+    mockitsCache[constrName].define = deepCopy(
       {},
       {
         params,
@@ -399,8 +454,9 @@ export default abstract class Mockit<T = unknown> {
     fn: TMRuleFn | TMModifierFn<T>,
     pos?: string,
   ): never | void {
-    const curName = this.constrName;
-    const mockitsCache = getNsMockitsCache(this.namespace);
+    const { namespace, constrName } = this.getStaticProps();
+    const curName = constrName;
+    const mockitsCache = getNsMockitsCache(namespace);
     const { rules, ruleFns, modifiers, modifierFns } = mockitsCache[curName];
     const isRuleType = type === 'rule';
     let target;
@@ -451,17 +507,45 @@ export default abstract class Mockit<T = unknown> {
   }
   /**
    *
+   * @returns
+   */
+  public getStaticProps(): TStaticMockit {
+    const staticMockit = this.constructor as typeof Mockit;
+    const { constrName, namespace } = staticMockit;
+    return namespace
+      ? {
+          constrName,
+          namespace,
+        }
+      : {
+          constrName,
+        };
+  }
+  /**
+   * return current namespace
+   * @returns [string]
+   */
+  protected getCurrentNs(): [string, string] {
+    return [this.callerNamespace, this.getStaticProps().namespace];
+  }
+  /**
+   *
    *
    * @private
    * @memberof Mockit
    */
   private validParams(): boolean {
     const { params, validator } = this;
-    const mockitsCache = getNsMockitsCache(this.namespace);
-    const { rules, ruleFns } = mockitsCache[this.constrName];
+    const { namespace, constrName } = this.getStaticProps();
+    const mockitsCache = getNsMockitsCache(namespace);
+    const { rules, ruleFns } = mockitsCache[constrName];
     const keys = Object.keys(params);
-    const execute = function (name: string, cb: TMRuleFn<unknown>) {
-      const transformedKey = '__TRANSFORMED__';
+    const execute = function (
+      name: string,
+      cb: TMRuleFn<unknown>,
+      cacheName?: string,
+    ) {
+      const transformedKey = cacheName || '__TRANSFORMED__';
       // if the rule name has ever validated, ignore this rule
       if (
         isObject(params[name]) &&
@@ -483,8 +567,9 @@ export default abstract class Mockit<T = unknown> {
         // if a preprocess rule, execute it first
         if (PRE_PROCESS.hasOwnProperty(name)) {
           execute(
-            `__${name}__`,
+            name,
             PRE_PROCESS[name as keyof typeof PRE_PROCESS].bind(this),
+            `__${name}__`,
           );
         }
         // execute the rule
@@ -541,8 +626,9 @@ export default abstract class Mockit<T = unknown> {
    */
   private runModifiers(result: unknown, options: TSuchInject): unknown {
     const { params } = this;
-    const mockitsCache = getNsMockitsCache(this.namespace);
-    const { modifiers, modifierFns } = mockitsCache[this.constrName];
+    const { namespace, constrName } = this.getStaticProps();
+    const mockitsCache = getNsMockitsCache(namespace);
+    const { modifiers, modifierFns } = mockitsCache[constrName];
     for (let i = 0, j = modifiers.length; i < j; i++) {
       const name = modifiers[i];
       if (params.hasOwnProperty(name)) {
@@ -564,22 +650,23 @@ export default abstract class Mockit<T = unknown> {
    */
   private runFuncs(result: unknown, options: TSuchInject): unknown {
     const { $config, $func } = this.params;
-    const { nsFns, nsVars } = getNsValues(this.namespace);
+    const { nsFns, nsVars } = getNsValues(...this.getCurrentNs());
     if ($func) {
       const { queue, params: fnsParams, fns } = $func as IPPFunc;
       for (let i = 0, j = queue.length; i < j; i++) {
         const name = queue[i];
         const fn = fns[i];
-        const args: unknown[] = ((nsFns[name]
-          ? [nsFns[name]]
-          : []) as unknown[]).concat([
+        const isUserDefined = nsFns.hasOwnProperty(name);
+        const args: unknown[] = (
+          (isUserDefined ? [nsFns[name]] : []) as unknown[]
+        ).concat([
           fnsParams[i],
           nsVars,
           result,
           ($config as IPPConfig) || {},
           getExpValue,
         ]);
-        result = fn.apply(options, args);
+        result = fn(isUserDefined).apply(options, args);
       }
     }
     return result;

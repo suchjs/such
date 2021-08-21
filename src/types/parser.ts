@@ -85,7 +85,7 @@ export interface IPPFuncParam {
 export interface IPPFunc {
   queue: TStrList;
   params: IPPFuncParam[][];
-  fns: TFunc[];
+  fns: ((isUserDefined: boolean) => TFunc)[];
   options: IPPFuncOptions[];
 }
 /**

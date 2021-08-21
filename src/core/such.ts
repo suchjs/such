@@ -126,6 +126,16 @@ const getMinAndMax = (
     max,
   };
 };
+
+const warn = (message: string) => {
+  // eslint-disable-next-line no-console
+  console.warn(message);
+};
+const setExportWarn = (method: string, param: string) => {
+  warn(
+    `You can't call the "${method}(\"${param}\")" method for the root such instance, the root such's data is global exported by default.`,
+  );
+};
 /**
  *
  *
@@ -140,9 +150,7 @@ export class Mocker {
    * @returns
    * @memberof Mocker
    */
-  public static parseKey(
-    key: string,
-  ): {
+  public static parseKey(key: string): {
     key: string;
     config: IMockerKeyRule;
   } {
@@ -466,7 +474,7 @@ export class Mocker {
             // otherwise, take it as a normal string
             if (klass) {
               this.type = realType;
-              const instance = new klass();
+              const instance = new klass(this.root.namespace);
               let meta = target.replace(match[0], '');
               if (meta !== '') {
                 // remote the prefix splitor
@@ -501,7 +509,11 @@ export class Mocker {
                 } use an empty template literal "${templateSplitor}"`,
               );
             }
-            const template = this.root.such.template(content, path);
+            const template = this.root.such.template(
+              content,
+              path,
+              this.root.namespace,
+            );
             // set the mockit as template mockit
             this.mockit = template.mockit;
             this.mockFn = (dpath: TFieldPath) =>
@@ -688,7 +700,7 @@ export class Template {
    * @returns the reference instance's values
    */
   public getRefValue(index: string): TemplateData | TemplateData[] {
-    if (!isNaN((index as unknown) as number)) {
+    if (!isNaN(index as unknown as number)) {
       return this.indexData[Number(index)];
     }
     return this.namedData[index];
@@ -699,10 +711,10 @@ export class Template {
    */
   public end(meta = ''): void {
     meta = meta.trim();
-    const klass = (globalStore.mockits[
+    const klass = globalStore.mockits[
       tmplMockitName
-    ] as unknown) as typeof ToTemplate;
-    const instance = new klass();
+    ] as unknown as typeof ToTemplate;
+    const instance = new klass(this.such.namespace);
     // set the template object
     instance.setTemplate(this);
     // set params for mockit if meta not empty
@@ -1053,7 +1065,7 @@ export class Such {
   public readonly utils = utils;
   public readonly store: Store;
   private readonly hasNs: boolean;
-  constructor(private readonly namespace?: string) {
+  constructor(public readonly namespace?: string) {
     this.hasNs = !!namespace;
     if (this.hasNs) {
       this.store = createNsStore(namespace);
@@ -1122,14 +1134,8 @@ export class Such {
         : argsNum === 1 && typeof opts === 'function'
         ? { generate: opts }
         : opts;
-    const {
-      param,
-      init,
-      generate,
-      validator,
-      configOptions,
-      allowAttrs,
-    } = config;
+    const { param, init, generate, validator, configOptions, allowAttrs } =
+      config;
     const constrName = `To${capitalize(type)}`;
     // init process
     const initProcess = function (this: Mockit, genFn?: GeneratorFunction) {
@@ -1176,24 +1182,20 @@ export class Such {
       if (argsNum === 2) {
         const baseType = args[0] as string;
         const realBaseType = alias[baseType] || baseType;
-        const BaseClass = ((hasNs
+        const BaseClass = (hasNs
           ? mockits[realBaseType] ||
             globalStore.mockits[globalStore.alias[baseType] || baseType]
-          : mockits[realBaseType]) as unknown) as typeof BaseExtendMockit;
+          : mockits[realBaseType]) as unknown as typeof BaseExtendMockit;
         if (!BaseClass) {
           throw new Error(
             `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
           );
         }
         klass = class extends BaseClass implements Mockit {
-          // set chain names
-          public static chainNames = ((BaseClass as unknown) as typeof Mockit).chainNames.concat(
-            baseType,
-          );
-          // set constructor name
-          constructor() {
-            super(constrName, namespace);
-          }
+          // set static properties
+          public static chainNames = BaseClass.chainNames.concat(type);
+          public static constrName = constrName;
+          public static namespace = namespace;
           // init
           public init() {
             super.init();
@@ -1202,20 +1204,17 @@ export class Such {
           }
         };
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const self = this;
         klass = class extends Mockit {
-          // set constructor name
-          constructor() {
-            super(constrName, namespace);
-          }
+          // set static properties
+          public static constrName = constrName;
+          public static namespace = namespace;
           // init
           public init() {
             initProcess.call(this);
           }
           // call generate
-          public generate(options: TSuchInject) {
-            return generate.call(this, options, self);
+          public generate(options: TSuchInject, such: Such) {
+            return generate.call(this, options, such);
           }
           public test() {
             return true;
@@ -1286,7 +1285,7 @@ export class Such {
       globals: 'assign',
     };
     const lastConf: TSuchSettings = {};
-    const curSuch = (this as unknown) as {
+    const curSuch = this as unknown as {
       loadExtend: (files: TStrList) => TSuchSettings[];
     };
     if (config.extends && typeof curSuch.loadExtend === 'function') {
@@ -1306,9 +1305,9 @@ export class Such {
     });
     Object.keys(lastConf).map((key: keyof TSuchSettings) => {
       const conf = lastConf[key];
-      const fnName = (fnHashs.hasOwnProperty(key)
-        ? fnHashs[key]
-        : key) as keyof Such;
+      const fnName = (
+        fnHashs.hasOwnProperty(key) ? fnHashs[key] : key
+      ) as keyof Such;
       Object.keys(conf).map((name: keyof typeof conf) => {
         const fn = this[fnName] as TFunc;
         const args = utils.isArray(conf[name])
@@ -1323,7 +1322,11 @@ export class Such {
    * @param tpl
    * @returns
    */
-  public template(code: string, path?: TFieldPath): Template {
+  public template(
+    code: string,
+    path?: TFieldPath,
+    callerNamespace?: string,
+  ): Template {
     const template = new Template(code, this);
     const total = code.length;
     const symbol = '`';
@@ -1373,7 +1376,7 @@ export class Such {
                   thirdNs,
                 );
                 if (mockitClass) {
-                  mockit = new mockitClass();
+                  mockit = new mockitClass(callerNamespace);
                   meta = meta.replace(match[0], '');
                   if (meta === '') {
                     // no params, only data type name
@@ -1410,7 +1413,7 @@ export class Such {
             if (curParams.hasOwnProperty('errorIndex')) {
               // parse error, return a wrapper data with 'errorIndex'
               // need parse to next symbol
-              const errorIndex = (curParams.errorIndex as unknown) as number;
+              const errorIndex = curParams.errorIndex as unknown as number;
               // remove the parsed string and add the symbol back
               if (errorIndex > 0) {
                 meta = meta.slice(errorIndex) + symbol;
@@ -1540,10 +1543,62 @@ export class Such {
    *
    * @memberof Such
    */
-  public setExport(limitFn: (type: string) => boolean): void {
+  public setExportType(type: string): void | never {
+    if (this.namespace) {
+      const { namespace } = this;
+      const store = getNsStore(namespace);
+      const { types } = store.exports;
+      if (types.includes(type)) {
+        warn(
+          `The export type "${type}" has ever exported, you don't need export it again.`,
+        );
+      } else {
+        const { alias, mockits } = store;
+        if (!(mockits.hasOwnProperty(type) || alias.hasOwnProperty(type))) {
+          throw new Error(
+            `The export type "${type}" is not exist when you call the "setExportType", make sure you have defined the type.`,
+          );
+        }
+        types.push(type);
+      }
+    } else {
+      setExportWarn('setExportType', type);
+    }
+  }
+  /**
+   *
+   * @param type
+   */
+  public setExportVar(name: string): void {
     if (this.namespace) {
       const store = getNsStore(this.namespace);
-      store.exportLimit = limitFn;
+      const { vars } = store;
+      if (!vars.hasOwnProperty(name)) {
+        throw new Error(
+          `The export variable "${name}" is not exist when you call the "setExportVar", make sure you have assigned the variable.`,
+        );
+      }
+      store.exports.vars[name] = vars[name];
+    } else {
+      setExportWarn('setExportVar', name);
+    }
+  }
+  /**
+   *
+   * @param name
+   */
+  public setExportFn(name: string): void {
+    if (this.namespace) {
+      const store = getNsStore(this.namespace);
+      const { fns } = store;
+      if (!fns.hasOwnProperty(name)) {
+        throw new Error(
+          `The export function "${name}" is not exist when you call the "setExportFn", make sure you have assigned the function.`,
+        );
+      }
+      store.exports.fns[name] = fns[name];
+    } else {
+      setExportWarn('setExportVar', name);
     }
   }
 }

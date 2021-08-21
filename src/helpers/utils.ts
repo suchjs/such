@@ -4,6 +4,30 @@ import { IPPPathItem } from '../types/parser';
 import { Mocker } from '../core/such';
 import { TMParams } from '../types/mockit';
 
+/**
+ *  setPrototypeOf: https://github.com/wesleytodd/setprototypeof
+ *
+ */
+const setPrototypeOf = (() => {
+  if (Object.setPrototypeOf) {
+    return (clone: TObj, proto: TObj) => {
+      Object.setPrototypeOf(clone, proto);
+    };
+  } else if ({ __proto__: [] } instanceof Array) {
+    return (clone: TObj, proto: TObj) => {
+      clone.__proto__ = proto;
+    };
+  } else {
+    return (clone: TObj, proto: TObj) => {
+      for (const prop in proto) {
+        if (!clone.hasOwnProperty(prop)) {
+          clone[prop] = proto[prop];
+        }
+      }
+    };
+  }
+})();
+
 /*
  * re export strtotime/dateformat from dateformat
  */
@@ -182,8 +206,10 @@ export const getExpValue = (...args: unknown[]): unknown | never => {
 
 function deepCopyHandle<T>(target: T, copy: T): void {
   let keys: Array<keyof T> = [];
+  let tryClass = false;
   if (isObject(copy)) {
     keys = Object.keys(copy) as Array<keyof T>;
+    tryClass = copy.constructor !== Object;
   } else if (isArray(copy)) {
     keys = range(0, copy.length - 1) as Array<keyof T>;
   }
@@ -203,6 +229,9 @@ function deepCopyHandle<T>(target: T, copy: T): void {
       target[key] = from;
     }
   });
+  if (tryClass) {
+    setPrototypeOf((target as unknown) as TObj, copy.constructor.prototype);
+  }
 }
 
 /**

@@ -6,9 +6,7 @@ export default class ToRegexp extends Mockit<string> {
   // parser
   private instance: RegexpParser;
   // set constructor name
-  constructor(public readonly constrName: string = 'ToRegexp') {
-    super(constrName);
-  }
+  public static readonly constrName: string = 'ToRegexp';
   // init
   public init(): void {
     // regexp rule

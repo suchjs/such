@@ -6,9 +6,7 @@ import Mockit from '../core/mockit';
 import { tmplRefRule } from '../data/config';
 export default class ToRef extends Mockit<unknown> {
   // set constructor name
-  constructor(public readonly constrName: string = 'ToRef') {
-    super(constrName);
-  }
+  public static readonly constrName: string = 'ToRef';
   // init
   public init(): void {
     // path

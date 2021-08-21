@@ -12,9 +12,7 @@ export default class ToTemplate extends Mockit<string> {
   // private $template: Template;
   private $template: Template;
   // set constructor name
-  constructor(public readonly constrName: string = 'ToTemplate') {
-    super(constrName);
-  }
+  public static readonly constrName: string = 'ToTemplate';
   // set template object
   public setTemplate($template: Template): void {
     this.$template = $template;

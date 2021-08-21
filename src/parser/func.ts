@@ -7,46 +7,52 @@ import {
 } from '../types/parser';
 import { encodeSplitor } from '../data/config';
 import { getExp } from '../helpers/utils';
-import store from '../data/store';
 import { AParser } from '../core/parser';
-const { fns: globalFns } = store;
+
 const parseFuncParams = (options: IPPFuncOptions) => {
   const { name, params } = options;
-  const isUserDefined = globalFns.hasOwnProperty(name);
-  const confName = '__CONFIG__';
-  const varName = '__VARS__';
-  const argName = '__ARGS__';
-  const resName = '__RESULT__';
-  const expName = '__EXP__';
-  const fnName = isUserDefined ? '__FN__' : `${resName}.${name}`;
-  const useFnParam = isUserDefined ? [fnName] : [];
-  const lastParams: string[] = isUserDefined ? [resName] : [];
   const paramValues: unknown[] = [];
-  let index = 0;
   params.forEach((param) => {
-    const { value, variable } = param;
-    if (variable) {
-      const isObjChain =
-        typeof value === 'string'
-          ? value.includes('.') || value.includes('[')
-          : false;
-      lastParams.push(
-        isObjChain
-          ? `${expName}(${confName},"${value}")`
-          : `${confName}.hasOwnProperty("${value}") ? ${confName}["${value}"] : ${varName}["${value}"]`,
-      );
-    } else {
+    const { variable, value } = param;
+    if (!variable) {
       paramValues.push(value);
-      lastParams.push(`${argName}[${index++}]`);
     }
   });
-  return {
-    fn: new Function(
+  const fn = (isUserDefined: boolean): TFunc => {
+    const confName = '__CONFIG__';
+    const varName = '__VARS__';
+    const argName = '__ARGS__';
+    const resName = '__RESULT__';
+    const expName = '__EXP__';
+    const fnName = isUserDefined ? '__FN__' : `${resName}.${name}`;
+    const useFnParam = isUserDefined ? [fnName] : [];
+    const lastParams: string[] = isUserDefined ? [resName] : [];
+    let index = 0;
+    params.forEach((param) => {
+      const { value, variable } = param;
+      if (variable) {
+        const isObjChain =
+          typeof value === 'string'
+            ? value.includes('.') || value.includes('[')
+            : false;
+        lastParams.push(
+          isObjChain
+            ? `${expName}(${confName},"${value}")`
+            : `${confName}.hasOwnProperty("${value}") ? ${confName}["${value}"] : ${varName}["${value}"]`,
+        );
+      } else {
+        lastParams.push(`${argName}[${index++}]`);
+      }
+    });
+    return new Function(
       useFnParam.concat(argName, varName, resName, confName, expName).join(','),
       isUserDefined
         ? `return ${fnName}.apply(this,[${lastParams.join(',')}]);`
         : `return ${fnName}(${lastParams.join(',')})`,
-    ),
+    ) as TFunc;
+  };
+  return {
+    fn,
     param: paramValues,
   };
 };
@@ -55,7 +61,8 @@ const parser: IParserFactory = {
     startTag: ['@'],
     endTag: [],
     separator: '|',
-    pattern: /^([a-z][\w$]*)(?:\(((?:(?:(['"])(?:(?!\3)[^\\]|\\.)*\3|[+-]?\d+|[a-zA-Z_$]+(?:\.[\w$]+|\[(?:(['"])(?:(?!\4)[^\\]|\\.)*\4|\d+)\])*)\s*(?:,(?!\s*\))|(?=\s*\)))\s*)*)\)|)/,
+    pattern:
+      /^([a-z][\w$]*)(?:\(((?:(?:(['"])(?:(?!\3)[^\\]|\\.)*\3|[+-]?\d+|[a-zA-Z_$]+(?:\.[\w$]+|\[(?:(['"])(?:(?!\4)[^\\]|\\.)*\4|\d+)\])*)\s*(?:,(?!\s*\))|(?=\s*\)))\s*)*)\)|)/,
     rule: new RegExp(
       `^@(?:[a-z][\\w$]*(?:\\((?:(?:(['"])(?:(?!\\1)[^\\\\]|\\\\.)*\\1|[+-]?\\d+|[a-zA-Z_$]+(?:\\.[\\w$]+|\\[(?:(['"])(?:(?!\\2)[^\\\\]|\\.)*\\2|\\d+)\\])*)\\s*(?:,(?!\\s*\\))|(?=\\s*\\)))\\s*)*\\)|)(?:\\|(?!$|${encodeSplitor})|(?=\\s*$|${encodeSplitor})))*`,
     ),
@@ -71,7 +78,8 @@ const parser: IParserFactory = {
     if (!patterns.length) {
       this.halt(`no modify functions find in "${code}"`);
     } else {
-      const rule = /(['"])((?:(?!\1)[^\\]|\\.)*)\1|([+-]?[\w$]+(?:\.[\w$]+|\[(?:(['"])(?:(?!\4)[^\\]|\\.)*\4|\d+)\])*)/g;
+      const rule =
+        /(['"])((?:(?!\1)[^\\]|\\.)*)\1|([+-]?[\w$]+(?:\.[\w$]+|\[(?:(['"])(?:(?!\4)[^\\]|\\.)*\4|\d+)\])*)/g;
       const nativeValues = ['true', 'false', 'undefined', 'null', 'NaN'];
       (patterns as TMatchResult[]).forEach((match) => {
         const [, name, args] = match;
@@ -104,7 +112,7 @@ const parser: IParserFactory = {
         };
         result.options.push(options);
         const { fn, param } = parseFuncParams(options);
-        result.fns.push(fn as TFunc);
+        result.fns.push(fn);
         result.params.push(param);
       });
       return result;

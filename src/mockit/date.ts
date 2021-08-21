@@ -24,9 +24,7 @@ export default class ToDate extends Mockit<string | Date> {
   // keep the name in parameter
   // don't short for `super('ToDate')`
   // the constrName may not make sence, need check the ts
-  constructor(public readonly constrName: string = 'ToDate') {
-    super(constrName);
-  }
+  public static readonly constrName: string = 'ToDate';
   // init
   public init(): void {
     // range

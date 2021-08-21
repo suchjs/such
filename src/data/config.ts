@@ -15,3 +15,7 @@ export const tmplNamedRule = new RegExp(`^<(${tmplNamedContext})>`);
 export const tmplRefRule = new RegExp(
   `^\\/\\$\\{([1-9]\\d+|[0-9]|${tmplNamedContext})\\}$`,
 );
+// class Varaible
+export class Variable {
+  constructor(public readonly name: string) {}
+}

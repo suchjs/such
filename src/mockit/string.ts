@@ -15,9 +15,7 @@ const hex2num = (hex: string): number => {
  */
 export default class ToString extends Mockit<string> {
   // set constructor name
-  constructor(public readonly constrName: string = 'ToString') {
-    super(constrName);
-  }
+  public static readonly constrName: string = 'ToString';
   // init
   public init(): void {
     // set allow data attributes
@@ -146,7 +144,7 @@ export default class ToString extends Mockit<string> {
     const params = this.params;
     const { $length } = params;
     const { least, most } = $length || { least: 1, most: 100 };
-    const { range } = ((params.$size as unknown) as IPPSize<number[]>) || {
+    const { range } = (params.$size as unknown as IPPSize<number[]>) || {
       range: [[32, 126]],
     };
     const index = range.length - 1;

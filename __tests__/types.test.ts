@@ -334,8 +334,7 @@ describe('test built-in types', () => {
     const namedTmplRef = {
       a: 'hello',
       b: 'world',
-      c:
-        ':::`<say>:ref:&./a`,`<say>:ref:&./b`!`<helloworld>:ref:&/${say}:@join(",")`!`:ref:&/${helloworld}`!',
+      c: ':::`<say>:ref:&./a`,`<say>:ref:&./b`!`<helloworld>:ref:&/${say}:@join(",")`!`:ref:&/${helloworld}`!',
     };
     const namedTmplRefData = Such.as(namedTmplRef) as typeof namedTmplRef;
     expect(
@@ -476,27 +475,27 @@ describe('test built-in types', () => {
     // mixed content
     expect(
       !isNaN(
-        ((Such.as(':::abc`:number`') as string).replace(
+        (Such.as(':::abc`:number`') as string).replace(
           'abc',
           '',
-        ) as unknown) as number,
+        ) as unknown as number,
       ),
     ).toBeTruthy();
     expect(
       !isNaN(
-        ((Such.as(':::`:number`abc') as string).replace(
+        (Such.as(':::`:number`abc') as string).replace(
           'abc',
           '',
-        ) as unknown) as number,
+        ) as unknown as number,
       ),
     ).toBeTruthy();
     // use a backtick in the data attribute, must parse correctly
     expect(
       !isNaN(
-        ((Such.as(':::abc`:number:#[v="```"]`') as string).replace(
+        (Such.as(':::abc`:number:#[v="```"]`') as string).replace(
           'abc',
           '',
-        ) as unknown) as number,
+        ) as unknown as number,
       ),
     ).toBeTruthy();
     // two number
@@ -525,7 +524,7 @@ describe('test built-in types', () => {
     const numAndStrSegs = numberAndString.split('|');
     expect(numAndStrSegs.length >= 2).toBeTruthy();
     const [num, str] = numAndStrSegs;
-    expect(!isNaN((num as unknown) as number)).toBeTruthy();
+    expect(!isNaN(num as unknown as number)).toBeTruthy();
     expect(str.length).toEqual(5);
   });
 });
