@@ -10,7 +10,7 @@ import { TMClassList } from '../types/mockit';
 import globalStore from './store';
 import { tmplMockitName } from './config';
 // all mockits
-globalStore.mockits = {
+export const builtinMockits = {
   number,
   string,
   regexp,

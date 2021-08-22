@@ -9,6 +9,7 @@ import { TPath } from './types/common';
 // dict & cascader types for nodejs
 import ToCascader from './node/mockit/cascader';
 import ToDict from './node/mockit/dict';
+import { addMockitList, builtinMockits } from './data/mockit';
 
 // load config files
 const builtRule = /such:([a-zA-Z]+)/;
@@ -69,6 +70,7 @@ export class NSuch extends Such {
       deepCopy(config, conf.config);
       (<const>['suchDir', 'dataDir']).map((key) => {
         if (config[key]) {
+          console.log(key, config[key]);
           config[key] = path.resolve(config.rootDir, config[key]);
         }
       });
@@ -135,11 +137,14 @@ const lastConfFile = tryConfigFile(
   path.join(rootDir, filename),
   path.join(process.cwd(), filename),
 );
+// add all builtin mockits first
+addMockitList(builtinMockits);
+// create the root such
 const rootSuch = new NSuch();
 // if has config file, auto load the config file
 if (lastConfFile) {
-  rootSuch.loadConf(lastConfFile);
   rootSuch.store.config.rootDir = path.dirname(lastConfFile);
+  rootSuch.loadConf(lastConfFile);
 } else {
   rootSuch.store.config.rootDir = rootDir;
 }

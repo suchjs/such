@@ -4,8 +4,9 @@ import { Such } from './core/such';
 import dict from './browser/mockit/dict';
 import cascader from './browser/mockit/cascader';
 // add mockit list
-import { addMockitList } from './data/mockit';
+import { addMockitList, builtinMockits } from './data/mockit';
 // add dict/cascader
+addMockitList(builtinMockits);
 addMockitList({
   dict,
   cascader,
