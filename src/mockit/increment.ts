@@ -1,28 +1,33 @@
 import { TSuchInject } from '../types/instance';
 import Mockit from '../core/mockit';
 import { makeRandom, validator } from '../helpers/utils';
+import { TMAttrs } from '../types/mockit';
+const constrName = 'ToIncrement';
+const configOptions = {
+  step: {
+    type: Number,
+    default: 1,
+    validator(value: unknown): boolean | never {
+      return validator.validNumber(constrName, 'step', value);
+    },
+  },
+  start: {
+    type: Number,
+    default: 1,
+    validator(value: unknown): boolean | never {
+      return validator.validNumber(constrName, 'start', value);
+    },
+  },
+};
 export default class ToIncrement extends Mockit<number | number[]> {
-  public static readonly constrName: string = 'ToIncrement';
+  public static readonly constrName: string = constrName;
+  // set config options
+  public static configOptions = configOptions;
+  public static selfConfigOptions = configOptions;
+  // allowed data attribute
+  public static readonly allowAttrs: TMAttrs = [];
   // init
   public init(): void {
-    const { constrName } = this.getStaticProps();
-    // set config options
-    this.configOptions = {
-      step: {
-        type: Number,
-        default: 1,
-        validator(value: unknown): boolean | never {
-          return validator.validNumber(constrName, 'step', value);
-        },
-      },
-      start: {
-        type: Number,
-        default: 1,
-        validator(value: unknown): boolean | never {
-          return validator.validNumber(constrName, 'start', value);
-        },
-      },
-    };
     // set allow data attributes
     this.setAllowAttrs('$length', '$size');
   }

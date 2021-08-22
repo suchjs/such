@@ -1,7 +1,7 @@
 import Parser from '../src/data/parser';
 import { IPPFunc } from '../src/types/parser';
 const getFunc = (context: string): IPPFunc => {
-  return (Parser.parse(context).$func as unknown) as IPPFunc;
+  return Parser.parse(context).$func as unknown as IPPFunc;
 };
 describe('validate parser and dispatch', () => {
   test('count parser', () => {

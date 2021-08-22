@@ -160,7 +160,7 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
           }
         }
       }
-      const { configOptions } = this;
+      const { configOptions } = this.constructor as TStaticMockit;
       Object.keys(configOptions).map((key: string) => {
         const cur: TMConfigRule = configOptions[key];
         let def: unknown;
@@ -211,7 +211,8 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
     setPreProcessFn,
   };
 })();
-type TStaticMockit = Partial<typeof Mockit>;
+export type TStaticMockit = typeof Mockit;
+type TPartStaticMockit = Partial<TStaticMockit>;
 /**
  * abstrct class Mockit
  * @export
@@ -220,18 +221,22 @@ type TStaticMockit = Partial<typeof Mockit>;
  * @template T
  */
 export default abstract class Mockit<T = unknown> {
-  public static readonly constrName: string;
-  public static readonly namespace?: string;
   // chain names
   public static chainNames: string[] = [];
+  // constructor name, for cache
+  public static readonly constrName: string;
+  // namespace
+  public static readonly namespace?: string;
+  // allowed data attribute
+  public static readonly allowAttrs: TMAttrs = [];
+  // if config options is set, will allow configuration `data attribute`
+  public static configOptions: TMConfig = {};
+  // self config options
+  public static selfConfigOptions: TMConfig = {};
+  // validate all params
+  public static validator: TMParamsValidFn;
   // params
   public params: TMParams = {};
-  // allowed data attribute
-  public readonly allowAttrs: TMAttrs = [];
-  // if config options is set, will allow configuration `data attribute`
-  public configOptions: TMConfig = {};
-  // validate all params
-  public validator: TMParamsValidFn;
   protected initParams: TMParams = {};
   protected isValidOk = false;
   protected hasValid = false;
@@ -244,7 +249,7 @@ export default abstract class Mockit<T = unknown> {
    * @memberof Mockit
    */
   constructor(protected readonly callerNamespace?: string) {
-    const { namespace, constrName } = this.getStaticProps();
+    const { namespace, constrName, configOptions } = this.getStaticProps();
     const mockitsCache = getNsMockitsCache(namespace);
     if (mockitsCache[constrName]) {
       const { define } = mockitsCache[constrName];
@@ -274,7 +279,6 @@ export default abstract class Mockit<T = unknown> {
     // all mockits allow funcs
     this.addRule('$func', setPreProcessFn(PRE_PROCESS.$func.bind(this)));
     // if set configOptions,validate config
-    const { configOptions } = this;
     if (isNoEmptyObject(configOptions)) {
       this.addRule('$config', setPreProcessFn(PRE_PROCESS.$config.bind(this)));
     }
@@ -358,9 +362,10 @@ export default abstract class Mockit<T = unknown> {
    * @returns
    */
   public setAllowAttrs(...names: string[]): void {
+    const { allowAttrs } = this.constructor as TStaticMockit;
     names.forEach((name) => {
-      if (!this.allowAttrs.includes(name)) {
-        this.allowAttrs.push(name);
+      if (!allowAttrs.includes(name)) {
+        allowAttrs.push(name);
       }
     });
   }
@@ -371,15 +376,10 @@ export default abstract class Mockit<T = unknown> {
    */
   public frozen(): Mockit<T> {
     // frozen params for extend type.
-    const {
-      params,
-      initParams,
-      generate,
-      validator,
-      configOptions,
-      allowAttrs,
-    } = this;
-    const { namespace, constrName } = this.getStaticProps();
+    const { params, initParams, generate } = this;
+    const { validator } = this.constructor as TStaticMockit;
+    const { namespace, constrName, configOptions, allowAttrs } =
+      this.getStaticProps();
     const mockitsCache = getNsMockitsCache(namespace);
     mockitsCache[constrName].define = deepCopy(
       {},
@@ -509,17 +509,24 @@ export default abstract class Mockit<T = unknown> {
    *
    * @returns
    */
-  public getStaticProps(): TStaticMockit {
-    const staticMockit = this.constructor as typeof Mockit;
-    const { constrName, namespace } = staticMockit;
-    return namespace
-      ? {
-          constrName,
-          namespace,
-        }
-      : {
-          constrName,
-        };
+  public getStaticProps(): TPartStaticMockit {
+    const staticMockit = this.constructor as TStaticMockit;
+    const {
+      constrName,
+      namespace,
+      validator,
+      allowAttrs,
+      configOptions,
+      selfConfigOptions,
+    } = staticMockit;
+    return {
+      constrName,
+      namespace,
+      validator,
+      allowAttrs,
+      configOptions,
+      selfConfigOptions,
+    };
   }
   /**
    * return current namespace
@@ -535,8 +542,8 @@ export default abstract class Mockit<T = unknown> {
    * @memberof Mockit
    */
   private validParams(): boolean {
-    const { params, validator } = this;
-    const { namespace, constrName } = this.getStaticProps();
+    const { params } = this;
+    const { namespace, constrName, validator } = this.getStaticProps();
     const mockitsCache = getNsMockitsCache(namespace);
     const { rules, ruleFns } = mockitsCache[constrName];
     const keys = Object.keys(params);
@@ -584,7 +591,7 @@ export default abstract class Mockit<T = unknown> {
     });
     // validate all params
     if (isFn(validator)) {
-      this.validator(this.params);
+      validator(this.params);
     }
     return this.invalidKeys.length === 0;
   }

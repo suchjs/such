@@ -37,10 +37,10 @@ export type TMAttrs = string[];
 export type TMFactoryOptions = {
   param?: string;
   configOptions?: TMConfig;
+  allowAttrs?: TMAttrs;
   init?: () => void;
   generate: (options?: TSuchInject, such?: Such) => unknown;
   validator?: TMParamsValidFn;
-  allowAttrs?: TMAttrs;
 };
 export type TMClass = new (callerNamespace?: string) => Mockit;
 export type TMClassList = TObj<TMClass>;

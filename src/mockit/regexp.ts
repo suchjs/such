@@ -2,11 +2,14 @@ import RegexpParser, { NamedGroupConf, regexpRule } from 'reregexp';
 import { TMatchResult, TObj } from '../types/common';
 import { IPPRegexp } from '../types/parser';
 import Mockit from '../core/mockit';
+import { TMAttrs } from '../types/mockit';
 export default class ToRegexp extends Mockit<string> {
   // parser
   private instance: RegexpParser;
   // set constructor name
   public static readonly constrName: string = 'ToRegexp';
+  // allowed data attribute
+  public static readonly allowAttrs: TMAttrs = [];
   // init
   public init(): void {
     // regexp rule

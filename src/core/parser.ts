@@ -341,8 +341,7 @@ export class Dispatcher {
         );
       } else {
         if (mockit) {
-          const { allowAttrs } = mockit;
-          const { constrName } = mockit.getStaticProps();
+          const { constrName, allowAttrs } = mockit.getStaticProps();
           if (!allowAttrs.includes(type)) {
             switch (type) {
               case '$config':

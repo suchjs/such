@@ -2,6 +2,7 @@ import { makeRandom } from '../helpers/utils';
 import Mockit from '../core/mockit';
 import { Template } from '../core/such';
 import { TSuchInject } from '../types/instance';
+import { TMAttrs } from '../types/mockit';
 /**
  * mock a string
  * @export
@@ -13,6 +14,8 @@ export default class ToTemplate extends Mockit<string> {
   private $template: Template;
   // set constructor name
   public static readonly constrName: string = 'ToTemplate';
+  // allowed data attribute
+  public static readonly allowAttrs: TMAttrs = [];
   // set template object
   public setTemplate($template: Template): void {
     this.$template = $template;

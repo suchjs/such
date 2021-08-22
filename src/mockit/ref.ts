@@ -4,9 +4,12 @@ import { getRefMocker, isArray } from '../helpers/utils';
 import { Mocker } from '../core/such';
 import Mockit from '../core/mockit';
 import { tmplRefRule } from '../data/config';
+import { TMAttrs } from '../types/mockit';
 export default class ToRef extends Mockit<unknown> {
   // set constructor name
   public static readonly constrName: string = 'ToRef';
+  // allowed data attribute
+  public static readonly allowAttrs: TMAttrs = [];
   // init
   public init(): void {
     // path

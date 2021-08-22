@@ -219,18 +219,16 @@ function deepCopyHandle<T>(target: T, copy: T): void {
     const fromType = typeOf(from);
     const toType = typeOf(to);
     if (fromType === 'Object' || fromType === 'Array') {
-      target[key] = (toType === fromType
-        ? target[key]
-        : fromType === 'Object'
-        ? {}
-        : []) as typeof from;
+      target[key] = (
+        toType === fromType ? target[key] : fromType === 'Object' ? {} : []
+      ) as typeof from;
       deepCopy(target[key], from);
     } else {
       target[key] = from;
     }
   });
   if (tryClass) {
-    setPrototypeOf((target as unknown) as TObj, copy.constructor.prototype);
+    setPrototypeOf(target as unknown as TObj, copy.constructor.prototype);
   }
 }
 

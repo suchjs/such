@@ -1,5 +1,5 @@
 import printf, { rule as formatRule } from 'nprintf';
-import { TMModifierFn } from '../types/mockit';
+import { TMAttrs, TMModifierFn } from '../types/mockit';
 import { IPPFormat, IPPSize } from '../types/parser';
 import { isOptional } from '../helpers/utils';
 import Mockit from '../core/mockit';
@@ -28,16 +28,20 @@ const factor = (type: number) => {
       return Math.random();
   }
 };
+const configOptions = {
+  step: {
+    type: Number,
+  },
+};
 export default class ToNumber extends Mockit<number> {
   public static readonly constrName: string = 'ToNumber';
+  // config options
+  public static configOptions = configOptions;
+  public static selfConfigOptions = configOptions;
+  // allowed data attribute
+  public static readonly allowAttrs: TMAttrs = [];
   // init
   public init(): void {
-    // config options
-    this.configOptions = {
-      step: {
-        type: Number,
-      },
-    };
     // $size Rule
     this.addRule('$size', function ($size: IPPSize) {
       if (!$size) {

@@ -1,4 +1,4 @@
-import { TMModifierFn } from '../types/mockit';
+import { TMAttrs, TMModifierFn } from '../types/mockit';
 import { IPPFormat, IPPSize } from '../types/parser';
 import { strRule } from '../data/config';
 import {
@@ -25,6 +25,8 @@ export default class ToDate extends Mockit<string | Date> {
   // don't short for `super('ToDate')`
   // the constrName may not make sence, need check the ts
   public static readonly constrName: string = 'ToDate';
+  // allowed data attribute
+  public static readonly allowAttrs: TMAttrs = [];
   // init
   public init(): void {
     // range

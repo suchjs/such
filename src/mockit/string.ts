@@ -2,6 +2,7 @@ import { TMatchResult, TStrList } from '../types/common';
 import { IPPSize } from '../types/parser';
 import { makeRandom } from '../helpers/utils';
 import Mockit from '../core/mockit';
+import { TMAttrs } from '../types/mockit';
 const uniRule = /^\\u([0-9a-fA-F]{1,6})$/;
 const numRule = /^\d+$/;
 const hex2num = (hex: string): number => {
@@ -16,6 +17,8 @@ const hex2num = (hex: string): number => {
 export default class ToString extends Mockit<string> {
   // set constructor name
   public static readonly constrName: string = 'ToString';
+  // allowed data attribute
+  public static readonly allowAttrs: TMAttrs = [];
   // init
   public init(): void {
     // set allow data attributes

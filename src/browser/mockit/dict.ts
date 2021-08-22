@@ -2,19 +2,25 @@ import { TMultiStr, TStrList } from '../../types/common';
 import { IPPConfig } from '../../types/parser';
 import { isArray, makeDictData } from '../../helpers/utils';
 import Mockit from '../../core/mockit';
+import { TMAttrs } from '../../types/mockit';
 
+const configOptions = {
+  data: {
+    type: Array,
+  },
+};
 export default class ToDict extends Mockit<TMultiStr> {
   // set constructor name
   public static readonly constrName: string = 'ToDict';
+  // config options
+  public static configOptions = configOptions;
+  public static selfConfigOptions = configOptions;
+  // allowed data attribute
+  public static readonly allowAttrs: TMAttrs = [];
   /**
    * init
    */
   public init(): void {
-    this.configOptions = {
-      data: {
-        type: Array,
-      },
-    };
     // in browser, get data from config
     this.addRule('$config', function ($config: IPPConfig) {
       if (!$config || !$config['data']) {

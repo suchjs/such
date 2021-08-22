@@ -18,7 +18,7 @@ import globalStore, {
   Store,
 } from '../data/store';
 import { TFunc, TObj, TStrList, ValueOf } from '../types/common';
-import { TMClass, TMFactoryOptions } from '../types/mockit';
+import { TMClass, TMFactoryOptions, TMParamsValidFn } from '../types/mockit';
 import { TSuchSettings } from '../types/node';
 import { IParserConfig } from '../types/parser';
 import {
@@ -1134,17 +1134,17 @@ export class Such {
         : argsNum === 1 && typeof opts === 'function'
         ? { generate: opts }
         : opts;
-    const { param, init, generate, validator, configOptions, allowAttrs } =
-      config;
+    const {
+      param,
+      init,
+      generate,
+      validator,
+      configOptions = {},
+      allowAttrs = [],
+    } = config;
     const constrName = `To${capitalize(type)}`;
     // init process
     const initProcess = function (this: Mockit, genFn?: GeneratorFunction) {
-      if (isNoEmptyObject(configOptions)) {
-        this.configOptions = deepCopy({}, this.configOptions, configOptions);
-      }
-      if (isArray(allowAttrs)) {
-        this.setAllowAttrs(...allowAttrs);
-      }
       if (isFn(init)) {
         init.call(this, utils);
       }
@@ -1159,17 +1159,6 @@ export class Such {
       }
       if (isNoEmptyObject(params)) {
         this.setParams(params, true);
-      }
-      if (isFn(validator)) {
-        if (isFn(this.validator)) {
-          const origValidator = this.validator;
-          // inject orig validator as the last argument
-          this.validator = function (...args: unknown[]) {
-            validator(...args, origValidator);
-          };
-        } else {
-          this.validator = validator;
-        }
       }
     };
     const { mockits, alias } = this.store;
@@ -1191,11 +1180,30 @@ export class Such {
             `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
           );
         }
+        let lastValidator: TMParamsValidFn;
+        if (isFn(validator)) {
+          if (isFn(BaseClass.validator)) {
+            const origValidator = BaseClass.validator;
+            // inject orig validator as the last argument
+            lastValidator = function (...args: unknown[]) {
+              validator(...args, origValidator);
+            };
+          } else {
+            lastValidator = validator;
+          }
+        }
         klass = class extends BaseClass implements Mockit {
           // set static properties
-          public static chainNames = BaseClass.chainNames.concat(type);
+          public static chainNames = BaseClass.chainNames.concat(realBaseType);
           public static constrName = constrName;
           public static namespace = namespace;
+          public static selfConfigOptions = configOptions;
+          public static configOptions = {
+            ...(BaseClass.configOptions || {}),
+            ...configOptions,
+          };
+          public static allowAttrs = allowAttrs;
+          public static validator = lastValidator;
           // init
           public init() {
             super.init();
@@ -1208,6 +1216,10 @@ export class Such {
           // set static properties
           public static constrName = constrName;
           public static namespace = namespace;
+          public static selfConfigOptions = configOptions;
+          public static configOptions = configOptions;
+          public static allowAttrs = allowAttrs;
+          public static validator = validator;
           // init
           public init() {
             initProcess.call(this);
