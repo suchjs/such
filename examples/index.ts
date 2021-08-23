@@ -115,23 +115,36 @@ import Such, { createNsSuch } from '../src/index';
   //   }),
   // );
   // console.log(instance.keys());
-  const mySuch = createNsSuch('my');
-  mySuch.define('myString', 'string', '{10}');
-  mySuch.assign('dict', ['1', '2', '3']);
-  console.log(mySuch.as(':myString'));
-  // console.log(mySuch.as(':dict:#[data=dict]'));
-  const hisSuch = createNsSuch('his');
-  console.log(hisSuch.as(':myString'));
-  hisSuch.define('hisString', 'string', '{1}');
-  hisSuch.define('hisNumber', 'number', '[500,1000]');
-  hisSuch.alias('string', 'hisString');
-  console.log(hisSuch.as(':hisString'));
-  console.log(hisSuch.as(':string'));
-  console.log(hisSuch.as(':hisNumber'));
-  console.log(mySuch.as(':hisString'));
-  hisSuch.setExportType('hisString');
-  console.log(mySuch.as(':@his/hisString'));
-  console.log(mySuch.as(':string:{3}'));
-  console.log(mySuch.as(':@his/hisNumber'));
-  console.log(Such.as(':@his/hisString'));
+  // const mySuch = createNsSuch('my');
+  // mySuch.define('myString', 'string', '{10}');
+  // mySuch.assign('dict', ['1', '2', '3']);
+  // console.log(mySuch.as(':myString'));
+  // // console.log(mySuch.as(':dict:#[data=dict]'));
+  // const hisSuch = createNsSuch('his');
+  // console.log(hisSuch.as(':myString'));
+  // hisSuch.define('hisString', 'string', '{1}');
+  // hisSuch.define('hisNumber', 'number', '[500,1000]');
+  // hisSuch.alias('string', 'hisString');
+  // console.log(hisSuch.as(':hisString'));
+  // console.log(hisSuch.as(':string'));
+  // console.log(hisSuch.as(':hisNumber'));
+  // console.log(mySuch.as(':hisString'));
+  // hisSuch.setExportType('hisString');
+  // console.log(mySuch.as(':@his/hisString'));
+  // console.log(mySuch.as(':string:{3}'));
+  // console.log(mySuch.as(':@his/hisNumber'));
+  // console.log(Such.as(':@his/hisString'));
+  Such.define('tmpl1', '`:string{5}`hahah');
+  console.log(Such.as(':tmpl1:{1,3}'));
+  Such.define('letter', ['a', 'b', 'c']);
+  const instance = Such.instance(':letter');
+  console.log(
+    instance.a({
+      keys: {
+        '/': {
+          index: 1,
+        },
+      },
+    }),
+  );
 })();

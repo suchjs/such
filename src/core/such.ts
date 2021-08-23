@@ -1,5 +1,6 @@
 import {
   dtNameRule,
+  enumConfig,
   splitor,
   suchRule,
   templateSplitor,
@@ -32,6 +33,7 @@ import {
   IMockerKeyRule,
   IMockerOptions,
   IMockerPathRuleKeys,
+  EnumSpecialType,
   TSuchInject,
 } from '../types/instance';
 // import { NSuch } from '../index';
@@ -155,9 +157,7 @@ export class Mocker {
    * @returns
    * @memberof Mocker
    */
-  public static parseKey(
-    key: string,
-  ): {
+  public static parseKey(key: string): {
     key: string;
     config: IMockerKeyRule;
   } {
@@ -191,6 +191,7 @@ export class Mocker {
   private instanceOptions?: IAInstanceOptions;
   protected readonly storeData: TObj = {};
   public result: unknown;
+  public isEnum: boolean;
   public readonly target: unknown;
   public readonly config: IMockerKeyRule = {};
   public readonly path: TFieldPath;
@@ -481,7 +482,9 @@ export class Mocker {
             // otherwise, take it as a normal string
             if (klass) {
               this.type = realType;
-              const instance = new klass(this.root.namespace);
+              const instance = new klass(this.root.namespace, path);
+              const { specialType } = instance.getStaticProps();
+              this.isEnum = specialType === EnumSpecialType.Enum;
               let meta = target.replace(match[0], '');
               if (meta !== '') {
                 // remote the prefix splitor
@@ -494,16 +497,26 @@ export class Mocker {
                 });
                 instance.setParams(params);
               }
+              const strPath = path2str(path);
               this.mockit = instance;
-              this.mockFn = (dpath: TFieldPath) =>
-                instance.make(
-                  {
-                    datas,
-                    dpath,
-                    mocker: this,
-                  },
-                  this.root.such,
-                );
+              this.mockFn = (dpath: TFieldPath) => {
+                const { root } = this;
+                const { instanceOptions } = root;
+                const inject: TSuchInject = {
+                  datas,
+                  dpath,
+                  mocker: this,
+                };
+                if (instanceOptions?.keys) {
+                  const config = instanceOptions.keys[strPath];
+                  if (config && config.hasOwnProperty('index')) {
+                    inject.config = {
+                      index: config.index,
+                    };
+                  }
+                }
+                return instance.make(inject, root.such);
+              };
               isMockFnOk = true;
             }
           } else if (target.startsWith(templateSplitor)) {
@@ -567,9 +580,6 @@ export class Mocker {
         };
       }
     }
-    /**
-     * name
-     */
   }
 
   /**
@@ -679,7 +689,11 @@ export class Template {
   /**
    * constructor
    */
-  constructor(public readonly context = '', public readonly such: Such) {
+  constructor(
+    public readonly context = '',
+    public readonly such: Such,
+    public readonly path: TFieldPath,
+  ) {
     // nothing to do
   }
   /**
@@ -707,7 +721,7 @@ export class Template {
    * @returns the reference instance's values
    */
   public getRefValue(index: string): TemplateData | TemplateData[] {
-    if (!isNaN((index as unknown) as number)) {
+    if (!isNaN(index as unknown as number)) {
       return this.indexData[Number(index)];
     }
     return this.namedData[index];
@@ -718,9 +732,9 @@ export class Template {
    */
   public end(meta = ''): void {
     meta = meta.trim();
-    const klass = (globalStore.mockits[
+    const klass = globalStore.mockits[
       tmplMockitName
-    ] as unknown) as typeof ToTemplate;
+    ] as unknown as typeof ToTemplate;
     const instance = new klass(this.such.namespace);
     // set the template object
     instance.setTemplate(this);
@@ -744,6 +758,7 @@ export class Template {
       datas: null,
       dpath: [],
       mocker: null,
+      config: null,
       template: this,
     },
   ): unknown {
@@ -856,13 +871,15 @@ export default class SuchMocker {
       {
         target,
         path: [],
-        config: options && options.config,
+        config: options?.config,
       },
       this.such,
       this.namespace,
       this.instances,
       this.datas,
     );
+    // set root mocker instance
+    this.instances.set([], this.mocker);
   }
   /**
    *
@@ -918,6 +935,8 @@ export default class SuchMocker {
     };
     // loop the target
     loop(target, []);
+    // the root
+    ruleKeys['/'] = this.options?.config;
     // return the rulekeys
     return ruleKeys;
   }
@@ -941,7 +960,11 @@ export default class SuchMocker {
             );
           } else {
             const value = keys[path];
-            const config = fields[path];
+            const pathSegs = path === '/' ? [] : path.slice(1).split('/');
+            const curInstance = this.instances.get(pathSegs);
+            const config = curInstance?.isEnum
+              ? enumConfig
+              : fields[path] || {};
             const hasExist = typeof value.exist === 'boolean';
             // check optional
             if (hasExist && config.optional !== true) {
@@ -1122,6 +1145,16 @@ export class Such {
    * @param {(string|TMFactoryOptions)} options
    * @memberof Such
    */
+  public define(type: string, template: string): void | never;
+  public define(type: string, enums: unknown[]): void | never;
+  public define(type: string, generate: TMGenerateFn): void | never;
+  public define(type: string, options: Partial<TMFactoryOptions>): void | never;
+  public define(type: string, baseType: string, param: string): void | never;
+  public define(
+    type: string,
+    baseType: string,
+    options: Partial<TMFactoryOptions>,
+  ): void | never;
   public define(type: string, ...args: unknown[]): void | never {
     if (!dtNameRule.test(type)) {
       throw new Error(
@@ -1140,6 +1173,11 @@ export class Such {
     let isEnum = false;
     if (argsNum === 2) {
       if (typeof opts === 'string') {
+        if (opts.trim() === '') {
+          throw new Error(
+            `The defined type "${type}" base on type "${args[0]}" must set a param not empty.`,
+          );
+        }
         config = {
           param: opts,
         };
@@ -1196,10 +1234,10 @@ export class Such {
       if (argsNum === 2) {
         const baseType = args[0] as string;
         const realBaseType = alias[baseType] || baseType;
-        const BaseClass = ((hasNs
+        const BaseClass = (hasNs
           ? mockits[realBaseType] ||
             globalStore.mockits[globalStore.alias[baseType] || baseType]
-          : mockits[realBaseType]) as unknown) as typeof BaseExtendMockit;
+          : mockits[realBaseType]) as unknown as typeof BaseExtendMockit;
         if (!BaseClass) {
           throw new Error(
             `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
@@ -1219,9 +1257,10 @@ export class Such {
         }
         klass = class extends BaseClass implements Mockit {
           // set static properties
-          public static chainNames = BaseClass.chainNames.concat(realBaseType);
-          public static constrName = constrName;
-          public static namespace = namespace;
+          public static readonly chainNames =
+            BaseClass.chainNames.concat(realBaseType);
+          public static readonly constrName = constrName;
+          public static readonly namespace = namespace;
           public static selfConfigOptions = configOptions;
           public static configOptions = {
             ...(BaseClass.configOptions || {}),
@@ -1242,11 +1281,12 @@ export class Such {
         if (isTemplate) {
           klass = class extends ToTemplate {
             // set static properties
-            public static constrName = constrName;
-            public static namespace = namespace;
+            public static readonly constrName = constrName;
+            public static readonly namespace = namespace;
+            public static readonly allowAttrs = allowAttrs;
+            public static readonly specialType = EnumSpecialType.Template;
             public static selfConfigOptions = configOptions;
             public static configOptions = configOptions;
-            public static allowAttrs = allowAttrs;
             public static validator = validator;
             // init
             public init() {
@@ -1259,25 +1299,29 @@ export class Such {
         } else if (isEnum) {
           klass = class extends Mockit {
             // set static properties
-            public static constrName = constrName;
-            public static namespace = namespace;
+            public static readonly constrName = constrName;
+            public static readonly namespace = namespace;
+            public static readonly allowAttrs = allowAttrs;
+            public static readonly specialType = EnumSpecialType.Enum;
             public static selfConfigOptions = configOptions;
             public static configOptions = configOptions;
-            public static allowAttrs = allowAttrs;
             public static validator = validator;
             private instance: SuchMocker;
             // init
             public init() {
               this.instance = self.instance(opts, {
-                config: {
-                  oneOf: true,
-                  min: 1,
-                  max: 1,
-                },
+                config: enumConfig,
               });
             }
             // generate
-            public generate(_options: TSuchInject, _such: Such): unknown {
+            public generate(options: TSuchInject): unknown {
+              if (options?.config) {
+                return this.instance.a({
+                  keys: {
+                    '/': options.config,
+                  },
+                });
+              }
               return this.instance.a();
             }
             // test
@@ -1372,7 +1416,7 @@ export class Such {
       globals: 'assign',
     };
     const lastConf: TSuchSettings = {};
-    const curSuch = (this as unknown) as {
+    const curSuch = this as unknown as {
       loadExtend: (files: TStrList) => TSuchSettings[];
     };
     if (config.extends && typeof curSuch.loadExtend === 'function') {
@@ -1392,9 +1436,9 @@ export class Such {
     });
     Object.keys(lastConf).map((key: keyof TSuchSettings) => {
       const conf = lastConf[key];
-      const fnName = (fnHashs.hasOwnProperty(key)
-        ? fnHashs[key]
-        : key) as keyof Such;
+      const fnName = (
+        fnHashs.hasOwnProperty(key) ? fnHashs[key] : key
+      ) as keyof Such;
       Object.keys(conf).map((name: keyof typeof conf) => {
         const fn = this[fnName] as TFunc;
         const args = utils.isArray(conf[name])
@@ -1414,7 +1458,7 @@ export class Such {
     path?: TFieldPath,
     callerNamespace?: string,
   ): Template {
-    const template = new Template(code, this);
+    const template = new Template(code, this, path);
     const total = code.length;
     const symbol = '`';
     const tsSymbol = templateSplitor.charAt(0);
@@ -1500,7 +1544,7 @@ export class Such {
             if (curParams.hasOwnProperty('errorIndex')) {
               // parse error, return a wrapper data with 'errorIndex'
               // need parse to next symbol
-              const errorIndex = (curParams.errorIndex as unknown) as number;
+              const errorIndex = curParams.errorIndex as unknown as number;
               // remove the parsed string and add the symbol back
               if (errorIndex > 0) {
                 meta = meta.slice(errorIndex) + symbol;

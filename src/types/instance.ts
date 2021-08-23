@@ -1,12 +1,21 @@
 import PathMap, { TFieldPath } from '../helpers/pathmap';
 import { Mocker, Template } from '../core/such';
 import Mockit from '../core/mockit';
-export interface TSuchInject {
+export type TSuchInject = {
   datas: PathMap<unknown>;
   dpath: TFieldPath;
   mocker: Mocker;
+  config?: Required<TEnumedIndex>;
   template?: Template;
-}
+};
+
+export type TEnumedIndex = {
+  index?: number;
+};
+
+export type TOptionalExist = {
+  exist?: boolean;
+};
 /**
  *
  *
@@ -37,10 +46,9 @@ export interface IMockerPathRuleKeys {
  */
 export interface IAInstanceOptions {
   keys?: {
-    [index: string]: Pick<IMockerKeyRule, 'min' | 'max'> & {
-      exist?: boolean;
-      index?: number;
-    };
+    [index: string]: Pick<IMockerKeyRule, 'min' | 'max'> &
+      TEnumedIndex &
+      TOptionalExist;
   };
 }
 /**
@@ -62,4 +70,9 @@ export interface IMockerOptions {
   path: TFieldPath;
   parent?: Mocker;
   config?: IMockerKeyRule;
+}
+
+export enum EnumSpecialType {
+  Enum = 1,
+  Template = 2,
 }

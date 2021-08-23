@@ -11,6 +11,7 @@ import {
 import Mockit from '../core/mockit';
 import { Such, Template } from '../core/such';
 import { TSuchInject } from './instance';
+import { TFieldPath } from 'src/helpers/pathmap';
 export type TMModifierFn<T> = (res: T) => T | string | never;
 export type TMRuleFn<T = unknown> = (cur: T) => T | void;
 export type TMParamsValidFn = (params: TMParams) => void | never;
@@ -44,5 +45,8 @@ export type TMFactoryOptions = {
   generate: TMGenerateFn;
   validator?: TMParamsValidFn;
 };
-export type TMClass = new (callerNamespace?: string) => Mockit;
+export type TMClass = new (
+  callerNamespace?: string,
+  path?: TFieldPath,
+) => Mockit;
 export type TMClassList = TObj<TMClass>;

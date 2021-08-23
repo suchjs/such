@@ -31,26 +31,31 @@ export default class PathMap<T> {
       this.result = typeof keys[0] === 'number' ? [] : {};
       this.initial = true;
     }
+
     let data = this.result as unknown as TFieldValue<TFieldValue>;
-    let i = 0;
-    for (; i < len - 1; i++) {
-      const key = keys[i];
-      const next = keys[i + 1];
-      if (isArray(data) && typeof key === 'number' && key % 1 === 0) {
-        if (data.length < key + 1) {
-          data[key] = typeof next === 'number' ? [] : {};
+    if (keys.length !== 0) {
+      let i = 0;
+      for (; i < len - 1; i++) {
+        const key = keys[i];
+        const next = keys[i + 1];
+        if (isArray(data) && typeof key === 'number' && key % 1 === 0) {
+          if (data.length < key + 1) {
+            data[key] = typeof next === 'number' ? [] : {};
+          }
+          data = data[key] as TFieldValue<TFieldValue>;
+        } else if (isObject(data)) {
+          if (!data.hasOwnProperty(key)) {
+            data[key] = typeof next === 'number' ? [] : {};
+          }
+          data = data[key] as TFieldValue<TFieldValue>;
+        } else {
+          throw new Error(`wrong field path key: '${key}'`);
         }
-        data = data[key] as TFieldValue<TFieldValue>;
-      } else if (isObject(data)) {
-        if (!data.hasOwnProperty(key)) {
-          data[key] = typeof next === 'number' ? [] : {};
-        }
-        data = data[key] as TFieldValue<TFieldValue>;
-      } else {
-        throw new Error(`wrong field path key: '${key}'`);
       }
+      (data as unknown as { [index: string]: T })[keys[i]] = value;
+    } else {
+      (this.result as TObj)[''] = value;
     }
-    (data as unknown as { [index: string]: T })[keys[i]] = value;
     return this;
   }
   /**
@@ -62,17 +67,22 @@ export default class PathMap<T> {
    */
   public get(keys: TFieldPath): T {
     let result = this.result;
-    try {
-      for (let i = 0, len = keys.length; i < len; i++) {
-        const key = keys[i];
-        result = (
-          typeof key === 'number' ? (result as T[])[key] : (result as TObj)[key]
-        ) as TFieldValue<T>;
+    if (keys.length !== 0) {
+      try {
+        for (let i = 0, len = keys.length; i < len; i++) {
+          const key = keys[i];
+          result = (
+            typeof key === 'number'
+              ? (result as T[])[key]
+              : (result as TObj)[key]
+          ) as TFieldValue<T>;
+        }
+      } catch (e) {
+        // not exists
       }
-    } catch (e) {
-      // not exists
+      return result as unknown as T;
     }
-    return result as unknown as T;
+    return (result as TObj)[''] as T;
   }
   /**
    *

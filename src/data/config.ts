@@ -1,3 +1,4 @@
+import { IMockerKeyRule } from '../types/instance';
 import { encodeRegexpChars } from '../helpers/utils';
 export const IS_BROWSER = process.env.BROWSER;
 export const splitor = ':';
@@ -10,6 +11,11 @@ export const strRule = /^(["'])((?:(?!\1)[^\\]|\\.)*)\1$/;
 // define your own data type's name rule
 export const dtNameRule = /^[a-zA-Z_$][\w$]*$/;
 export const tmplMockitName = 'template';
+export const enumConfig: IMockerKeyRule = {
+  oneOf: true,
+  min: 1,
+  max: 1,
+};
 const tmplNamedContext = '[a-zA-Z_]\\w*';
 export const tmplNamedRule = new RegExp(`^<(${tmplNamedContext})>`);
 export const tmplRefRule = new RegExp(

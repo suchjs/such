@@ -10,8 +10,8 @@ import { TMAttrs } from '../types/mockit';
  * @extends {Mockit<string>}
  */
 export default class ToTemplate extends Mockit<string> {
-  // private $template: Template;
-  private $template: Template;
+  // protected $template: Template;
+  protected $template: Template;
   // set constructor name
   public static readonly constrName: string = 'ToTemplate';
   // allowed data attribute

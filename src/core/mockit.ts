@@ -20,10 +20,10 @@ import {
   TMFactoryOptions,
   TMConfigRule,
 } from '../types/mockit';
-import { TSuchInject } from '../types/instance';
+import { EnumSpecialType, TSuchInject } from '../types/instance';
 import type { Such } from './such';
 import { Variable } from '../data/config';
-import { TFieldPath } from 'src/helpers/pathmap';
+import { TFieldPath } from '../helpers/pathmap';
 
 const { fns: globalFns, vars: globalVars } = globalStore;
 // get namespace assigned values
@@ -101,10 +101,10 @@ const getNsMockitsCache = (
 const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
   const PRE_PROCESS_STAND = '__pre_process_fn__';
   const isPreProcessFn = (fn: (...args: unknown[]) => unknown): boolean => {
-    return ((fn as unknown) as TObj).hasOwnProperty(PRE_PROCESS_STAND);
+    return (fn as unknown as TObj).hasOwnProperty(PRE_PROCESS_STAND);
   };
   const setPreProcessFn = <T = (...args: unknown[]) => unknown>(fn: T): T => {
-    ((fn as unknown) as TObj)[PRE_PROCESS_STAND] = true;
+    (fn as unknown as TObj)[PRE_PROCESS_STAND] = true;
     return fn;
   };
   // mockit preprocessing
@@ -230,6 +230,8 @@ export default abstract class Mockit<T = unknown> {
   public static readonly namespace?: string;
   // allowed data attribute
   public static readonly allowAttrs: TMAttrs = [];
+  // special type
+  public static readonly specialType: EnumSpecialType;
   // if config options is set, will allow configuration `data attribute`
   public static configOptions: TMConfig = {};
   // self config options
@@ -261,7 +263,7 @@ export default abstract class Mockit<T = unknown> {
         Object.keys(define).map((key: keyof TMFactoryOptions) => {
           const value = define[key];
           // force to add defines
-          const self = (this as unknown) as TObj;
+          const self = this as unknown as TObj;
           if (typeOf(value) === 'Object') {
             self[key] = deepCopy({}, value);
           } else {
@@ -517,6 +519,7 @@ export default abstract class Mockit<T = unknown> {
       allowAttrs,
       configOptions,
       selfConfigOptions,
+      specialType,
     } = staticMockit;
     return {
       constrName,
@@ -525,6 +528,7 @@ export default abstract class Mockit<T = unknown> {
       allowAttrs,
       configOptions,
       selfConfigOptions,
+      specialType,
     };
   }
   /**
@@ -663,9 +667,9 @@ export default abstract class Mockit<T = unknown> {
         const name = queue[i];
         const fn = fns[i];
         const isUserDefined = nsFns.hasOwnProperty(name);
-        const args: unknown[] = ((isUserDefined
-          ? [nsFns[name]]
-          : []) as unknown[]).concat([
+        const args: unknown[] = (
+          (isUserDefined ? [nsFns[name]] : []) as unknown[]
+        ).concat([
           fnsParams[i],
           nsVars,
           result,
