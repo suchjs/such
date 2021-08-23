@@ -18,7 +18,12 @@ import globalStore, {
   Store,
 } from '../data/store';
 import { TFunc, TObj, TStrList, ValueOf } from '../types/common';
-import { TMClass, TMFactoryOptions, TMParamsValidFn } from '../types/mockit';
+import {
+  TMClass,
+  TMFactoryOptions,
+  TMGenerateFn,
+  TMParamsValidFn,
+} from '../types/mockit';
 import { TSuchSettings } from '../types/node';
 import { IParserConfig } from '../types/parser';
 import {
@@ -150,7 +155,9 @@ export class Mocker {
    * @returns
    * @memberof Mocker
    */
-  public static parseKey(key: string): {
+  public static parseKey(
+    key: string,
+  ): {
     key: string;
     config: IMockerKeyRule;
   } {
@@ -700,7 +707,7 @@ export class Template {
    * @returns the reference instance's values
    */
   public getRefValue(index: string): TemplateData | TemplateData[] {
-    if (!isNaN(index as unknown as number)) {
+    if (!isNaN((index as unknown) as number)) {
       return this.indexData[Number(index)];
     }
     return this.namedData[index];
@@ -711,9 +718,9 @@ export class Template {
    */
   public end(meta = ''): void {
     meta = meta.trim();
-    const klass = globalStore.mockits[
+    const klass = (globalStore.mockits[
       tmplMockitName
-    ] as unknown as typeof ToTemplate;
+    ] as unknown) as typeof ToTemplate;
     const instance = new klass(this.such.namespace);
     // set the template object
     instance.setTemplate(this);
@@ -1128,12 +1135,30 @@ export class Such {
       );
     }
     const opts = args.pop();
-    const config: Partial<TMFactoryOptions> =
-      argsNum === 2 && typeof opts === 'string'
-        ? { param: opts }
-        : argsNum === 1 && typeof opts === 'function'
-        ? { generate: opts }
-        : opts;
+    let config: Partial<TMFactoryOptions> = {};
+    let isTemplate = false;
+    let isEnum = false;
+    if (argsNum === 2) {
+      if (typeof opts === 'string') {
+        config = {
+          param: opts,
+        };
+      } else {
+        config = opts;
+      }
+    } else if (argsNum === 1) {
+      if (typeof opts === 'function') {
+        config = {
+          generate: opts as TMGenerateFn,
+        };
+      } else if (typeof opts === 'string') {
+        isTemplate = true;
+      } else if (isArray(opts)) {
+        isEnum = true;
+      } else {
+        config = opts;
+      }
+    }
     const {
       param,
       init,
@@ -1171,10 +1196,10 @@ export class Such {
       if (argsNum === 2) {
         const baseType = args[0] as string;
         const realBaseType = alias[baseType] || baseType;
-        const BaseClass = (hasNs
+        const BaseClass = ((hasNs
           ? mockits[realBaseType] ||
             globalStore.mockits[globalStore.alias[baseType] || baseType]
-          : mockits[realBaseType]) as unknown as typeof BaseExtendMockit;
+          : mockits[realBaseType]) as unknown) as typeof BaseExtendMockit;
         if (!BaseClass) {
           throw new Error(
             `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
@@ -1212,26 +1237,76 @@ export class Such {
           }
         };
       } else {
-        klass = class extends Mockit {
-          // set static properties
-          public static constrName = constrName;
-          public static namespace = namespace;
-          public static selfConfigOptions = configOptions;
-          public static configOptions = configOptions;
-          public static allowAttrs = allowAttrs;
-          public static validator = validator;
-          // init
-          public init() {
-            initProcess.call(this);
-          }
-          // call generate
-          public generate(options: TSuchInject, such: Such) {
-            return generate.call(this, options, such);
-          }
-          public test() {
-            return true;
-          }
-        };
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        const self = this;
+        if (isTemplate) {
+          klass = class extends ToTemplate {
+            // set static properties
+            public static constrName = constrName;
+            public static namespace = namespace;
+            public static selfConfigOptions = configOptions;
+            public static configOptions = configOptions;
+            public static allowAttrs = allowAttrs;
+            public static validator = validator;
+            // init
+            public init() {
+              super.init();
+              this.setTemplate(
+                self.template(opts as string, this.path, this.callerNamespace),
+              );
+            }
+          };
+        } else if (isEnum) {
+          klass = class extends Mockit {
+            // set static properties
+            public static constrName = constrName;
+            public static namespace = namespace;
+            public static selfConfigOptions = configOptions;
+            public static configOptions = configOptions;
+            public static allowAttrs = allowAttrs;
+            public static validator = validator;
+            private instance: SuchMocker;
+            // init
+            public init() {
+              this.instance = self.instance(opts, {
+                config: {
+                  oneOf: true,
+                  min: 1,
+                  max: 1,
+                },
+              });
+            }
+            // generate
+            public generate(_options: TSuchInject, _such: Such): unknown {
+              return this.instance.a();
+            }
+            // test
+            public test() {
+              return true;
+            }
+          };
+        } else {
+          klass = class extends Mockit {
+            // set static properties
+            public static constrName = constrName;
+            public static namespace = namespace;
+            public static selfConfigOptions = configOptions;
+            public static configOptions = configOptions;
+            public static allowAttrs = allowAttrs;
+            public static validator = validator;
+            // init
+            public init() {
+              initProcess.call(this);
+            }
+            // call generate
+            public generate(options: TSuchInject, such: Such) {
+              return generate.call(this, options, such);
+            }
+            public test() {
+              return true;
+            }
+          };
+        }
       }
       mockits[type] = klass;
     } else {
@@ -1297,7 +1372,7 @@ export class Such {
       globals: 'assign',
     };
     const lastConf: TSuchSettings = {};
-    const curSuch = this as unknown as {
+    const curSuch = (this as unknown) as {
       loadExtend: (files: TStrList) => TSuchSettings[];
     };
     if (config.extends && typeof curSuch.loadExtend === 'function') {
@@ -1317,9 +1392,9 @@ export class Such {
     });
     Object.keys(lastConf).map((key: keyof TSuchSettings) => {
       const conf = lastConf[key];
-      const fnName = (
-        fnHashs.hasOwnProperty(key) ? fnHashs[key] : key
-      ) as keyof Such;
+      const fnName = (fnHashs.hasOwnProperty(key)
+        ? fnHashs[key]
+        : key) as keyof Such;
       Object.keys(conf).map((name: keyof typeof conf) => {
         const fn = this[fnName] as TFunc;
         const args = utils.isArray(conf[name])
@@ -1425,7 +1500,7 @@ export class Such {
             if (curParams.hasOwnProperty('errorIndex')) {
               // parse error, return a wrapper data with 'errorIndex'
               // need parse to next symbol
-              const errorIndex = curParams.errorIndex as unknown as number;
+              const errorIndex = (curParams.errorIndex as unknown) as number;
               // remove the parsed string and add the symbol back
               if (errorIndex > 0) {
                 meta = meta.slice(errorIndex) + symbol;

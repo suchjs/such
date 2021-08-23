@@ -34,12 +34,14 @@ export type TMParams = {
   $template?: Template;
 };
 export type TMAttrs = string[];
+export type TMGenerateFn = (options?: TSuchInject, such?: Such) => unknown;
 export type TMFactoryOptions = {
   param?: string;
   configOptions?: TMConfig;
+  selfConfigOptions?: TMConfig;
   allowAttrs?: TMAttrs;
   init?: () => void;
-  generate: (options?: TSuchInject, such?: Such) => unknown;
+  generate: TMGenerateFn;
   validator?: TMParamsValidFn;
 };
 export type TMClass = new (callerNamespace?: string) => Mockit;
