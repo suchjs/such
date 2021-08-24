@@ -32,7 +32,7 @@ export default class PathMap<T> {
       this.initial = true;
     }
 
-    let data = this.result as unknown as TFieldValue<TFieldValue>;
+    let data = (this.result as unknown) as TFieldValue<TFieldValue>;
     if (keys.length !== 0) {
       let i = 0;
       for (; i < len - 1; i++) {
@@ -52,7 +52,7 @@ export default class PathMap<T> {
           throw new Error(`wrong field path key: '${key}'`);
         }
       }
-      (data as unknown as { [index: string]: T })[keys[i]] = value;
+      ((data as unknown) as { [index: string]: T })[keys[i]] = value;
     } else {
       (this.result as TObj)[''] = value;
     }
@@ -71,16 +71,14 @@ export default class PathMap<T> {
       try {
         for (let i = 0, len = keys.length; i < len; i++) {
           const key = keys[i];
-          result = (
-            typeof key === 'number'
-              ? (result as T[])[key]
-              : (result as TObj)[key]
-          ) as TFieldValue<T>;
+          result = (typeof key === 'number'
+            ? (result as T[])[key]
+            : (result as TObj)[key]) as TFieldValue<T>;
         }
       } catch (e) {
         // not exists
       }
-      return result as unknown as T;
+      return (result as unknown) as T;
     }
     return (result as TObj)[''] as T;
   }

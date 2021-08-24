@@ -134,17 +134,17 @@ import Such, { createNsSuch } from '../src/index';
   // console.log(mySuch.as(':string:{3}'));
   // console.log(mySuch.as(':@his/hisNumber'));
   // console.log(Such.as(':@his/hisString'));
-  Such.define('tmpl1', '`:string{5}`hahah');
-  console.log(Such.as(':tmpl1:{1,3}'));
-  Such.define('letter', ['a', 'b', 'c']);
-  const instance = Such.instance(':letter');
-  console.log(
-    instance.a({
-      keys: {
-        '/': {
-          index: 1,
-        },
-      },
-    }),
-  );
+  Such.define('tmpl1', '<`:string{5}`hahah>:::{2,4}');
+  console.log(Such.as(':tmpl1:{5}'));
+  // Such.define('letter', ['a', 'b', 'c']);
+  // const instance = Such.instance(':letter');
+  // console.log(
+  //   instance.a({
+  //     keys: {
+  //       '/': {
+  //         index: 1,
+  //       },
+  //     },
+  //   }),
+  // );
 })();

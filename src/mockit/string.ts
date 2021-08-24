@@ -147,7 +147,7 @@ export default class ToString extends Mockit<string> {
     const params = this.params;
     const { $length } = params;
     const { least, most } = $length || { least: 1, most: 100 };
-    const { range } = (params.$size as unknown as IPPSize<number[]>) || {
+    const { range } = ((params.$size as unknown) as IPPSize<number[]>) || {
       range: [[32, 126]],
     };
     const index = range.length - 1;

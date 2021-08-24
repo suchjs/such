@@ -23,6 +23,7 @@ import {
   TMClass,
   TMFactoryOptions,
   TMGenerateFn,
+  TMParams,
   TMParamsValidFn,
 } from '../types/mockit';
 import { TSuchSettings } from '../types/node';
@@ -157,7 +158,9 @@ export class Mocker {
    * @returns
    * @memberof Mocker
    */
-  public static parseKey(key: string): {
+  public static parseKey(
+    key: string,
+  ): {
     key: string;
     config: IMockerKeyRule;
   } {
@@ -685,6 +688,7 @@ export class Template {
   private namedData: TemplateNamedData = {};
   private index = 0;
   public meta = '';
+  public params: TMParams = {};
   public mockit: Mockit;
   /**
    * constructor
@@ -721,7 +725,7 @@ export class Template {
    * @returns the reference instance's values
    */
   public getRefValue(index: string): TemplateData | TemplateData[] {
-    if (!isNaN(index as unknown as number)) {
+    if (!isNaN((index as unknown) as number)) {
       return this.indexData[Number(index)];
     }
     return this.namedData[index];
@@ -732,9 +736,9 @@ export class Template {
    */
   public end(meta = ''): void {
     meta = meta.trim();
-    const klass = globalStore.mockits[
+    const klass = (globalStore.mockits[
       tmplMockitName
-    ] as unknown as typeof ToTemplate;
+    ] as unknown) as typeof ToTemplate;
     const instance = new klass(this.such.namespace);
     // set the template object
     instance.setTemplate(this);
@@ -744,6 +748,7 @@ export class Template {
       const params = Dispatcher.parse(meta, {
         mockit: instance,
       });
+      this.params = params;
       instance.setParams(params);
     }
     // set the mockit, and params
@@ -775,6 +780,7 @@ export class Template {
       datas: null,
       dpath: [],
       mocker: null,
+      config: null,
       template: this,
     },
   ): string {
@@ -1073,7 +1079,11 @@ class BaseExtendMockit extends Mockit {
     // nothing to do
   }
 }
-
+/**
+ *
+ * @param name [string]
+ * @param defType [string]
+ */
 const warnIfEverDefinedInBuiltin = (name: string, defType: string) => {
   // warn if the short alias name or data type name is defined in builtin
   const { mockits, alias } = globalStore;
@@ -1155,46 +1165,52 @@ export class Such {
     baseType: string,
     options: Partial<TMFactoryOptions>,
   ): void | never;
-  public define(type: string, ...args: unknown[]): void | never {
+  public define(
+    type: string,
+    base: TMGenerateFn | Partial<TMFactoryOptions> | unknown[] | string,
+    frozen?: string | Partial<TMFactoryOptions>,
+    ...args: unknown[]
+  ): void | never {
     if (!dtNameRule.test(type)) {
       throw new Error(
-        `define a wrong type name '${type}', the name should match the regexp '${dtNameRule.toString()}'`,
+        `Call the "define" method with a wrong type name "${type}" parameter, the type name must match the regexp rule '${dtNameRule.toString()}'`,
       );
     }
-    const argsNum = args.length;
-    if (argsNum === 0 || argsNum > 2) {
+    if (!base || args.length) {
       throw new Error(
-        `the "define" method's arguments is not right, expect 1 or 2 argments, but got ${argsNum}`,
+        `Wrong parameters when call the "define" method, it should provide 2 or 3 parameters, but got ${
+          args.length + 3
+        }`,
       );
     }
-    const opts = args.pop();
     let config: Partial<TMFactoryOptions> = {};
     let isTemplate = false;
     let isEnum = false;
-    if (argsNum === 2) {
-      if (typeof opts === 'string') {
-        if (opts.trim() === '') {
+    const isExtend = !!frozen;
+    if (isExtend) {
+      if (typeof frozen === 'string') {
+        if (frozen.trim() === '') {
           throw new Error(
-            `The defined type "${type}" base on type "${args[0]}" must set a param not empty.`,
+            `The defined type "${type}" base on type "${base}" must set a param not empty.`,
           );
         }
         config = {
-          param: opts,
+          param: frozen,
         };
       } else {
-        config = opts;
+        config = frozen;
       }
-    } else if (argsNum === 1) {
-      if (typeof opts === 'function') {
+    } else {
+      if (typeof base === 'function') {
         config = {
-          generate: opts as TMGenerateFn,
+          generate: base as TMGenerateFn,
         };
-      } else if (typeof opts === 'string') {
+      } else if (typeof base === 'string') {
         isTemplate = true;
-      } else if (isArray(opts)) {
+      } else if (isArray(base)) {
         isEnum = true;
       } else {
-        config = opts;
+        config = base;
       }
     }
     const {
@@ -1231,13 +1247,13 @@ export class Such {
       if (hasNs) {
         warnIfEverDefinedInBuiltin(type, 'data type');
       }
-      if (argsNum === 2) {
-        const baseType = args[0] as string;
+      if (isExtend) {
+        const baseType = base as string;
         const realBaseType = alias[baseType] || baseType;
-        const BaseClass = (hasNs
+        const BaseClass = ((hasNs
           ? mockits[realBaseType] ||
             globalStore.mockits[globalStore.alias[baseType] || baseType]
-          : mockits[realBaseType]) as unknown as typeof BaseExtendMockit;
+          : mockits[realBaseType]) as unknown) as typeof BaseExtendMockit;
         if (!BaseClass) {
           throw new Error(
             `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
@@ -1257,8 +1273,9 @@ export class Such {
         }
         klass = class extends BaseClass implements Mockit {
           // set static properties
-          public static readonly chainNames =
-            BaseClass.chainNames.concat(realBaseType);
+          public static readonly chainNames = BaseClass.chainNames.concat(
+            realBaseType,
+          );
           public static readonly constrName = constrName;
           public static readonly namespace = namespace;
           public static selfConfigOptions = configOptions;
@@ -1291,9 +1308,16 @@ export class Such {
             // init
             public init() {
               super.init();
-              this.setTemplate(
-                self.template(opts as string, this.path, this.callerNamespace),
+              const $template = self.template(
+                base as string,
+                this.path,
+                this.callerNamespace,
               );
+              // rewrite the value method
+              if ($template.params) {
+                this.setParams($template.params);
+              }
+              this.setTemplate($template);
             }
           };
         } else if (isEnum) {
@@ -1309,7 +1333,7 @@ export class Such {
             private instance: SuchMocker;
             // init
             public init() {
-              this.instance = self.instance(opts, {
+              this.instance = self.instance(base, {
                 config: enumConfig,
               });
             }
@@ -1346,6 +1370,7 @@ export class Such {
             public generate(options: TSuchInject, such: Such) {
               return generate.call(this, options, such);
             }
+            // test
             public test() {
               return true;
             }
@@ -1416,7 +1441,7 @@ export class Such {
       globals: 'assign',
     };
     const lastConf: TSuchSettings = {};
-    const curSuch = this as unknown as {
+    const curSuch = (this as unknown) as {
       loadExtend: (files: TStrList) => TSuchSettings[];
     };
     if (config.extends && typeof curSuch.loadExtend === 'function') {
@@ -1436,9 +1461,9 @@ export class Such {
     });
     Object.keys(lastConf).map((key: keyof TSuchSettings) => {
       const conf = lastConf[key];
-      const fnName = (
-        fnHashs.hasOwnProperty(key) ? fnHashs[key] : key
-      ) as keyof Such;
+      const fnName = (fnHashs.hasOwnProperty(key)
+        ? fnHashs[key]
+        : key) as keyof Such;
       Object.keys(conf).map((name: keyof typeof conf) => {
         const fn = this[fnName] as TFunc;
         const args = utils.isArray(conf[name])
@@ -1544,7 +1569,7 @@ export class Such {
             if (curParams.hasOwnProperty('errorIndex')) {
               // parse error, return a wrapper data with 'errorIndex'
               // need parse to next symbol
-              const errorIndex = curParams.errorIndex as unknown as number;
+              const errorIndex = (curParams.errorIndex as unknown) as number;
               // remove the parsed string and add the symbol back
               if (errorIndex > 0) {
                 meta = meta.slice(errorIndex) + symbol;
