@@ -70,7 +70,6 @@ export class NSuch extends Such {
       deepCopy(config, conf.config);
       (<const>['suchDir', 'dataDir']).map((key) => {
         if (config[key]) {
-          console.log(key, config[key]);
           config[key] = path.resolve(config.rootDir, config[key]);
         }
       });

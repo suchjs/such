@@ -288,7 +288,7 @@ export class Dispatcher {
       constructor(public readonly errorIndex: number) {}
     }
     Object.assign(Wrapper.prototype, result);
-    return (new Wrapper(errorIndex) as unknown) as TObj<TObj>;
+    return new Wrapper(errorIndex) as unknown as TObj<TObj>;
   }
   /**
    * dispatcher parse all the code
