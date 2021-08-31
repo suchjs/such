@@ -2,6 +2,29 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v2.0.0] - 2021-08-31
+
+### Added
+
+- Export a new method named `createNsSuch(namespace: string)`, so you can use it to get a such instance with namespace, then the store data such as defined types, alias names, assigned variables and functions are all in it's own namespace, instances with different namespaces can't access to visit each other's data unless they export the data to global by using methods such as `setExportType`, `setExportVar`, `setExportFn`, etc.
+
+- Now the `define` method allow define type base on `template` literal string and enum data.
+
+- Allowed set keys config of `index` for enum types.
+
+### Changed
+
+- Breaking Change: Now the `Such` object is an instance by calling `createNsSuch` with root namespace, the methods such as `define`, `alias`, `template` and other methods that used to be static methods of `Such` now become to be methods of a `Such` instance.
+
+### Fixed
+
+- Fix the default handle of the data attribute `$config`, `$func` do not trigger correctly.
+
+- Fix the `define` method's parameter of `baseType` not cover the alias names. 
+
+
+### Fixed
+
 ## [v1.2.4] - 2021-08-15
 
 ### Added
