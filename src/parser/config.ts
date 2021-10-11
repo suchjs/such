@@ -12,8 +12,7 @@ const parser: IParserFactory = {
     startTag: ['#['],
     endTag: [']'],
     separator: ',',
-    pattern:
-      /\s*([a-zA-Z_$]+)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|([^\s,\]]+))\s*)?/,
+    pattern: /\s*([a-zA-Z_$]+)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|([^\s,\]]+))\s*)?/,
   },
   /**
    *
@@ -24,8 +23,7 @@ const parser: IParserFactory = {
     const { params } = this.info();
     const config: IPPConfig = {};
     if (params.length) {
-      const rule =
-        /^\s*([a-zA-Z_$]+)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|([^\s,\]]+))\s*)?$/;
+      const rule = /^\s*([a-zA-Z_$]+)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|([^\s,\]]+))\s*)?$/;
       const nativeValues = ['true', 'false', 'null', 'undefined', 'NaN'];
       for (let i = 0, j = params.length; i < j; i++) {
         const param = params[i];

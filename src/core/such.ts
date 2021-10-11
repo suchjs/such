@@ -158,7 +158,9 @@ export class Mocker {
    * @returns
    * @memberof Mocker
    */
-  public static parseKey(key: string): {
+  public static parseKey(
+    key: string,
+  ): {
     key: string;
     config: IMockerKeyRule;
   } {
@@ -723,7 +725,7 @@ export class Template {
    * @returns the reference instance's values
    */
   public getRefValue(index: string): TemplateData | TemplateData[] {
-    if (!isNaN(index as unknown as number)) {
+    if (!isNaN((index as unknown) as number)) {
       return this.indexData[Number(index)];
     }
     return this.namedData[index];
@@ -734,9 +736,9 @@ export class Template {
    */
   public end(meta = ''): void {
     meta = meta.trim();
-    const klass = globalStore.mockits[
+    const klass = (globalStore.mockits[
       tmplMockitName
-    ] as unknown as typeof ToTemplate;
+    ] as unknown) as typeof ToTemplate;
     const instance = new klass(this.such.namespace);
     // set the template object
     instance.setTemplate(this);
@@ -1248,10 +1250,10 @@ export class Such {
       if (isExtend) {
         const baseType = base as string;
         const realBaseType = alias[baseType] || baseType;
-        const BaseClass = (hasNs
+        const BaseClass = ((hasNs
           ? mockits[realBaseType] ||
             globalStore.mockits[globalStore.alias[baseType] || baseType]
-          : mockits[realBaseType]) as unknown as typeof BaseExtendMockit;
+          : mockits[realBaseType]) as unknown) as typeof BaseExtendMockit;
         if (!BaseClass) {
           throw new Error(
             `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
@@ -1271,8 +1273,9 @@ export class Such {
         }
         klass = class extends BaseClass implements Mockit {
           // set static properties
-          public static readonly chainNames =
-            BaseClass.chainNames.concat(realBaseType);
+          public static readonly chainNames = BaseClass.chainNames.concat(
+            realBaseType,
+          );
           public static readonly constrName = constrName;
           public static readonly namespace = namespace;
           public static selfConfigOptions = configOptions;
@@ -1438,7 +1441,7 @@ export class Such {
       globals: 'assign',
     };
     const lastConf: TSuchSettings = {};
-    const curSuch = this as unknown as {
+    const curSuch = (this as unknown) as {
       loadExtend: (files: TStrList) => TSuchSettings[];
     };
     if (config.extends && typeof curSuch.loadExtend === 'function') {
@@ -1458,9 +1461,9 @@ export class Such {
     });
     Object.keys(lastConf).map((key: keyof TSuchSettings) => {
       const conf = lastConf[key];
-      const fnName = (
-        fnHashs.hasOwnProperty(key) ? fnHashs[key] : key
-      ) as keyof Such;
+      const fnName = (fnHashs.hasOwnProperty(key)
+        ? fnHashs[key]
+        : key) as keyof Such;
       Object.keys(conf).map((name: keyof typeof conf) => {
         const fn = this[fnName] as TFunc;
         const args = utils.isArray(conf[name])
@@ -1566,7 +1569,7 @@ export class Such {
             if (curParams.hasOwnProperty('errorIndex')) {
               // parse error, return a wrapper data with 'errorIndex'
               // need parse to next symbol
-              const errorIndex = curParams.errorIndex as unknown as number;
+              const errorIndex = (curParams.errorIndex as unknown) as number;
               // remove the parsed string and add the symbol back
               if (errorIndex > 0) {
                 meta = meta.slice(errorIndex) + symbol;
