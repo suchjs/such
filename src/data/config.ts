@@ -1,6 +1,5 @@
 import { IMockerKeyRule } from '../types/instance';
 import { encodeRegexpChars } from '../helpers/utils';
-export const IS_BROWSER = process.env.BROWSER;
 export const splitor = ':';
 export const templateSplitor = splitor.repeat(3);
 export const encodeSplitor = encodeRegexpChars(splitor);
