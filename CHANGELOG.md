@@ -2,6 +2,12 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v2.0.1] - 2021-10-11
+
+### Fixed
+
+Fix the "process.env" is not defined in browser when import the package by "npm install".
+
 ## [v2.0.0] - 2021-08-31
 
 ### Added
@@ -20,8 +26,7 @@ Suchjs add changelog since `v1.0.0`.
 
 - Fix the default handle of the data attribute `$config`, `$func` do not trigger correctly.
 
-- Fix the `define` method's parameter of `baseType` not cover the alias names. 
-
+- Fix the `define` method's parameter of `baseType` not cover the alias names.
 
 ### Fixed
 
