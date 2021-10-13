@@ -4,6 +4,10 @@ Suchjs add changelog since `v1.0.0`.
 
 ## [v2.0.1] - 2021-10-11
 
+### NPM
+
+Hit the npm incident: [report](https://status.npmjs.org/incidents/wy4002vc8ryc), this version is not updated correctly, update to version v2.0.2.
+
 ### Fixed
 
 Fix the "process.env" is not defined in browser when import the package by "npm install".
