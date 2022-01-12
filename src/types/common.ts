@@ -10,6 +10,6 @@ export type TObj<T = unknown> = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type TConstructor<T = any> = new (...args: any) => T;
 export type ValueOf<T> = T[keyof T];
-export type PrototypeMethodNames<T> = {
-  [K in keyof T]: T[K] extends () => void ? K : never;
+export type PrototypeMethodNames<T, U> = {
+  [K in keyof T]: T[K] extends U ? K : never;
 }[keyof T];

@@ -14,7 +14,8 @@ interface IDateHashInterface<T> {
 }
 type TDateHashInfo = IDateHashInterface<string[]>;
 type TDateHashInfoKey = keyof TDateHashInfo;
-type TDateMethods = PrototypeMethodNames<Date>;
+type TDateGetMethods = PrototypeMethodNames<Date, () => void>;
+type TDateSetMethods = PrototypeMethodNames<Date, (n: number) => number>;
 interface DateHashResult extends IDateHashInterface<number> {
   date: number;
   fullYear: number;
@@ -221,11 +222,9 @@ const strToDate = (
       const num = result[key];
       const method = capitalize(key);
       if (num) {
-        const orig = lastDate[`get${method}` as TDateMethods]() as number;
+        const orig = lastDate[`get${method}` as TDateGetMethods]() as number;
         try {
-          (lastDate[`set${method}` as TDateMethods] as (num: number) => number)(
-            orig + num,
-          );
+          lastDate[`set${method}` as TDateSetMethods](orig + num);
         } catch (e) {
           throw e;
         }

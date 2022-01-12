@@ -3,23 +3,48 @@ import { TSuchInject } from '../types/instance';
 import { TSuchSettings } from '../types/node';
 const confs: TSuchSettings = {
   types: {
+    /**
+     * numbers
+     */
     integer: ['number', '%d'],
     percent: ['number', '[0,100]:%d%'],
+    /**
+     * language
+     */
     chinese: ['string', '[\\u4E00,\\u9FA5]'],
+    /**
+     * numberic: '0123456789'
+     * alphaNumberic: ''
+     */
     uppercase: ['string', '[65,90]'],
     lowercase: ['string', '[97,122]'],
+    numberic: ['string', '[48-57]'],
+    alphabet: ['string', '[65-90,97-122]'],
+    alphaNumberic: ['string', '[48-57,97-122,65-90]'],
     alphaNumericDash: ['string', '[48-57,97-122,65-90,95]'],
+    /**
+     * url
+     */
     url: [
       'regexp',
       '/(?<protocol>http|https|ftp|telnet|file):\\/\\/(?<domain>(?:[a-z0-9]+(?:-?[a-z0-9]+|[a-z0-9]*))\\.(?<ltd>com|cn|com\\.cn|org|net|gov\\.cn|wang|ren|xyz|top|cc|io))(?<port>(?::(?:6[0-5][0-5][0-3][0-5]|[1-5]\\d{4}|[1-9]\\d{0,3}))?)\\/(?<pathname>(?:[0-9a-z]+\\/)*(?<filename>\\w+(?<extname>\\.(?:html|htm|php|do)))?)(?<query>\\?([0-9a-z_]+=(?:[0-9a-z]+|(?:%[0-9A-F]{2}){2,})&)*([0-9a-z_]+=(?:[0-9a-z]+|(?:%[0-9A-F]{2}){2,})))(?<hash>#[0-9a-z_=]{5,})?/',
     ],
+    /**
+     * email
+     */
     email: [
       'regexp',
       '/(?<user>(?:[a-z0-9]+(?:[-_]?[a-z0-9]+|[a-z0-9]*)))@(?<domain>(?:[a-z0-9]+(?:-?[a-z0-9]+|[a-z0-9]*))\\.(?<ltd>com|cn|com\\.cn|org|net|gov\\.cn|wang|ren|xyz|top|cc|io))/',
     ],
+    /**
+     * boolean
+     */
     boolean(_: TSuchInject, such: Such): boolean {
       return such.utils.isOptional();
     },
+    /**
+     * colors
+     */
     color$hex: {
       configOptions: {
         lowercase: {
@@ -30,18 +55,31 @@ const confs: TSuchSettings = {
           type: Boolean,
           default: false,
         },
+        min: {
+          type: Number,
+          default: 0x000000,
+        },
+        max: {
+          type: Number,
+        },
       },
       generate(_: TSuchInject, such: Such): string {
         const { $config = {} } = this.params;
-        const { lowercase, argb } = $config;
+        const { lowercase, argb, min, max } = $config;
         const { makeRandom } = such.utils;
         let hexValue: number;
         let len = 6;
         if (!argb) {
-          hexValue = makeRandom(0x000000, 0xffffff);
+          hexValue = makeRandom(
+            min,
+            $config.hasOwnProperty('max') ? max : 0xffffff,
+          );
         } else {
           len = 8;
-          hexValue = makeRandom(0x00000000, 0xffffffff);
+          hexValue = makeRandom(
+            0x00000000,
+            $config.hasOwnProperty('max') ? max : 0xffffffff,
+          );
         }
         if (!lowercase) {
           return `#${hexValue.toString(16).toUpperCase().padStart(len, '0')}`;
