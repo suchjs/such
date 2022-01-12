@@ -101,10 +101,10 @@ const getNsMockitsCache = (
 const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
   const PRE_PROCESS_STAND = '__pre_process_fn__';
   const isPreProcessFn = (fn: (...args: unknown[]) => unknown): boolean => {
-    return ((fn as unknown) as TObj).hasOwnProperty(PRE_PROCESS_STAND);
+    return (fn as unknown as TObj).hasOwnProperty(PRE_PROCESS_STAND);
   };
   const setPreProcessFn = <T = (...args: unknown[]) => unknown>(fn: T): T => {
-    ((fn as unknown) as TObj)[PRE_PROCESS_STAND] = true;
+    (fn as unknown as TObj)[PRE_PROCESS_STAND] = true;
     return fn;
   };
   // mockit preprocessing
@@ -264,7 +264,7 @@ export default abstract class Mockit<T = unknown> {
         Object.keys(define).map((key: keyof TMFactoryOptions) => {
           const value = define[key];
           // force to add defines
-          const self = (this as unknown) as TObj;
+          const self = this as unknown as TObj;
           if (typeOf(value) === 'Object') {
             self[key] = deepCopy({}, value);
           } else {
@@ -671,9 +671,9 @@ export default abstract class Mockit<T = unknown> {
         const name = queue[i];
         const fn = fns[i];
         const isUserDefined = nsFns.hasOwnProperty(name);
-        const args: unknown[] = ((isUserDefined
-          ? [nsFns[name]]
-          : []) as unknown[]).concat([
+        const args: unknown[] = (
+          (isUserDefined ? [nsFns[name]] : []) as unknown[]
+        ).concat([
           fnsParams[i],
           nsVars,
           result,

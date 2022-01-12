@@ -15,9 +15,11 @@ export interface TSSGlobals {
 }
 export interface TSSTypes {
   [index: string]:
+    | string
     | TFunc
     | TMFactoryOptions
     | [string, string]
+    | [unknown[]]
     | [string, TMFactoryOptions];
 }
 export type TSSParsers = {
