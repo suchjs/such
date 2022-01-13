@@ -2,7 +2,7 @@ import { TMultiStr, TStrList } from '../../types/common';
 import { IPPPath, IPPPathItem } from '../../types/parser';
 import store from '../../data/store';
 import { getRealPath } from '../utils';
-import { makeDictData } from '../../helpers/utils';
+import { hasOwn, makeDictData } from '../../helpers/utils';
 
 export default {
   /**
@@ -39,7 +39,7 @@ export default {
     // all the dict files must preload before generate
     // check if every path is in preload
     for (const filePath of lastPaths) {
-      if (!fileCache.hasOwnProperty(filePath)) {
+      if (!hasOwn(fileCache, filePath)) {
         throw new Error(`the dict of '${filePath}' is not loaded or not found`);
       } else {
         queues.push(fileCache[filePath] as TStrList);

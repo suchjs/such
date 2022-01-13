@@ -4,7 +4,7 @@ export const splitor = ':';
 export const templateSplitor = splitor.repeat(3);
 export const encodeSplitor = encodeRegexpChars(splitor);
 export const suchRule = new RegExp(
-  `^${encodeSplitor}(?:@([A-Za-z][\\w$-]*\/))?([A-Za-z][\\w$-]*)`,
+  `^${encodeSplitor}(?:@([A-Za-z][\\w$-]*/))?([A-Za-z][\\w$-]*)`,
 );
 export const strRule = /^(["'])((?:(?!\1)[^\\]|\\.)*)\1$/;
 // define your own data type's name rule

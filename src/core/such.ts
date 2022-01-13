@@ -49,6 +49,7 @@ const {
   deepCopy,
   path2str,
   capitalize,
+  hasOwn
 } = utils;
 /**
  *
@@ -72,9 +73,9 @@ const getOptional = (
         needOptional = false;
         // when not exist, just return
         needReturn = !curConfig.exist;
-      } else if (!config.hasOwnProperty('min')) {
-        const hasMin = curConfig.hasOwnProperty('min');
-        const hasMax = curConfig.hasOwnProperty('max');
+      } else if (!hasOwn(config, 'min')) {
+        const hasMin = hasOwn(curConfig, 'min');
+        const hasMax = hasOwn(curConfig, 'max');
         // if the field set min, it's maybe an array field
         // don't set min or max instead of exist
         // ignore the min and max if config has min
@@ -121,10 +122,10 @@ const getMinAndMax = (
   if (instanceConfig) {
     const curConfig = instanceConfig[strPath];
     if (curConfig) {
-      if (curConfig.hasOwnProperty('min')) {
+      if (hasOwn(curConfig, 'min')) {
         min = curConfig.min;
       }
-      if (curConfig.hasOwnProperty('max')) {
+      if (hasOwn(curConfig, 'max')) {
         max = curConfig.max;
       }
     }
@@ -141,7 +142,7 @@ const warn = (message: string) => {
 };
 const setExportWarn = (method: string, param: string) => {
   warn(
-    `You can't call the "${method}(\"${param}\")" method for the root such instance, the root such's data is global exported by default.`,
+    `You can't call the "${method}('${param}')" method for the root such instance, the root such's data is global exported by default.`,
   );
 };
 /**
@@ -510,7 +511,7 @@ export class Mocker {
                 };
                 if (instanceOptions?.keys) {
                   const config = instanceOptions.keys[strPath];
-                  if (config && config.hasOwnProperty('index')) {
+                  if (config && hasOwn(config, 'index')) {
                     inject.config = {
                       index: config.index,
                     };
@@ -652,7 +653,7 @@ export class Mocker {
    * @returns
    */
   public hasStore(key: string): boolean {
-    return this.storeData.hasOwnProperty(key);
+    return hasOwn(this.storeData, key);
   }
   /**
    *
@@ -800,7 +801,7 @@ export class Template {
           // check if has ref name
           const refName = this.indexHash[index];
           if (refName) {
-            if (!namedData.hasOwnProperty(refName)) {
+            if (!hasOwn(namedData, refName)) {
               namedData[refName] = instanceData;
             } else {
               // multiple same name
@@ -920,7 +921,7 @@ export default class SuchMocker {
     const loop = (obj: unknown, path: TFieldPath) => {
       if (isObject(obj)) {
         for (const curKey in obj) {
-          if (obj.hasOwnProperty(curKey)) {
+          if (hasOwn(obj, curKey)) {
             const { config, key } = Mocker.parseKey(curKey);
             const nowPath = path.concat(key);
             // if has config
@@ -957,8 +958,8 @@ export default class SuchMocker {
     if (keys && isNoEmptyObject(keys)) {
       const fields = this.keys();
       for (const path in keys) {
-        if (keys.hasOwnProperty(path)) {
-          if (!fields.hasOwnProperty(path)) {
+        if (hasOwn(keys, path)) {
+          if (!hasOwn(fields, path)) {
             throw new Error(
               `The target's field with a path '${path}' in instanceOptions keys is not optional or having a length with min/max, but you set a config on it.`,
             );
@@ -977,8 +978,8 @@ export default class SuchMocker {
               );
             }
             // check count
-            const hasMin = value.hasOwnProperty('min');
-            const hasMax = value.hasOwnProperty('max');
+            const hasMin = hasOwn(value, 'min');
+            const hasMax = hasOwn(value, 'max');
             if (hasMin || hasMax) {
               if (value.exist === false) {
                 // has set the exist false
@@ -989,10 +990,10 @@ export default class SuchMocker {
               }
               let confMin: number;
               let confMax: number;
-              if (config.hasOwnProperty('min')) {
+              if (hasOwn(config, 'min')) {
                 // first use the config's min and max
                 confMin = config.min;
-                confMax = config.hasOwnProperty('max') ? config.max : confMin;
+                confMax = hasOwn(config, 'max') ? config.max : confMin;
               } else {
                 // then if is optional, set the min and max to 0 and 1
                 if (config.optional) {
@@ -1048,7 +1049,7 @@ export default class SuchMocker {
               }
             }
             // check index
-            if (value.hasOwnProperty('index')) {
+            if (hasOwn(value, 'index')) {
               if (!(config.oneOf || config.max === 1)) {
                 throw new Error(
                   `The target's field with a path '${path}' in instanceOptions keys is not a field with config 'oneOf' or 'max' equal to 1, can't set a 'index' value.`,
@@ -1085,7 +1086,7 @@ class BaseExtendMockit extends Mockit {
 const warnIfEverDefinedInBuiltin = (name: string, defType: string) => {
   // warn if the short alias name or data type name is defined in builtin
   const { mockits, alias } = globalStore;
-  if (mockits.hasOwnProperty(name) || alias.hasOwnProperty(name)) {
+  if (hasOwn(mockits, name) || hasOwn(alias, name)) {
     // warn that the name in used in builtin
     // eslint-disable-next-line no-console
     console.warn(
@@ -1239,7 +1240,7 @@ export class Such {
       }
     };
     const { mockits, alias } = this.store;
-    if (!(mockits.hasOwnProperty(type) || alias.hasOwnProperty(type))) {
+    if (!(hasOwn(mockits, type) || hasOwn(alias, type))) {
       let klass: TMClass;
       const { namespace, hasNs } = this;
       if (hasNs) {
@@ -1409,7 +1410,7 @@ export class Such {
           `Use a wrong alias short name '${short}', the name should match the regexp '${dtNameRule.toString()}'`,
         );
       }
-      if (!mockits.hasOwnProperty(long)) {
+      if (!hasOwn(mockits, long)) {
         throw new Error(
           `You can't set an alias "${short}" for the data type of "${long}" which is not defined${
             this.hasNs
@@ -1459,7 +1460,7 @@ export class Such {
     Object.keys(lastConf).map((key: keyof TSuchSettings) => {
       const conf = lastConf[key];
       const fnName = (
-        fnHashs.hasOwnProperty(key) ? fnHashs[key] : key
+        hasOwn(fnHashs, key) ? fnHashs[key] : key
       ) as keyof Such;
       const fn = this[fnName] as TFunc;
       Object.keys(conf).map((name: keyof typeof conf) => {
@@ -1564,7 +1565,7 @@ export class Such {
               mockit,
               greedy: true,
             });
-            if (curParams.hasOwnProperty('errorIndex')) {
+            if (hasOwn(curParams, 'errorIndex')) {
               // parse error, return a wrapper data with 'errorIndex'
               // need parse to next symbol
               const errorIndex = curParams.errorIndex as unknown as number;
@@ -1708,7 +1709,7 @@ export class Such {
         );
       } else {
         const { alias, mockits } = store;
-        if (!(mockits.hasOwnProperty(type) || alias.hasOwnProperty(type))) {
+        if (!(hasOwn(mockits, type) || hasOwn(alias, type))) {
           throw new Error(
             `The export type "${type}" is not exist when you call the "setExportType", make sure you have defined the type.`,
           );
@@ -1727,7 +1728,7 @@ export class Such {
     if (this.namespace) {
       const store = getNsStore(this.namespace);
       const { vars } = store;
-      if (!vars.hasOwnProperty(name)) {
+      if (!hasOwn(vars, name)) {
         throw new Error(
           `The export variable "${name}" is not exist when you call the "setExportVar", make sure you have assigned the variable.`,
         );
@@ -1745,7 +1746,7 @@ export class Such {
     if (this.namespace) {
       const store = getNsStore(this.namespace);
       const { fns } = store;
-      if (!fns.hasOwnProperty(name)) {
+      if (!hasOwn(fns, name)) {
         throw new Error(
           `The export function "${name}" is not exist when you call the "setExportFn", make sure you have assigned the function.`,
         );

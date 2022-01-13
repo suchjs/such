@@ -110,7 +110,7 @@ const strToDate = (
   6. r6&r6e|format: +1 day,-1 week,1 week ago
   */
   // match the r1 format
-  const r1 = /^(\d{4})([-\/.])(\d{1,2})\2(\d{1,2})$/;
+  const r1 = /^(\d{4})([-/.])(\d{1,2})\2(\d{1,2})$/;
   dateStr = dateStr.toLowerCase();
   let matchs;
   if ((matchs = dateStr.match(r1))) {
@@ -223,11 +223,7 @@ const strToDate = (
       const method = capitalize(key);
       if (num) {
         const orig = lastDate[`get${method}` as TDateGetMethods]() as number;
-        try {
-          lastDate[`set${method}` as TDateSetMethods](orig + num);
-        } catch (e) {
-          throw e;
-        }
+        lastDate[`set${method}` as TDateSetMethods](orig + num);
       }
     }
     return lastDate;

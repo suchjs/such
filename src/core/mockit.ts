@@ -3,6 +3,7 @@ import { IPPConfig, IPPFunc, IPPFuncOptions } from '../types/parser';
 import {
   deepCopy,
   getExpValue,
+  hasOwn,
   isArray,
   isFn,
   isNoEmptyObject,
@@ -101,7 +102,7 @@ const getNsMockitsCache = (
 const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
   const PRE_PROCESS_STAND = '__pre_process_fn__';
   const isPreProcessFn = (fn: (...args: unknown[]) => unknown): boolean => {
-    return (fn as unknown as TObj).hasOwnProperty(PRE_PROCESS_STAND);
+    return hasOwn((fn as unknown as TObj), PRE_PROCESS_STAND);
   };
   const setPreProcessFn = <T = (...args: unknown[]) => unknown>(fn: T): T => {
     (fn as unknown as TObj)[PRE_PROCESS_STAND] = true;
@@ -129,7 +130,7 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
                     '__CONFIG__',
                     'return __CONFIG__.' + param.value,
                   )(nsVars);
-                } else if (!nsVars.hasOwnProperty(param.value)) {
+                } else if (!hasOwn(nsVars, param.value)) {
                   throw new Error(`"${param.value} is not assigned."`);
                 }
               }
@@ -146,11 +147,11 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
       const last: IPPConfig = {};
       const { nsVars } = getNsValues(...this.getCurrentNs());
       for (const key in $config) {
-        if ($config.hasOwnProperty(key)) {
+        if (hasOwn($config, key)) {
           const value = $config[key];
           if (value instanceof Variable) {
             const { name } = value;
-            if (!nsVars.hasOwnProperty(name)) {
+            if (!hasOwn(nsVars, name)) {
               throw new Error(
                 `The configuration of key "${key}" use a variable name "${name}" is not found in the assigned values, you need assign it first.`,
               );
@@ -180,7 +181,7 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
           });
           return flag;
         };
-        const hasKey = last.hasOwnProperty(key);
+        const hasKey = hasOwn(last, key);
         if (isObject(cur)) {
           def = isFn(cur.default) ? cur.default() : cur.default;
           type = cur.type;
@@ -476,7 +477,7 @@ export default abstract class Mockit<T = unknown> {
     if (target.includes(name)) {
       // if has ever added a handle that not PRE_PROCESS handle, ignore the PRE_PROCESS handle
       // otherwise, override the handle
-      if (PRE_PROCESS.hasOwnProperty(name)) {
+      if (hasOwn(PRE_PROCESS, name)) {
         if (isPreProcessFn(fn)) {
           return;
         }
@@ -563,7 +564,7 @@ export default abstract class Mockit<T = unknown> {
       // if the rule name has ever validated, ignore this rule
       if (
         isObject(params[name]) &&
-        params[name].hasOwnProperty(transformedKey)
+        hasOwn(params[name], transformedKey)
       ) {
         return;
       }
@@ -579,7 +580,7 @@ export default abstract class Mockit<T = unknown> {
     rules.map((name: string) => {
       try {
         // if a preprocess rule, execute it first
-        if (PRE_PROCESS.hasOwnProperty(name)) {
+        if (hasOwn(PRE_PROCESS, name)) {
           execute(
             name,
             PRE_PROCESS[name as keyof typeof PRE_PROCESS].bind(this),
@@ -645,7 +646,7 @@ export default abstract class Mockit<T = unknown> {
     const { modifiers, modifierFns } = mockitsCache[constrName];
     for (let i = 0, j = modifiers.length; i < j; i++) {
       const name = modifiers[i];
-      if (params.hasOwnProperty(name)) {
+      if (hasOwn(params, name)) {
         const fn = modifierFns[name];
         const args = [result, params[name], options];
         result = fn.apply(this, args);
@@ -670,7 +671,7 @@ export default abstract class Mockit<T = unknown> {
       for (let i = 0, j = queue.length; i < j; i++) {
         const name = queue[i];
         const fn = fns[i];
-        const isUserDefined = nsFns.hasOwnProperty(name);
+        const isUserDefined = hasOwn(nsFns, name);
         const args: unknown[] = (
           (isUserDefined ? [nsFns[name]] : []) as unknown[]
         ).concat([

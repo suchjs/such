@@ -1,6 +1,6 @@
 import { regexpRule } from 'reregexp';
 import { IParserFactory, IPPConfig } from '../types/parser';
-import { decodeTrans, getExp } from '../helpers/utils';
+import { decodeTrans, getExp, hasOwn } from '../helpers/utils';
 import { AParser } from '../core/parser';
 import { Variable } from '../data/config';
 
@@ -31,7 +31,7 @@ const parser: IParserFactory = {
         const param = params[i];
         if (rule.test(param)) {
           const { $1: key, $3: strValue, $4: plainValue } = RegExp;
-          if (config.hasOwnProperty(key)) {
+          if (hasOwn(config, key)) {
             throw new Error(
               `the config of "${key}" has exists,do not define repeatly.`,
             );

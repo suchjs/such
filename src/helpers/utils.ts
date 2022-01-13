@@ -5,6 +5,13 @@ import { Mocker } from '../core/such';
 import { TMParams } from '../types/mockit';
 
 /**
+ * hasOwn
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const hasOwn = (obj: TObj<any>, key: string): boolean =>
+  Object.prototype.hasOwnProperty.call(obj, key);
+
+/**
  *  setPrototypeOf: https://github.com/wesleytodd/setprototypeof
  *
  */
@@ -20,7 +27,7 @@ const setPrototypeOf = (() => {
   } else {
     return (clone: TObj, proto: TObj) => {
       for (const prop in proto) {
-        if (!clone.hasOwnProperty(prop)) {
+        if (!hasOwn(clone, prop)) {
           clone[prop] = proto[prop];
         }
       }
@@ -82,7 +89,7 @@ export const isNoEmptyObject = (target: unknown): boolean => {
  * @returns [string] escaped context string
  */
 export const encodeRegexpChars = (chars: string): string => {
-  return chars.replace(/([()\[{^$.*+?\/\-])/g, '\\$1');
+  return chars.replace(/([()[{^$.*+?/-])/g, '\\$1');
 };
 
 /**
@@ -278,8 +285,8 @@ export const shiftObj = <T = TObj>(
  */
 export const pickObj = <T = TObj>(obj: T, keys: Array<keyof T>): Partial<T> => {
   const res: Partial<T> = {};
-  keys.map((key) => {
-    if (obj.hasOwnProperty(key)) {
+  keys.map((key: keyof T) => {
+    if (hasOwn(obj, key as string)) {
       res[key] = obj[key];
     }
   });

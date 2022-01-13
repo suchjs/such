@@ -1,6 +1,6 @@
 import { IParserConfig } from '../types/parser';
 import { encodeSplitor, splitor as confSplitor } from '../data/config';
-import { encodeRegexpChars, isArray } from '../helpers/utils';
+import { encodeRegexpChars, hasOwn, isArray } from '../helpers/utils';
 import { TMatchResult, TObj, TStrList } from '../types/common';
 import Mockit from './mockit';
 export interface Tags {
@@ -186,7 +186,7 @@ export class Dispatcher {
       );
     }
     // the parser'name is repeated
-    if (this.parsers.hasOwnProperty(name)) {
+    if (hasOwn(this.parsers, name)) {
       return this.halt(`the parser of "${name}" has existed.`);
     }
     // no start tag,can't go on the parsing.

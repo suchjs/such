@@ -1,4 +1,4 @@
-import { isObject } from '../helpers/utils';
+import { hasOwn, isObject } from '../helpers/utils';
 import { TObj, TFunc, TStrList } from '../types/common';
 import {
   TMClass,
@@ -79,7 +79,7 @@ const nsStoreHashs: {
  * @returns Store|never
  */
 export const createNsStore = (namespace: string): Store | never => {
-  if (nsStoreHashs.hasOwnProperty(namespace)) {
+  if (hasOwn(nsStoreHashs, namespace)) {
     throw new Error(
       `The store namespace '${namespace}' has been in used when you called the method 'createNsStore'.`,
     );
@@ -94,7 +94,7 @@ export const createNsStore = (namespace: string): Store | never => {
  * @returns Store|undefined
  */
 export const getNsStore = (namespace: string): Store => {
-  if (nsStoreHashs.hasOwnProperty(namespace)) {
+  if (hasOwn(nsStoreHashs, namespace)) {
     return nsStores[nsStoreHashs[namespace]];
   }
 };
@@ -119,7 +119,7 @@ export const getNsMockit = (
   const handle = (store: Store): INsRealMockit => {
     const { alias, mockits } = store;
     let realType = type;
-    if (alias.hasOwnProperty(type)) {
+    if (hasOwn(alias, type)) {
       realType = alias[type];
     }
     return {

@@ -1,3 +1,4 @@
+import { hasOwn } from '../helpers/utils';
 import { Such } from '../core/such';
 import { TSuchInject } from '../types/instance';
 import { TSuchSettings } from '../types/node';
@@ -91,13 +92,13 @@ const confs: TSuchSettings = {
         if (!argb) {
           hexValue = makeRandom(
             min,
-            $config.hasOwnProperty('max') ? max : 0xffffff,
+            hasOwn($config, 'max') ? max : 0xffffff,
           );
         } else {
           len = 8;
           hexValue = makeRandom(
             0x00000000,
-            $config.hasOwnProperty('max') ? max : 0xffffffff,
+            hasOwn($config, 'max') ? max : 0xffffffff,
           );
         }
         if (!lowercase) {

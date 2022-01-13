@@ -38,8 +38,8 @@ export default class ToString extends Mockit<string> {
       const [first, second] = range as TStrList;
       const result: number[][] = [];
       const maxCodeNum = 0x10ffff;
-      const uniRangeRule = /^\\u([0-9a-fA-F]{1,6})\-\\u([0-9a-fA-F]{1,6})$/;
-      const numRangeRule = /^(\d+)\-(\d+)$/;
+      const uniRangeRule = /^\\u([0-9a-fA-F]{1,6})-\\u([0-9a-fA-F]{1,6})$/;
+      const numRangeRule = /^(\d+)-(\d+)$/;
       let isNormalRange = false;
       let index = 0;
       let isFirstUni = false;

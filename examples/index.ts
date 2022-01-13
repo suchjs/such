@@ -136,7 +136,7 @@ import Such, { createNsSuch } from '../src/index';
   // console.log(Such.as(':@his/hisString'));
   Such.define('tmpl1', '<`:string{5}`hahah>:::{2,4}');
   console.log(Such.as(':tmpl1:{5}'));
-  console.log(Such.as(':url'));
+  console.log(Such.as(':hello'));
   // Such.define('letter', ['a', 'b', 'c']);
   // const instance = Such.instance(':letter');
   // console.log(

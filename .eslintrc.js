@@ -8,10 +8,11 @@ module.exports = {
     jest: true,
     browser: true,
   },
+  plugins: ['@typescript-eslint'],
   extends: [
+    'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
-    'prettier/@typescript-eslint',
-    'plugin:prettier/recommended',
+    'prettier',
   ],
   rules: {
     '@typescript-eslint/no-unused-vars': [
@@ -19,6 +20,7 @@ module.exports = {
       { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
     ],
     'no-console': 'warn',
+    'comma-spacing': 'error'
   },
   overrides: [
     {
@@ -31,7 +33,6 @@ module.exports = {
       env: {
         node: true,
       },
-      extends: ['plugin:prettier/recommended'],
       rules: {
         '@typescript-eslint/no-var-requires': 'off',
       },
