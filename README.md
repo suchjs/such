@@ -12,19 +12,21 @@
 </div>
 
 
-A extendable and powerful library for generating fake data, both for nodejs & browser, mock data as you want easily, see the demos in the [official site](https://www.suchjs.com/?locale=en-US).
+An expandable and powerful library for generating fake data, both in nodejs & browser envirionment. You can use it to build a mock data server in nodejs, or just mocking data locally in the browser, normal built-in types can seen in [official site](https://www.suchjs.com/?locale=en-US), you can start it easily.
 
-## Document
+## Installation
 
-[中文文档](https://suchjs.github.io/vp-suchjs) &nbsp; [Document](https://suchjs.github.io/vp-suchjs/en)
+[How to install](https://suchjs.github.io/vp-suchjs/en/installation.html)
 
+## Online demos
 
+[Playground](https://suchjs.github.io/vp-suchjs/en/playground.html)
 ## Changelog
 
 [Changelog](./CHANGELOG.md)
-## Extendable & Powerful 
+## Expandable & Powerful 
 
-Suchjs has powerful APIs for you to design your own data, you can use a template literal mixed normal string and all supported data types to generate a DIY string just like an article. A built-in recommend extend types can be seen in [such:recommend](./src/extends/recommend.ts)
+Suchjs has powerful APIs for you to [design your own data](https://suchjs.github.io/vp-suchjs/en/api.html#such-define), you can use a template literal mixed normal string and all supported data types to generate a DIY string just like an article. A built-in recommend extend types can be seen in [such:recommend](./src/extends/recommend.ts)
 ## Questions & Bugs?
 
 Welcome to report to us with [issue](https://github.com/suchjs/such/issues) if you meet any question or bug. 

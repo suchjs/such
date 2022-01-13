@@ -137,7 +137,7 @@ import Such, { createNsSuch } from '../src/index';
   Such.define('tmpl1', '<`:string{5}`hahah>:::{2,4}');
   console.log(Such.as(':tmpl1:{5}'));
   console.log(Such.as(':url'));
-  console.log(Such.as(':ip'));
+  console.log(Such.as(':ip#[min="0.0.2.1"]'));
   // Such.define('letter', ['a', 'b', 'c']);
   // const instance = Such.instance(':letter');
   // console.log(

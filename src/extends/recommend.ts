@@ -2,6 +2,8 @@ import { hasOwn, makeRandom } from '../helpers/utils';
 import SuchMocker, { Such } from '../core/such';
 import { TSuchInject } from '../types/instance';
 import { TSuchSettings } from '../types/node';
+
+type StoreGenerateFn = () => string;
 /**
  * enum protocols/tlds
  * escape for domain
@@ -36,6 +38,7 @@ const domainRule = `(?<domainLabel>[a-z0-9]+(?:-?[a-z0-9]+|[a-z0-9]*))\\.(?<tld>
   '|',
 )})`;
 const fullDomainRule = `(?<domain>${domainRule})`;
+const STORE_KEY = 'generate';
 /**
  * ip string to number array
  */
@@ -56,7 +59,7 @@ const ip4str2num = (ip: string, errorTips: string): number[] | never => {
     });
     if (flag) return ret;
   }
-  throw new Error(`${errorTips}${ip}`);
+  throw new Error(`${errorTips}"${ip}"`);
 };
 /**
  * compare two ip
@@ -72,8 +75,8 @@ const compareIp = <T extends string>(
   } else {
     if (!max) return min.split('.').map(Number);
   }
-  const errorTips = `wrong ${isMax ? 'max' : 'min'} ip ${
-    type ? ' of class ' + type + ' ' : ''
+  const errorTips = `wrong config ${isMax ? 'max' : 'min'} ip${
+    type ? ' of class ' + type : ''
   }:`;
   const minSegs = ip4str2num(min, errorTips);
   const maxSegs = ip4str2num(max, errorTips);
@@ -122,8 +125,8 @@ const confs: TSuchSettings = {
     uppercase: ['string', '[65,90]'],
     lowercase: ['string', '[97,122]'],
     alpha: ['string', '[65-90,97-122]'],
-    numberic: ['string', '[48-57]'],
-    alphaNumberic: ['string', '[48-57,97-122,65-90]'],
+    numeric: ['string', '[48-57]'],
+    alphaNumeric: ['string', '[48-57,97-122,65-90]'],
     alphaNumericDash: ['string', '[48-57,97-122,65-90,95]'],
     /**
      * url
@@ -160,10 +163,10 @@ const confs: TSuchSettings = {
       generate(options: TSuchInject, such: Such): string {
         const { $config } = this.params;
         const { v6 } = $config;
-        const key = 'instance';
         const { mocker } = options;
-        let instance = mocker.store(key) as SuchMocker;
-        if (!(instance instanceof Such)) {
+        let gen = mocker.store(STORE_KEY) as StoreGenerateFn;
+        if (!(typeof gen === 'function')) {
+          let instance: SuchMocker;
           if (v6) {
             instance = such.instance(`:ipv6#[compress=${$config.compress}]`);
           } else {
@@ -181,8 +184,10 @@ const confs: TSuchSettings = {
             const config = configs.length ? `#[${configs.join(',')}]` : '';
             instance = such.instance(`:ipv4${config}`);
           }
+          gen = () => instance.a() as string;
+          mocker.store(STORE_KEY, gen);
         }
-        return instance.a() as string;
+        return gen();
       },
     },
     ipv6: {
@@ -194,8 +199,7 @@ const confs: TSuchSettings = {
       },
       generate(options: TSuchInject, such: Such): string {
         const { mocker } = options;
-        const key = 'generate';
-        let gen = mocker.store(key) as () => string;
+        let gen = mocker.store(STORE_KEY) as () => string;
         if (!(typeof gen === 'function')) {
           const { $config } = this.params;
           const { compress } = $config;
@@ -255,7 +259,7 @@ const confs: TSuchSettings = {
               return ret.join(':');
             };
           }
-          mocker.store(key, gen);
+          mocker.store(STORE_KEY, gen);
         }
         return gen();
       },
@@ -274,8 +278,7 @@ const confs: TSuchSettings = {
       },
       generate(options: TSuchInject): string {
         const { mocker } = options;
-        const key = 'generate';
-        let gen = mocker.store(key) as () => number[];
+        let gen = mocker.store(STORE_KEY) as StoreGenerateFn;
         if (typeof gen !== 'function') {
           const { $config } = this.params;
           const { type } = $config;
@@ -325,10 +328,10 @@ const confs: TSuchSettings = {
               minSegs = compareIp('0.0.0.0', min);
               maxSegs = compareIp(max, '255.255.255.255', { isMax: true });
           }
-          gen = (): number[] => genRandomIp(minSegs, maxSegs);
-          mocker.store(key, gen);
+          gen = (): string => genRandomIp(minSegs, maxSegs).join('.');
+          mocker.store(STORE_KEY, gen);
         }
-        return gen().join('.');
+        return gen();
       },
     },
     /**

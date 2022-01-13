@@ -2,7 +2,23 @@
 
 Suchjs add changelog since `v1.0.0`.
 
-## [v2.0.1] - 2021-10-11
+## [v2.1.0] - 2022-01-13
+
+### Added
+
+- Add more recommend url types: `domain`、`tld`、`protocol`、`ipv4`、`ipv6`、`ip`
+
+- Add more recommend character types: `alpha`、`numeric`、`alphaNumeric`
+
+- Now `types` in config file support `enum` and `template` types.
+### Fixed
+
+- Fixed `config` parser `#[]` doesn't support keys with number characters, and fix the key-value like `#[a=""]` got a empty string value instead of a wrong boolean value.  
+
+- Fixed the `typo` named capture group name `ltd` -> `tld` in `url` and `email` type, this is a breakchange.
+
+- Upgrade the eslint packages in project. 
+## [v2.0.2] - 2021-10-11
 
 ### NPM
 
