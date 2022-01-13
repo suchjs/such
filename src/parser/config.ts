@@ -30,13 +30,13 @@ const parser: IParserFactory = {
       for (let i = 0, j = params.length; i < j; i++) {
         const param = params[i];
         if (rule.test(param)) {
-          const { $1: key, $3: strValue, $4: plainValue } = RegExp;
+          const { $1: key, $2: quote, $3: strValue, $4: plainValue } = RegExp;
           if (hasOwn(config, key)) {
             throw new Error(
               `the config of "${key}" has exists,do not define repeatly.`,
             );
           }
-          if (strValue) {
+          if (quote) {
             config[key] = decodeTrans(strValue);
           } else if (plainValue) {
             const value = plainValue;
