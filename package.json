@@ -1,6 +1,6 @@
 {
   "name": "suchjs",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "A fake data generator library, extendable and configable, mock data as you want easily.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -36,6 +36,7 @@
     "eslint": "^7.12.1",
     "eslint-config-prettier": "^8.3.0",
     "filemanager-webpack-plugin": "^6.1.4",
+    "git-cz": "^4.8.0",
     "husky": "^7.0.0",
     "jest": "^27.4.7",
     "madge": "^5.0.1",
@@ -74,6 +75,11 @@
   "husky": {
     "hooks": {
       "prepare-commit-msg": "exec < /dev/tty && git cz --hook || true"
+    }
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/git-cz"
     }
   }
 }
