@@ -13,9 +13,11 @@ Suchjs add changelog since `v1.0.0`.
 - Now `types` in config file support `enum` and `template` types.
 ### Fixed
 
-- Fixed `config` parser `#[]` doesn't support keys with number characters, and fix the key-value like `#[a=""]` got a empty string value instead of a wrong boolean value.  
+- Fix `config` parser `#[]` doesn't support keys with number characters, and fix the key-value like `#[a=""]` got a empty string value instead of a wrong boolean value.  
 
-- Fixed the `typo` named capture group name `ltd` -> `tld` in `url` and `email` type, this is a breakchange.
+- Fix the `typo` named capture group name `ltd` -> `tld` in `url` and `email` type, this is a breakchange.
+
+- Fix the `regexp` type's `namedGroupConf` doesn't make sence because the upgrade changes of the dependecy package `reregexp`.
 
 - Upgrade the eslint packages in project. 
 ## [v2.0.2] - 2021-10-11

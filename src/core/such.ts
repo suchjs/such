@@ -49,7 +49,7 @@ const {
   deepCopy,
   path2str,
   capitalize,
-  hasOwn
+  hasOwn,
 } = utils;
 /**
  *
@@ -1459,9 +1459,7 @@ export class Such {
     });
     Object.keys(lastConf).map((key: keyof TSuchSettings) => {
       const conf = lastConf[key];
-      const fnName = (
-        hasOwn(fnHashs, key) ? fnHashs[key] : key
-      ) as keyof Such;
+      const fnName = (hasOwn(fnHashs, key) ? fnHashs[key] : key) as keyof Such;
       const fn = this[fnName] as TFunc;
       Object.keys(conf).map((name: keyof typeof conf) => {
         const value = conf[name];

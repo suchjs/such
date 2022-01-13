@@ -200,7 +200,7 @@ describe('test built-in types', () => {
       const value = formatDate.a() as string;
       expect(typeof value === 'string').toBeTruthy();
       expect(
-        /^\d{4}\-\d{2}\-\d{2} [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$/.test(value),
+        /^\d{4}-\d{2}-\d{2} [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$/.test(value),
       ).toBeTruthy();
     }
     // wrong date
@@ -402,7 +402,7 @@ describe('test built-in types', () => {
     for (let i = 0; i < 100; i++) {
       const value = cascaderData.a() as typeof cascader;
       const country = value.country as keyof typeof COUNTRIES;
-      expect(COUNTRIES.hasOwnProperty(country)).toBeTruthy();
+      expect(Object.hasOwnProperty.call(COUNTRIES, country)).toBeTruthy();
       expect(COUNTRIES[country].includes(value.city)).toBeTruthy();
     }
   });
@@ -546,10 +546,71 @@ describe('test built-in recommend types', () => {
   });
   // boolean
   test(':boolean', () => {
-    const integer = Such.instance(':boolean');
+    const boolean = Such.instance(':boolean');
     for (let i = 0; i < 100; i++) {
-      const value = integer.a() as boolean;
+      const value = boolean.a() as boolean;
       expect(typeof value === 'boolean').toBeTruthy();
+    }
+  });
+  // protocol
+  test(':protocol', () => {
+    const protocol = Such.instance(':protocol');
+    const ps = ['http', 'https', 'ftp'];
+    let finded = false;
+    for (let i = 0; i < 100; i++) {
+      const value = protocol.a() as string;
+      if(ps.includes(value)){
+        finded = true;
+        break;
+      }
+    }
+    expect(finded).toBeTruthy();
+  });
+  // tld
+  test(':tld', () => {
+    const tld = Such.instance(':tld');
+    const ps = ['com', 'net', 'org'];
+    let finded = false;
+    for (let i = 0; i < 100; i++) {
+      const value = tld.a() as string;
+      if(ps.includes(value)){
+        finded = true;
+        break;
+      }
+    }
+    expect(finded).toBeTruthy();
+  });
+  // domain
+  test(':domain', () => {
+    const label = 'example';
+    const domain = Such.instance(`:domain#[domainLabel="${label}"]`);
+    const ps = ['com', 'net', 'org'];
+    let finded = false;
+    for (let i = 0; i < 100; i++) {
+      const value = domain.a() as string;
+      const suffix = value.slice(label.length);
+      expect(value.startsWith(label)).toBeTruthy();
+      expect(suffix.charAt(0) === '.').toBeTruthy();
+      if(ps.includes(suffix.slice(1))){
+        finded = true;
+        break;
+      }
+    }
+    expect(finded).toBeTruthy();
+  });
+  // ip
+  test(':ip', () => {
+    const ipv4 = Such.instance(`:ip#[min="1.1.1.1",max="1.1.1.5"]`);
+    const maybeIps = ['1.1.1.1', '1.1.1.2', '1.1.1.3', '1.1.1.4', '1.1.1.5'];
+    const ipv6 = Such.instance(`:ip#[v6]`);
+    for (let i = 0; i < 100; i++) {
+      const ip4 = ipv4.a() as string;
+      expect(maybeIps.includes(ip4)).toBeTruthy();
+      const ip6 = ipv6.a() as string;
+      const segs = ip6.split(':');
+      segs.map((seg) => {
+        expect(/^[0-9a-f]{0,4}$/.test(seg)).toBeTruthy();
+      })
     }
   });
   // uppsercase
@@ -569,6 +630,26 @@ describe('test built-in recommend types', () => {
       const value = lowercase.a() as string;
       expect(
         typeof value === 'string' && /^[a-z]{3}$/.test(value),
+      ).toBeTruthy();
+    }
+  });
+  // alpha
+  test(':alpha', () => {
+    const alpha = Such.instance(':alpha:{3}');
+    for (let i = 0; i < 100; i++) {
+      const value = alpha.a() as string;
+      expect(
+        typeof value === 'string' && /^[a-zA-Z]{3}$/.test(value),
+      ).toBeTruthy();
+    }
+  });
+  // alphaNumeric
+  test(':alphaNumeric', () => {
+    const alphaNumeric = Such.instance(':alphaNumeric:{3}');
+    for (let i = 0; i < 100; i++) {
+      const value = alphaNumeric.a() as string;
+      expect(
+        typeof value === 'string' && /^[a-zA-Z0-9]{3}$/.test(value),
       ).toBeTruthy();
     }
   });

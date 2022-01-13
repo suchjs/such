@@ -134,10 +134,10 @@ import Such, { createNsSuch } from '../src/index';
   // console.log(mySuch.as(':string:{3}'));
   // console.log(mySuch.as(':@his/hisNumber'));
   // console.log(Such.as(':@his/hisString'));
-  Such.define('tmpl1', '<`:string{5}`hahah>:::{2,4}');
-  console.log(Such.as(':tmpl1:{5}'));
-  console.log(Such.as(':url'));
-  console.log(Such.as(':ip#[min="0.0.2.1"]'));
+  // Such.define('tmpl1', '<`:string{5}`hahah>:::{2,4}');
+  // console.log(Such.as(':tmpl1:{5}'));
+  // console.log(Such.as(':url'));
+  console.log(Such.as(':domain#[tld="com"]'));
   // Such.define('letter', ['a', 'b', 'c']);
   // const instance = Such.instance(':letter');
   // console.log(
