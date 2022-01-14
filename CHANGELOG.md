@@ -2,7 +2,13 @@
 
 Suchjs add changelog since `v1.0.0`.
 
-## [v2.1.0] - 2022-01-13
+## [v2.1.1] - 2022-01-14
+
+### Fixed
+
+- Fix the ts file import path error. 
+
+## [v2.1.0] - 2022-01-13 [deprecated]
 
 ### Added
 
