@@ -2,6 +2,15 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v2.1.2] - 2022-01-19
+
+### Added
+
+- Add generic type for `.instance()` and `.as()` methods, so if you build an instance like this `.instance<string>()`, `const result = instance.a()` then result is a `string` type, the same for the `as` method, e.g. `as<string>()`. 
+
+### Changed
+
+- In nodejs environment, if you used a `.json` file as the mock template, please use `asc` method instead of `as` method, so keep the `as` method no need to make a special logic to treat that. `asc` as from file code, also means `async`.
 ## [v2.1.1] - 2022-01-14
 
 ### Fixed

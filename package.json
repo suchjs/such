@@ -1,7 +1,7 @@
 {
   "name": "suchjs",
-  "version": "2.1.1",
-  "description": "A fake data generator library, extendable and configable, mock data as you want easily.",
+  "version": "2.1.2",
+  "description": "Generating fake data, expandable and configurable, mock random data as you want easily.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "author": "jxz_211@163.com",

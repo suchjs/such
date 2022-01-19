@@ -32,11 +32,11 @@ import Such, { createNsSuch } from '../src/index';
   //   });
   //   console.log(value);
   // }
-  // const instance = Such.instance(':increment{3}');
-  // for (let i = 0; i < 5; i++) {
-  //   const result = instance.a();
-  //   console.log(result);
-  // }
+  const instance = Such.instance<number>(':increment{3}');
+  for (let i = 0; i < 5; i++) {
+    const result = instance.a();
+    console.log(result);
+  }
   // dict
   // const dict = Such.instance(':dict:&<dataDir>/dict.txt');
   // console.log(dict.a());

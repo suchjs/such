@@ -40,17 +40,16 @@ export { loadExtend };
  */
 export class NSuch extends Such {
   public loadExtend = loadExtend;
-  public as(target: unknown, options?: IAsOptions): unknown {
+  public async asc<T = unknown>(target: unknown, options?: IAsOptions): Promise<T>{
     const { config } = this.store;
     if (typeof target === 'string' && path.extname(target) === '.json') {
       const lastPath = path.resolve(config.suchDir || config.rootDir, target);
       if (fs.existsSync(lastPath)) {
-        return loadTemplate(lastPath).then((content) => {
-          return super.as(content, options);
-        });
+        const content = await loadTemplate(lastPath);
+        return super.as(content, options);
       }
     }
-    return super.as(target, options);
+    throw new Error(`make sure the target is a json file and exists in suchjs config's root directory or such directory`);
   }
   public loadData(): Promise<unknown> {
     return Promise.resolve();

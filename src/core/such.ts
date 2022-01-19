@@ -612,7 +612,7 @@ export class Mocker {
    * @returns
    * @memberof Mocker
    */
-  public mock(dpath: TFieldPath): unknown {
+  public mock<T = unknown>(dpath: TFieldPath): T {
     if (this.isRoot) {
       const { optional } = this.config;
       if (optional) {
@@ -623,7 +623,7 @@ export class Mocker {
         }
       }
     }
-    return (this.result = this.mockFn(dpath));
+    return (this.result = this.mockFn(dpath)) as T;
   }
   /**
    *
@@ -757,7 +757,7 @@ export class Template {
    *
    * @returns
    */
-  public a(
+  public a<T = string>(
     options: TSuchInject = {
       datas: null,
       dpath: [],
@@ -765,11 +765,11 @@ export class Template {
       config: null,
       template: this,
     },
-  ): unknown {
+  ): T {
     if (!this.mockit) {
       throw new Error(`the template's mockit object is not initialized yet!`);
     }
-    return this.mockit.make(options, this.such);
+    return this.mockit.make(options, this.such) as T;
   }
   /**
    * @return string
@@ -849,7 +849,7 @@ export class Template {
  * @export
  * @class Such
  */
-export default class SuchMocker {
+export default class SuchMocker<T = unknown> {
   /**
    * instance properties
    */
@@ -892,7 +892,7 @@ export default class SuchMocker {
    * @returns
    * @memberof Such
    */
-  public a(instanceOptions?: IAInstanceOptions): unknown {
+  public a(instanceOptions?: IAInstanceOptions): T {
     if (!this.initail) {
       // set initial true
       this.initail = true;
@@ -1365,7 +1365,7 @@ export class Such {
               initProcess.call(this);
             }
             // call generate
-            public generate(options: TSuchInject, such: Such) {
+            public generate(options: TSuchInject, such: Such): unknown {
               return generate.call(this, options, such);
             }
             // test
@@ -1676,8 +1676,8 @@ export class Such {
    * @param {*} target
    * @memberof Such
    */
-  public as(target: unknown, options?: IAsOptions): unknown {
-    return this.instance(target, options).a();
+  public as<T = unknown>(target: unknown, options?: IAsOptions): T {
+    return this.instance<T>(target, options).a();
   }
   /**
    *
@@ -1688,8 +1688,11 @@ export class Such {
    * @returns {Such}
    * @memberof Such
    */
-  public instance(target: unknown, options?: IAsOptions): SuchMocker {
-    return new SuchMocker(target, this, this.namespace, options);
+  public instance<T = unknown>(
+    target: unknown,
+    options?: IAsOptions,
+  ): SuchMocker<T> {
+    return new SuchMocker<T>(target, this, this.namespace, options);
   }
   /**
    *
