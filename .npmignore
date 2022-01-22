@@ -5,6 +5,7 @@
 /dist/
 /coverage
 /examples
+/source
 
 # npm
 node_modules/
