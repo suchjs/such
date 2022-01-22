@@ -8,6 +8,7 @@ module.exports = {
     jest: true,
     browser: true,
   },
+  ignorePatterns: ['./src/exports/index.ts'],
   plugins: ['@typescript-eslint'],
   extends: [
     'eslint:recommended',

@@ -2,7 +2,7 @@ import { TFunc, TObj, TStrList } from './common';
 import { TPath } from './common';
 import { TMFactoryOptions } from './mockit';
 import { IParserFactory } from './parser';
-import { loadExtend } from '../index';
+import { LoadExtendFunc } from '../node';
 export interface TSSConfig {
   rootDir?: TPath;
   suchDir?: TPath;
@@ -36,7 +36,7 @@ export type TSuchSettings = {
 
 export type TNodeSuch = {
   loadConf: (configFile: TPath) => void;
-  loadExtend: typeof loadExtend;
+  loadExtend: LoadExtendFunc;
   loadData: () => Promise<unknown>;
   reloadData: () => Promise<unknown>;
   clearCache: () => Promise<unknown>;

@@ -2,6 +2,12 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v2.1.3] - 2022-01-22
+
+### Added
+
+- Add support for nodejs `esm` module. 
+
 ## [v2.1.2] - 2022-01-19
 
 ### Added
