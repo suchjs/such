@@ -2,6 +2,11 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v2.1.4] - 2022-01-22
+
+### Added
+
+- Add support for nodejs load config file in `type: "module"` package. 
 ## [v2.1.3] - 2022-01-22
 
 ### Added

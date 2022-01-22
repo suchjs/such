@@ -129,12 +129,17 @@ const tryConfigFile = (...files: string[]) => {
     return filepath;
   }
 };
-const filename = 'such.config.js';
+
 const rootDir = path.resolve(__dirname, '../..');
-const lastConfFile = tryConfigFile(
-  path.join(rootDir, filename),
-  path.join(process.cwd(), filename),
-);
+const searchConfFilePaths = (() => {
+  const filename = 'such.config';
+  const cwd = process.cwd();
+  const cjsFile = `${filename}.cjs`;
+  const jsFile = `${filename}.js`;
+  const gen = (base: TPath, file: TPath) => path.join(base, file);
+  return [gen(rootDir, cjsFile), gen(cwd, cjsFile), gen(rootDir, jsFile), gen(cwd, jsFile)];
+})();
+const lastConfFile = tryConfigFile(...searchConfFilePaths);
 // add all builtin mockits first
 addMockitList(builtinMockits);
 // create the root such
