@@ -2,6 +2,15 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v2.1.6] - 2022-02-09
+
+### Fixed
+
+- Fix the extend `:numeric` type's wrong `$size` config. 
+
+### Changed
+
+- Now `:cascader` type in browser, the top level field just need the `data` config, the `root` config is not required anymore. 
 ## [v2.1.5] - 2022-01-22
 
 ### Added

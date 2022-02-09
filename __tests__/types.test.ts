@@ -388,14 +388,11 @@ describe('test built-in types', () => {
       return Such.as(':cascader');
     }).toThrow();
     expect(() => {
-      return Such.as(':cascader:#[data=countries]');
-    }).toThrow();
-    expect(() => {
       return Such.as(':cascader:#[root=true]');
     }).toThrow();
     // a cascader
     const cascader = {
-      country: ':cascader:#[root=true,data=countries]',
+      country: ':cascader:#[data=countries]',
       city: ':cascader:&./country',
     };
     const cascaderData = Such.instance(cascader);
@@ -640,6 +637,16 @@ describe('test built-in recommend types', () => {
       const value = alpha.a() as string;
       expect(
         typeof value === 'string' && /^[a-zA-Z]{3}$/.test(value),
+      ).toBeTruthy();
+    }
+  });
+  // numeric
+  test(':numeric', () => {
+    const numeric = Such.instance(':numeric:{3}');
+    for (let i = 0; i < 100; i++) {
+      const value = numeric.a() as string;
+      expect(
+        typeof value === 'string' && /^[0-9]{3}$/.test(value),
       ).toBeTruthy();
     }
   });

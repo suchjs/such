@@ -23,12 +23,12 @@ export default class ToDict extends Mockit<TMultiStr> {
   public init(): void {
     // in browser, get data from config
     this.addRule('$config', function ($config: IPPConfig) {
-      if (!$config || !$config['data']) {
+      if (!$config || !$config.data) {
         throw new Error(
           "the data type 'dict' must supply a 'data' field of 'data attribute' configuration, no configuration was set",
         );
       }
-      if (!isArray($config['data'])) {
+      if (!isArray($config.data)) {
         throw new Error(
           "the data type 'dict' has a none array 'data' field in configuration 'data attribute'",
         );

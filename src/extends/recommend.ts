@@ -125,7 +125,7 @@ const confs: TSuchSettings = {
     uppercase: ['string', '[65,90]'],
     lowercase: ['string', '[97,122]'],
     alpha: ['string', '[65-90,97-122]'],
-    numeric: ['string', '[48-57]'],
+    numeric: ['string', '[48,57]'],
     alphaNumeric: ['string', '[48-57,97-122,65-90]'],
     alphaNumericDash: ['string', '[48-57,97-122,65-90,95]'],
     /**

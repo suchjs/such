@@ -490,7 +490,11 @@ export const makeCascaderData = (
   // the nested max level < 10
   let loop = 1;
   // loop to get the root mocker
-  while (!$config.root && loop++ < 10) {
+  while (loop++ < 10) {
+    // once meet the root or data
+    if ($config.root || $config.data) {
+      break;
+    }
     const refMocker = getRefMocker(lastPath, mocker);
     if (!refMocker) {
       // eslint-disable-next-line no-console

@@ -6,10 +6,6 @@ import { TStrList } from '../../types/common';
 import { TMAttrs, TMParams } from '../../types/mockit';
 
 const configOptions = {
-  root: {
-    type: Boolean,
-    default: false,
-  },
   handle: {
     type: Function,
   },
@@ -28,16 +24,11 @@ export default class ToCascader extends Mockit<unknown> {
   // validate all params
   public static validator = (params: TMParams): void | never => {
     const { $config, $path } = params;
-    if ($config.root) {
+    if ($config.data) {
       // in browser
       if ($path) {
         throw new Error(
           `the data type 'cascader' doesn't need a path when it's a root node`,
-        );
-      }
-      if (!$config.data) {
-        throw new Error(
-          `the data type 'cascader' must set a 'data' configuration in a root node`,
         );
       }
     } else {

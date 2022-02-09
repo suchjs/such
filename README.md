@@ -12,7 +12,7 @@
 </div>
 
 
-An expandable and powerful library for generating fake data, both in nodejs & browser envirionment. You can use it to build a mock data server in nodejs, or just mocking data locally in the browser, normal built-in types can seen in [official site](https://www.suchjs.com/?locale=en-US), you can start it easily.
+An expandable and powerful library for generating fake data, both in nodejs & browser envirionment. You can use it to build a mock data server in nodejs, or just mocking data locally in the browser, normal built-in types can seen in [official site](https://www.suchjs.com/?locale=en-US), more extended types can seen in the [document](https://suchjs.github.io/vp-suchjs/en/extTypes.html), you can start it easily.
 
 ## Installation
 
