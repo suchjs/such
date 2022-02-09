@@ -1,6 +1,6 @@
 {
   "name": "suchjs",
-  "version": "2.1.6",
+  "version": "2.1.7",
   "description": "Generating fake data, define your own types easily, expandable and powerful.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -62,7 +62,6 @@
     "build:web": "BROWSER=true webpack --progress --mode=\"production\"",
     "coverage": "jest --coverage && coveralls < coverage/lcov.info",
     "prepublish": "npm run build",
-    "postpublish": "npm run clear",
     "prepare": "husky install"
   },
   "dependencies": {
