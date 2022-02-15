@@ -732,4 +732,12 @@ describe('test built-in recommend types', () => {
       expect(flag).toBeTruthy();
     }
   });
+  // test multiple called
+  test("multiple called", () => {
+    for(let i = 0; i < 5; i++){
+      expect(Object.keys(Such.as<{ip:string}>({
+        ip: ":ip"
+      })).includes('ip')).toBeTruthy();
+    }
+  }); 
 });

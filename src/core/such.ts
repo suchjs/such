@@ -1344,6 +1344,12 @@ export class Such {
                   },
                 });
               }
+              // the init method will only call once
+              // but the generate function is cached will call by other instance
+              // so here need a judgement, fix #14
+              if(!this.instance){
+                this.init();
+              }
               return this.instance.a();
             }
             // test

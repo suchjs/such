@@ -2,6 +2,13 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+
+## [v2.1.8] - 2022-02-15
+
+### Fixed
+
+- Fix the `Such.as` call the extended types multiple times may lost the `instance` property because the `instance` was created in `init` method, but the `init` method only call once. 
+
 ## [v2.1.7] - 2022-02-09
 
 ### Fixed

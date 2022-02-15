@@ -32,11 +32,55 @@ import Such, { createNsSuch } from '../src/index';
   //   });
   //   console.log(value);
   // }
-  const instance = Such.instance<number>(':increment{3}');
-  for (let i = 0; i < 5; i++) {
-    const result = instance.a();
-    console.log(result);
-  }
+  // const instance = Such.instance<number>(':increment{3}');
+  // for (let i = 0; i < 5; i++) {
+  //   const result = instance.a();
+  //   console.log(result);
+  // }
+  console.log(Such.as({ 
+    bool: ":bool", 
+    int: ":int", 
+    percent: ":percent", 
+    uppercase: ":uppercase:{2,4}", 
+    lowercase: ":lowercase:{2,4}", 
+    alpha: ":alpha:{3,6}", 
+    alphaNumeric: ":alphaNumeric:{3,6}", 
+    alphaNumericDash: ":alphaNumericDash:{3,6}", 
+    tld: ":tld", 
+    domain: ":domain", 
+    protocol: ":protocol", 
+    url: ":url", 
+    email: ":email:#[domain='163.com']", 
+    ipv4: ":ipv4", 
+    ipv6: ":ipv6", 
+    color$hex: ":color$hex", 
+    color$rgb: ":color$rgb", 
+    color$rgba: ":color$rgba", 
+    color$hsl: ":color$hsl", 
+    color$hsla: ":color$hsla", 
+  }));
+  console.log(Such.as({ 
+    bool: ":bool", 
+    int: ":int", 
+    percent: ":percent", 
+    uppercase: ":uppercase:{2,4}", 
+    lowercase: ":lowercase:{2,4}", 
+    alpha: ":alpha:{3,6}", 
+    alphaNumeric: ":alphaNumeric:{3,6}", 
+    alphaNumericDash: ":alphaNumericDash:{3,6}", 
+    tld: ":tld", 
+    domain: ":domain", 
+    protocol: ":protocol", 
+    url: ":url", 
+    email: ":email:#[domain='163.com']", 
+    ipv4: ":ipv4", 
+    ipv6: ":ipv6", 
+    color$hex: ":color$hex", 
+    color$rgb: ":color$rgb", 
+    color$rgba: ":color$rgba", 
+    color$hsl: ":color$hsl", 
+    color$hsla: ":color$hsla", 
+  }));
   // dict
   // const dict = Such.instance(':dict:&<dataDir>/dict.txt');
   // console.log(dict.a());
