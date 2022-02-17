@@ -7,6 +7,10 @@ describe('validate built-in types in nodejs', () => {
     expect(() => {
       return Such.as(':dict');
     }).toThrow();
+    // wrong dict without config
+    expect(() => {
+      return Such.as(':dict:&<dataDir>/dict.txt');
+    }).toThrow();
   });
   // cascader
   test(':cascader', () => {

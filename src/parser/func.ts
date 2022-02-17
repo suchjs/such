@@ -68,55 +68,51 @@ const parser: IParserFactory = {
     ),
   },
   parse(this: AParser): IPPFunc | never {
-    const { patterns, code } = this.info();
+    const { patterns } = this.info();
     const result: IPPFunc = {
       queue: [],
       fns: [],
       params: [],
       options: [],
     };
-    if (!patterns.length) {
-      this.halt(`no modify functions find in "${code}"`);
-    } else {
-      const rule =
-        /(['"])((?:(?!\1)[^\\]|\\.)*)\1|([+-]?[\w$]+(?:\.[\w$]+|\[(?:(['"])(?:(?!\4)[^\\]|\\.)*\4|\d+)\])*)/g;
-      const nativeValues = ['true', 'false', 'undefined', 'null', 'NaN'];
-      (patterns as TMatchResult[]).forEach((match) => {
-        const [, name, args] = match;
-        const params: IPPFuncParam[] = [];
-        if (args) {
-          let segs: TMatchResult | null = null;
-          while ((segs = rule.exec(args)) !== null) {
-            const plainValue = segs[3];
-            const cur: IPPFuncParam = {};
-            if (plainValue) {
-              if (
-                nativeValues.indexOf(plainValue) > -1 ||
-                !isNaN(Number(plainValue))
-              ) {
-                cur.value = getExp(plainValue);
-              } else {
-                cur.value = plainValue;
-                cur.variable = true;
-              }
+    const rule =
+      /(['"])((?:(?!\1)[^\\]|\\.)*)\1|([+-]?[\w$]+(?:\.[\w$]+|\[(?:(['"])(?:(?!\4)[^\\]|\\.)*\4|\d+)\])*)/g;
+    const nativeValues = ['true', 'false', 'undefined', 'null', 'NaN'];
+    (patterns as TMatchResult[]).forEach((match) => {
+      const [, name, args] = match;
+      const params: IPPFuncParam[] = [];
+      if (args) {
+        let segs: TMatchResult | null = null;
+        while ((segs = rule.exec(args)) !== null) {
+          const plainValue = segs[3];
+          const cur: IPPFuncParam = {};
+          if (plainValue) {
+            if (
+              nativeValues.indexOf(plainValue) > -1 ||
+              !isNaN(Number(plainValue))
+            ) {
+              cur.value = getExp(plainValue);
             } else {
-              cur.value = segs[2];
+              cur.value = plainValue;
+              cur.variable = true;
             }
-            params.push(cur);
+          } else {
+            cur.value = segs[2];
           }
+          params.push(cur);
         }
-        result.queue.push(name);
-        const options = {
-          name,
-          params,
-        };
-        result.options.push(options);
-        const { fn, param } = parseFuncParams(options);
-        result.fns.push(fn);
-        result.params.push(param);
-      });
-      return result;
-    }
+      }
+      result.queue.push(name);
+      const options = {
+        name,
+        params,
+      };
+      result.options.push(options);
+      const { fn, param } = parseFuncParams(options);
+      result.fns.push(fn);
+      result.params.push(param);
+    });
+    return result;
   },
 };
 export default parser;

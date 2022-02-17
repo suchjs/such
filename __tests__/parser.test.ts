@@ -37,6 +37,8 @@ describe('validate parser and dispatch', () => {
     expect(() => Parser.parse('{1,}')).toThrow();
     expect(() => Parser.parse('{,1}')).toThrow();
     expect(() => Parser.parse('{\\,,1}')).toThrow();
+    expect(() => Parser.parse('{1,2,3}')).toThrow();
+    expect(() => Parser.parse('{2,1}')).toThrow();
   });
   test('config parser', () => {
     expect(Parser.parse('#[a=true,b="333",c=1e10,d,f=false,g="\\""]')).toEqual({
@@ -75,6 +77,7 @@ describe('validate parser and dispatch', () => {
     });
   });
   test('function parser', () => {
+    // fn1
     const fn1 = getFunc('@fn');
     expect(fn1.params[0]).toEqual([]);
     expect(fn1.options[0]).toEqual({
@@ -82,6 +85,7 @@ describe('validate parser and dispatch', () => {
       params: [],
     });
     expect(fn1.queue).toEqual(['fn']);
+    // fn2
     const fn2 = getFunc(
       '@fn(true,obj.name,333)|fn2(333)|fn("haha",\'heihei\')',
     );

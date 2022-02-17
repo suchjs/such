@@ -15,10 +15,7 @@ const parser: IParserFactory = {
     ),
   },
   parse(this: AParser): IPPPath | never {
-    const { patterns, code } = this.info();
-    if (!patterns.length) {
-      this.halt(`no path params found:${code}`);
-    }
+    const { patterns } = this.info();
     const result: IPPPath = [];
     patterns.forEach((match) => {
       const [fullpath, prefix, curPath] = match;

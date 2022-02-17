@@ -6,8 +6,15 @@ describe('test built-in types', () => {
     China: ['BeiJing', 'ShangHai', 'WuHan'],
     America: ['Washington', 'New York', 'Los Angeles'],
   };
+  const globalConfig = {
+    suffix: 'ok'
+  };
   Such.assign('dict', DICTS);
   Such.assign('countries', COUNTRIES);
+  Such.assign('globalConfig', globalConfig);
+  Such.assign('addSuffix', function(value: string, suffix: string){
+    return value + '_' + suffix;
+  });
   // test string
   test(':string', () => {
     // string with length 3
@@ -90,6 +97,15 @@ describe('test built-in types', () => {
       if (typeof value === 'string') {
         expect(/^\w{3,5}$/.test(value)).toBeTruthy();
       }
+    }
+    // use a function
+    const suffixString = Such.instance<string>(
+      ":string:{3}:@addSuffix(globalConfig.suffix)"
+    );
+    for (let i = 0; i < 100; i++) {
+      const value = suffixString.a();
+      expect(typeof value === 'string').toBeTruthy();
+      expect(value.endsWith('_' + globalConfig.suffix)).toBeTruthy();
     }
   });
   // test number

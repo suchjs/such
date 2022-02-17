@@ -9,9 +9,6 @@ const parser: IParserFactory = {
   },
   parse(this: AParser): IPPRegexp | never {
     const { params } = this.info();
-    if (params.length !== 1) {
-      return this.halt(`invalid regexp rule:${params.join('')}`);
-    }
     return {
       rule: params[0],
     };

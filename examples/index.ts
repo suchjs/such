@@ -1,7 +1,16 @@
 /* eslint-disable no-console */
 import Such, { createNsSuch } from '../src/index';
 
-(() => {
+(async () => {
+  await Such.loadData();
+  const globalConfig = {
+    suffix: 'ok'
+  };
+  Such.assign('globalConfig', globalConfig);
+  Such.assign('addSuffix', function(value: string, suffix: string){
+    console.log(value, suffix);
+    return value + '_' + suffix;
+  });
   // const namedTmplRef = {
   //   a: 'hello',
   //   b: 'world',
@@ -37,50 +46,50 @@ import Such, { createNsSuch } from '../src/index';
   //   const result = instance.a();
   //   console.log(result);
   // }
-  console.log(Such.as({ 
-    bool: ":bool", 
-    int: ":int", 
-    percent: ":percent", 
-    uppercase: ":uppercase:{2,4}", 
-    lowercase: ":lowercase:{2,4}", 
-    alpha: ":alpha:{3,6}", 
-    alphaNumeric: ":alphaNumeric:{3,6}", 
-    alphaNumericDash: ":alphaNumericDash:{3,6}", 
-    tld: ":tld", 
-    domain: ":domain", 
-    protocol: ":protocol", 
-    url: ":url", 
-    email: ":email:#[domain='163.com']", 
-    ipv4: ":ipv4", 
-    ipv6: ":ipv6", 
-    color$hex: ":color$hex", 
-    color$rgb: ":color$rgb", 
-    color$rgba: ":color$rgba", 
-    color$hsl: ":color$hsl", 
-    color$hsla: ":color$hsla", 
-  }));
-  console.log(Such.as({ 
-    bool: ":bool", 
-    int: ":int", 
-    percent: ":percent", 
-    uppercase: ":uppercase:{2,4}", 
-    lowercase: ":lowercase:{2,4}", 
-    alpha: ":alpha:{3,6}", 
-    alphaNumeric: ":alphaNumeric:{3,6}", 
-    alphaNumericDash: ":alphaNumericDash:{3,6}", 
-    tld: ":tld", 
-    domain: ":domain", 
-    protocol: ":protocol", 
-    url: ":url", 
-    email: ":email:#[domain='163.com']", 
-    ipv4: ":ipv4", 
-    ipv6: ":ipv6", 
-    color$hex: ":color$hex", 
-    color$rgb: ":color$rgb", 
-    color$rgba: ":color$rgba", 
-    color$hsl: ":color$hsl", 
-    color$hsla: ":color$hsla", 
-  }));
+  // console.log(Such.as({ 
+  //   bool: ":bool", 
+  //   int: ":int", 
+  //   percent: ":percent", 
+  //   uppercase: ":uppercase:{2,4}", 
+  //   lowercase: ":lowercase:{2,4}", 
+  //   alpha: ":alpha:{3,6}", 
+  //   alphaNumeric: ":alphaNumeric:{3,6}", 
+  //   alphaNumericDash: ":alphaNumericDash:{3,6}", 
+  //   tld: ":tld", 
+  //   domain: ":domain", 
+  //   protocol: ":protocol", 
+  //   url: ":url", 
+  //   email: ":email:#[domain='163.com']", 
+  //   ipv4: ":ipv4", 
+  //   ipv6: ":ipv6", 
+  //   color$hex: ":color$hex", 
+  //   color$rgb: ":color$rgb", 
+  //   color$rgba: ":color$rgba", 
+  //   color$hsl: ":color$hsl", 
+  //   color$hsla: ":color$hsla", 
+  // }));
+  // console.log(Such.as({ 
+  //   bool: ":bool", 
+  //   int: ":int", 
+  //   percent: ":percent", 
+  //   uppercase: ":uppercase:{2,4}", 
+  //   lowercase: ":lowercase:{2,4}", 
+  //   alpha: ":alpha:{3,6}", 
+  //   alphaNumeric: ":alphaNumeric:{3,6}", 
+  //   alphaNumericDash: ":alphaNumericDash:{3,6}", 
+  //   tld: ":tld", 
+  //   domain: ":domain", 
+  //   protocol: ":protocol", 
+  //   url: ":url", 
+  //   email: ":email:#[domain='163.com']", 
+  //   ipv4: ":ipv4", 
+  //   ipv6: ":ipv6", 
+  //   color$hex: ":color$hex", 
+  //   color$rgb: ":color$rgb", 
+  //   color$rgba: ":color$rgba", 
+  //   color$hsl: ":color$hsl", 
+  //   color$hsla: ":color$hsla", 
+  // }));
   // dict
   // const dict = Such.instance(':dict:&<dataDir>/dict.txt');
   // console.log(dict.a());
@@ -181,7 +190,7 @@ import Such, { createNsSuch } from '../src/index';
   // Such.define('tmpl1', '<`:string{5}`hahah>:::{2,4}');
   // console.log(Such.as(':tmpl1:{5}'));
   // console.log(Such.as(':url'));
-  console.log(Such.as(':domain#[tld="com"]'));
+  console.log(Such.as(':string:@addSuffix(globalConfig.suffix)'));
   // Such.define('letter', ['a', 'b', 'c']);
   // const instance = Such.instance(':letter');
   // console.log(

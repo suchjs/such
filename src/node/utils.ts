@@ -51,9 +51,9 @@ export const loadDict: (
 export const getAllFiles = (directory: string): Promise<TStrList> => {
   const walk = function (
     dir: string,
-    done: (err: unknown, results?: TStrList) => unknown,
+    done: (err: unknown, files?: TStrList) => unknown,
   ) {
-    let results: TStrList = [];
+    const files: TStrList = [];
     fs.readdir(dir, function (err, list) {
       if (err) {
         return done(err);
@@ -61,18 +61,15 @@ export const getAllFiles = (directory: string): Promise<TStrList> => {
       let i = list.length;
       (function next() {
         if (i === 0) {
-          return done(null, results);
+          return done(null, files);
         }
         const file = list[--i];
         const cur = path.join(dir, file);
         fs.stat(cur, function (_, stat) {
           if (stat && stat.isDirectory()) {
-            walk(cur, function (__, res) {
-              results = results.concat(res);
-              next();
-            });
+            walk(cur, done);
           } else {
-            results.push(cur);
+            files.push(cur);
             next();
           }
         });
@@ -80,11 +77,11 @@ export const getAllFiles = (directory: string): Promise<TStrList> => {
     });
   };
   return new Promise((resolve, reject) => {
-    walk(directory, (err, results) => {
+    walk(directory, (err, files) => {
       if (err) {
         reject(err);
       } else {
-        resolve(results);
+        resolve(files);
       }
     });
   });

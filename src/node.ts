@@ -40,7 +40,10 @@ export type LoadExtendFunc = typeof loadExtend;
  */
 export class NSuch extends Such {
   public loadExtend = loadExtend;
-  public async asc<T = unknown>(target: unknown, options?: IAsOptions): Promise<T>{
+  public async asc<T = unknown>(
+    target: unknown,
+    options?: IAsOptions,
+  ): Promise<T> {
     const { config } = this.store;
     if (typeof target === 'string' && path.extname(target) === '.json') {
       const lastPath = path.resolve(config.suchDir || config.rootDir, target);
@@ -49,7 +52,9 @@ export class NSuch extends Such {
         return super.as(content, options);
       }
     }
-    throw new Error(`make sure the target is a json file and exists in suchjs config's root directory or such directory`);
+    throw new Error(
+      `make sure the target is a json file and exists in suchjs config's root directory or such directory`,
+    );
   }
   public loadData(): Promise<unknown> {
     return Promise.resolve();
@@ -137,7 +142,12 @@ const searchConfFilePaths = (() => {
   const cjsFile = `${filename}.cjs`;
   const jsFile = `${filename}.js`;
   const gen = (base: TPath, file: TPath) => path.join(base, file);
-  return [gen(rootDir, cjsFile), gen(cwd, cjsFile), gen(rootDir, jsFile), gen(cwd, jsFile)];
+  return [
+    gen(rootDir, cjsFile),
+    gen(cwd, cjsFile),
+    gen(rootDir, jsFile),
+    gen(cwd, jsFile),
+  ];
 })();
 const lastConfFile = tryConfigFile(...searchConfFilePaths);
 // add all builtin mockits first
@@ -156,5 +166,5 @@ root.define('dict', ToDict);
 root.define('cascader', ToCascader);
 export default {
   root,
-  createNsSuch
+  createNsSuch,
 };
