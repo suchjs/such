@@ -1,4 +1,5 @@
 import Such from '../src/browser';
+import { hasOwn } from '../src/helpers/utils';
 
 describe('test filed', () => {
   // optional, equal to '{0,1}'
@@ -10,7 +11,7 @@ describe('test filed', () => {
     let notHasATimes = 0;
     for (let i = 0; i < 100; i++) {
       const value = optional.a() as { 'a?': boolean };
-      if (value.hasOwnProperty('a')) {
+      if (hasOwn(value, 'a')) {
         hasATimes++;
       } else {
         notHasATimes++;
@@ -76,9 +77,28 @@ describe('test filed', () => {
       }
       return okTimes === totalTimes;
     }).toBeTruthy();
+    // only oneof
+    expect(() => {
+      const instance = Such.instance<{ a: boolean }>({
+        'a:': [true, false],
+      });
+      const totalTimes = 100;
+      let okTimes = 0;
+      for (let i = 0; i < totalTimes; i++) {
+        const result = instance.a();
+        okTimes += +(typeof result === 'boolean');
+      }
+      return okTimes === totalTimes;
+    });
   });
   // test length
   test('test list count', () => {
+    // wrong count
+    expect(() => {
+      return Such.as({
+        'a{2,1}': ':boolean',
+      });
+    }).toThrow();
     // when the count of key is 1
     // it will not be an array
     const list = Such.instance({
@@ -118,17 +138,22 @@ describe('test filed', () => {
   });
   // test when value
   test("test when the list's value is an array", () => {
-    const list = Such.instance({
-      'a{3}': [':boolean', ':string'],
+    const list = Such.instance<{ a: Array<boolean | string> }>({
+      'a{1,3}': [':boolean', ':string'],
     });
     for (let i = 0; i < 100; i++) {
-      const value = list.a() as { a: Array<boolean | string> };
-      expect(Array.isArray(value.a)).toBeTruthy();
-      expect(value.a.length).toEqual(3);
-      const flag = (value.a as (boolean | string)[]).every(
-        (item) => typeof item === 'boolean' || typeof item === 'string',
-      );
-      expect(flag).toBeTruthy();
+      const value = list.a();
+      if (Array.isArray(value.a)) {
+        expect(value.a.length).toBeLessThanOrEqual(3);
+        const flag = value.a.every(
+          (item) => typeof item === 'boolean' || typeof item === 'string',
+        );
+        expect(flag).toBeTruthy();
+      } else {
+        expect(
+          typeof value.a === 'boolean' || typeof value.a === 'string'
+        ).toBeTruthy();
+      }
     }
     // use a ':' to use one of the array's index field
     const oneOfList = Such.instance({
@@ -159,7 +184,7 @@ describe('test filed', () => {
     let optionalATimes = 0;
     for (let i = 0; i < 100; i++) {
       const value = list.a() as { a?: Array<boolean> | Array<string> };
-      if (value.hasOwnProperty('a')) {
+      if (hasOwn(value, 'a')) {
         expect(Array.isArray(value.a)).toBeTruthy();
         if (value.a.length) {
           if (typeof value.a[0] === 'string') {
@@ -191,7 +216,7 @@ describe('test filed', () => {
     let hasATimes = 0;
     for (let i = 0; i < totalTimes; i++) {
       const data = optInstance.a() as typeof opt;
-      if (data.hasOwnProperty('a')) {
+      if (hasOwn(data, 'a')) {
         hasATimes++;
       }
     }
@@ -207,7 +232,7 @@ describe('test filed', () => {
           },
         },
       }) as typeof opt;
-      if (data.hasOwnProperty('a')) {
+      if (hasOwn(data, 'a')) {
         hasATimes++;
       }
     }
@@ -222,7 +247,7 @@ describe('test filed', () => {
           },
         },
       }) as typeof opt;
-      if (data.hasOwnProperty('a')) {
+      if (hasOwn(data, 'a')) {
         hasATimes++;
       }
     }
@@ -237,7 +262,7 @@ describe('test filed', () => {
           },
         },
       }) as typeof opt;
-      if (data.hasOwnProperty('a')) {
+      if (hasOwn(data, 'a')) {
         hasATimes++;
       }
     }
@@ -252,7 +277,7 @@ describe('test filed', () => {
           },
         },
       }) as typeof opt;
-      if (data.hasOwnProperty('a')) {
+      if (hasOwn(data, 'a')) {
         hasATimes++;
       }
     }
@@ -473,7 +498,7 @@ describe('test filed', () => {
           },
         },
       }) as typeof opt;
-      if (data.hasOwnProperty('a')) {
+      if (hasOwn(data, 'a')) {
         hasATimes++;
       }
     }
@@ -488,7 +513,7 @@ describe('test filed', () => {
           },
         },
       }) as typeof opt;
-      if (data.hasOwnProperty('a')) {
+      if (hasOwn(data, 'a')) {
         hasATimes++;
       }
     }
@@ -507,7 +532,7 @@ describe('test filed', () => {
       }) as {
         a?: string[];
       };
-      if (data.hasOwnProperty('a') && data.a.length === 3) {
+      if (hasOwn(data, 'a') && data.a.length === 3) {
         hasATimes++;
       }
     }
@@ -524,7 +549,7 @@ describe('test filed', () => {
       }) as {
         a?: string[];
       };
-      if (data.hasOwnProperty('a')) {
+      if (hasOwn(data, 'a')) {
         hasATimes++;
       }
     }

@@ -1,5 +1,18 @@
 import Such from '../src/browser';
 
+describe('test normal data', () => {
+  test("array data type", () => {
+    const arr = Such.instance<[string, number]>([':string', ':number']);
+    for(let i = 0; i < 100; i++){
+      const value = arr.a();
+      expect(value.length).toEqual(2);
+      const [first, second] = value;
+      expect(typeof first === 'string').toBeTruthy();
+      expect(typeof second === 'number').toBeTruthy();
+    }
+  });
+});
+
 describe('test built-in types', () => {
   const DICTS = ['a', 'b', 'c'];
   const COUNTRIES = {

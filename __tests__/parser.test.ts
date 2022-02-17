@@ -41,7 +41,8 @@ describe('validate parser and dispatch', () => {
     expect(() => Parser.parse('{2,1}')).toThrow();
   });
   test('config parser', () => {
-    expect(Parser.parse('#[a=true,b="333",c=1e10,d,f=false,g="\\""]')).toEqual({
+    // kinds of config
+    expect(Parser.parse('#[a=true,b="333",c=1e10,d,f=false,g="\\"",h=/a{3}/]')).toEqual({
       $config: {
         a: true,
         b: '333',
@@ -49,8 +50,15 @@ describe('validate parser and dispatch', () => {
         d: true,
         f: false,
         g: '"',
+        h: /a{3}/
       },
     });
+    // wrong exp
+    expect(() => Parser.parse('#[a=/abc]')).toThrow();
+    // repeated config
+    expect(() => Parser.parse('#[a=1,a=2]')).toThrow();
+    // wrong config
+    expect(() => Parser.parse('#[a=b c]')).toThrow();
   });
   test('regexp parser', () => {
     expect(Parser.parse('/aa(bb)/i')).toEqual({
