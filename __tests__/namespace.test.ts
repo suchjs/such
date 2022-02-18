@@ -56,6 +56,8 @@ describe('test namespace', () => {
     }).toThrow();
     expect((() => {
       apiSuch.setExportType('enum');
+      // export twice, will trigger a warnning
+      apiSuch.setExportType('enum');
       return true;
     })()).toBeTruthy();
   });

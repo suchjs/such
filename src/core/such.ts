@@ -1306,6 +1306,10 @@ export class Such {
             // init
             public init() {
               super.init();
+              this.initTemplate();
+            }
+            // init template
+            private initTemplate(){
               const $template = self.template(
                 base as string,
                 this.path,
@@ -1316,6 +1320,13 @@ export class Such {
                 this.setParams($template.params);
               }
               this.setTemplate($template);
+            }
+            // generate
+            public generate(options: TSuchInject): string {
+                if(!this.$template){
+                  this.initTemplate();
+                }
+                return super.generate(options);
             }
           };
         } else if (isEnum) {
@@ -1331,24 +1342,28 @@ export class Such {
             private instance: SuchMocker;
             // init
             public init() {
+              this.initInstance();
+            }
+            // init instance
+            private initInstance(){
               this.instance = self.instance(base, {
                 config: enumConfig,
               });
             }
             // generate
             public generate(options: TSuchInject): unknown {
+              // the init method will only call once
+              // but the generate function is cached will call by other instance
+              // so here need a judgement, fix #14
+              if(!this.instance){
+                this.initInstance();
+              }
               if (options?.config) {
                 return this.instance.a({
                   keys: {
                     '/': options.config,
                   },
                 });
-              }
-              // the init method will only call once
-              // but the generate function is cached will call by other instance
-              // so here need a judgement, fix #14
-              if(!this.instance){
-                this.init();
               }
               return this.instance.a();
             }

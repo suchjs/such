@@ -1,16 +1,19 @@
 /* eslint-disable no-console */
 import Such, { createNsSuch } from '../src/index';
-
+import PathMap from '../src/helpers/pathmap';
 (async () => {
   await Such.loadData();
-  const globalConfig = {
-    suffix: 'ok'
-  };
-  Such.assign('globalConfig', globalConfig);
-  Such.assign('addSuffix', function(value: string, suffix: string){
-    console.log(value, suffix);
-    return value + '_' + suffix;
-  });
+  const map = new PathMap(false);
+  map.set([0], 1);
+  map.set([1], 2);
+  console.log(map.get([]));
+  // const globalConfig = {
+  //   suffix: 'ok'
+  // };
+  // Such.define('myTmpl', "'`:number:%d`'`:string`");
+  // for(let i = 0; i < 2; i++){
+  //   console.log(Such.as(':myTmpl:{3}'));
+  // }
   // const namedTmplRef = {
   //   a: 'hello',
   //   b: 'world',
@@ -190,7 +193,7 @@ import Such, { createNsSuch } from '../src/index';
   // Such.define('tmpl1', '<`:string{5}`hahah>:::{2,4}');
   // console.log(Such.as(':tmpl1:{5}'));
   // console.log(Such.as(':url'));
-  console.log(Such.as({ 'a{1,5}': ["a", "b", ":string"]}));
+  // console.log(Such.as({ 'a{1,5}': ["a", "b", ":string"]}));
   // Such.define('letter', ['a', 'b', 'c']);
   // const instance = Such.instance(':letter');
   // console.log(

@@ -14,6 +14,9 @@ describe('test normal data', () => {
 });
 
 describe('test apis', () => {
+  /**
+  * test alias api
+  */
   test("alias", () => {
     // wrong alias
     expect(() => {
@@ -53,6 +56,20 @@ describe('test apis', () => {
       mySuch.alias('number', 'abc');
     }).toThrow();
   });
+  /**
+  * test define
+  */
+  // define a template
+  Such.define('sayHello', "'`:number:%d`'\\``:string`");
+  Array.from({
+    length: 100
+  }).forEach(() => {
+    expect(/^'-?\d+?'/.test(Such.as(':sayHello:{1,3}'))).toBeTruthy();
+  });
+  expect(() => {
+    // redefined
+    Such.define('sayHello', [1, 2, 3]);
+  }).toThrow();
 });
 
 

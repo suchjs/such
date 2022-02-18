@@ -3,6 +3,7 @@ import { hasOwn, isArray, isObject, typeOf } from './utils';
 export type TFieldPathKey = string | number;
 export type TFieldPath = TFieldPathKey[];
 export type TFieldValue<T = unknown> = { [index: string]: T } | T[];
+const isNumber = (num: unknown) : num is number => typeof num === 'number';
 /**
  *
  *
@@ -12,6 +13,8 @@ export type TFieldValue<T = unknown> = { [index: string]: T } | T[];
 export default class PathMap<T> {
   private result: TFieldValue<T> = null;
   private initial = false;
+  private rootValue: T = null;
+  private isSetRootValue = false;
   constructor(public readonly isPlain: boolean) {}
   /**
    *
@@ -28,24 +31,23 @@ export default class PathMap<T> {
       return;
     }
     if (!this.initial) {
-      this.result = typeof keys[0] === 'number' ? [] : {};
+      this.result = isNumber(keys[0]) ? [] : {};
       this.initial = true;
     }
-
     let data = this.result as unknown as TFieldValue<TFieldValue>;
     if (keys.length !== 0) {
       let i = 0;
       for (; i < len - 1; i++) {
         const key = keys[i];
         const next = keys[i + 1];
-        if (isArray(data) && typeof key === 'number' && key % 1 === 0) {
+        if (isArray(data) && isNumber(key) && key % 1 === 0) {
           if (data.length < key + 1) {
-            data[key] = typeof next === 'number' ? [] : {};
+            data[key] = isNumber(next) ? [] : {};
           }
           data = data[key] as TFieldValue<TFieldValue>;
         } else if (isObject(data)) {
           if (!hasOwn(data, key as string)) {
-            data[key] = typeof next === 'number' ? [] : {};
+            data[key] = isNumber(next) ? [] : {};
           }
           data = data[key] as TFieldValue<TFieldValue>;
         } else {
@@ -54,7 +56,8 @@ export default class PathMap<T> {
       }
       (data as unknown as { [index: string]: T })[keys[i]] = value;
     } else {
-      (this.result as TObj)[''] = value;
+      this.rootValue = value;
+      this.isSetRootValue = true;
     }
     return this;
   }
@@ -66,13 +69,14 @@ export default class PathMap<T> {
    * @memberof PathMap
    */
   public get(keys: TFieldPath): T {
-    let result = this.result;
+    let { result } = this;
     if (keys.length !== 0) {
+      let i = 0;
       try {
-        for (let i = 0, len = keys.length; i < len; i++) {
+        for (const len = keys.length; i < len; i++) {
           const key = keys[i];
           result = (
-            typeof key === 'number'
+            isNumber(key)
               ? (result as T[])[key]
               : (result as TObj)[key]
           ) as TFieldValue<T>;
@@ -82,7 +86,7 @@ export default class PathMap<T> {
       }
       return result as unknown as T;
     }
-    return (result as TObj)[''] as T;
+    return this.isSetRootValue ? this.rootValue : result as unknown as T;
   }
   /**
    *
@@ -103,7 +107,7 @@ export default class PathMap<T> {
     let flag = true;
     for (let i = 0, len = keys.length; i < len; i++) {
       const key = keys[i];
-      if (typeof key === 'number') {
+      if (isNumber(key)) {
         flag = isArray(result) && result.length > key;
         result = (result as unknown[])[key] as TFieldValue<T>;
       } else {

@@ -293,7 +293,7 @@ const formatter: TFormatter & ThisType<Date> = {
     return dayNames[this.getDay()];
   },
   ddd(): string {
-    return formatter.dddd().slice(0, 3);
+    return formatter.dddd.call(this).slice(0, 3);
   },
   m(): string {
     return this.getMonth() + 1;
@@ -305,7 +305,7 @@ const formatter: TFormatter & ThisType<Date> = {
     return monthNames[this.getMonth()];
   },
   mmm(): string {
-    return formatter.mmmm().slice(0, 3);
+    return formatter.mmmm.call(this).slice(0, 3);
   },
   yyyy(): string {
     return this.getFullYear().toString().padStart(4, '0');
@@ -361,7 +361,7 @@ const formatter: TFormatter & ThisType<Date> = {
     return ['st', 'nd', 'rd'][(this.getDate() % 10) - 1] || 'th';
   },
   N(): string {
-    return this.getDay().toString() || '7';
+    return (this.getDay() || 7).toString();
   },
 };
 type TFormatter = {
