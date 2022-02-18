@@ -2,8 +2,8 @@ module.exports = {
   extends: ['such:recommend'],
   config: {
     preload: true,
-    suchDir: 'suchas',
-    dataDir: 'suchas/data',
+    suchDir: 'examples/suchas',
+    dataDir: 'examples/suchas/data',
   },
   types: {},
   alias: {},

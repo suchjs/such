@@ -31,6 +31,7 @@ describe('test helper methods', () => {
       strtotime({});
     }).toThrow();
     expect(strtotime(1645180122694).getFullYear() === 2022).toBeTruthy();
+    expect(dateformat('yyyy-mm-dd', strtotime(""))).toEqual(dateformat('yyyy-mm-dd', new Date));
     // today
     const today = dateformat('yyyy', strtotime('today'));
     expect(today).toEqual((new Date).getFullYear().toString());
@@ -59,6 +60,13 @@ describe('test helper methods', () => {
     expect(dateformat('S', curDate)).toEqual('th');
     expect(dateformat('N', curDate)).toEqual('5');
     // new date
+    const otherDate = strtotime('02/18/2022');
+    expect(dateformat('yyyy-mm-dd', otherDate)).toEqual('2022-02-18');
+    // en date
+    const enDate = strtotime('Feb 18th,2022');
+    expect(dateformat('yyyy-mm-dd', enDate)).toEqual('2022-02-18');
+    const longEnDate = strtotime('February 18th,2022');
+    expect(dateformat('yyyy-mm-dd', longEnDate)).toEqual('2022-02-18');
   });
 
 });

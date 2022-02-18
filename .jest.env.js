@@ -1,0 +1,1 @@
+process.env.SUCH_ROOT = __dirname;

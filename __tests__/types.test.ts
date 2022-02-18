@@ -698,6 +698,34 @@ describe('test built-in recommend types', () => {
         expect(/^[0-9a-f]{0,4}$/.test(seg)).toBeTruthy();
       })
     }
+    // test ip config options
+    expect(() => {
+      Such.as(':ipv4:#[type="F"]');
+    }).toThrow();
+    // IP FIRST
+    const ip4first = (ip: string): number => Number(ip.split('.')[0]);
+    // A
+    const aIpFirst = ip4first(Such.as(':ipv4:#[type="A"]'));
+    expect(aIpFirst >= 0 && aIpFirst <= 127).toBeTruthy();
+    // B
+    const bIpFirst = ip4first(Such.as(':ipv4:#[type="B"]'));
+    expect(bIpFirst >= 128 && bIpFirst <= 191).toBeTruthy();
+    // C
+    const cIpFirst = ip4first(Such.as(':ipv4:#[type="C"]'));
+    expect(cIpFirst >= 192 && cIpFirst <= 223).toBeTruthy();
+    // D
+    const dIpFirst = ip4first(Such.as(':ipv4:#[type="D"]'));
+    expect(dIpFirst >= 224 && dIpFirst <= 239).toBeTruthy();
+    // E
+    const eIpFirst = ip4first(Such.as(':ipv4:#[type="E"]'));
+    expect(eIpFirst >= 240 && eIpFirst <= 247).toBeTruthy();
+    // IPV6 with compress
+    const ipv6compress = Such.instance<string>(':ipv6:#[compress=0.5]');
+    for(let i = 0; i < 100; i++){
+      expect(ipv6compress.a().split(':').every((seg: string) => {
+        return seg === '' || seg === '0' || /^[0-9a-f]{1,4}$/.test(seg);
+      })).toBeTruthy();
+    }
   });
   // uppsercase
   test(':uppercase', () => {
@@ -766,6 +794,22 @@ describe('test built-in recommend types', () => {
         typeof value === 'string' && /^#[0-9A-F]{6}$/.test(value),
       ).toBeTruthy();
     }
+    // lowercase
+    const lowerColor$hex = Such.instance(':color$hex:#[lowercase=true]');
+    for (let i = 0; i < 100; i++) {
+      const value = lowerColor$hex.a() as string;
+      expect(
+        typeof value === 'string' && /^#[0-9a-f]{6}$/.test(value),
+      ).toBeTruthy();
+    }
+    // argb
+    const argbColor$hex = Such.instance(':color$hex:#[argb=true,lowercase=true]');
+    for (let i = 0; i < 100; i++) {
+      const value = argbColor$hex.a() as string;
+      expect(
+        typeof value === 'string' && /^#[0-9a-f]{8}$/.test(value),
+      ).toBeTruthy();
+    }
   });
   // color$rgb
   test(':color$rgb', () => {
@@ -814,6 +858,27 @@ describe('test built-in recommend types', () => {
         if (index === 0) {
           const actualNum = Number(num);
           return !isNaN(actualNum) && actualNum >= 0 && actualNum <= 360;
+        } else {
+          return /^([1-9][0-9]|[0-9]|100)%$/.test(num);
+        }
+      });
+      expect(flag).toBeTruthy();
+    }
+  });
+  // test hsla
+  test(':color$hsla', () => {
+    const color$hsla = Such.instance(':color$hsla');
+    for (let i = 0; i < 100; i++) {
+      const value = color$hsla.a() as string;
+      expect(/^hsla\((.*)?\)$/.test(value)).toBeTruthy();
+      const segs = RegExp.$1.split(',');
+      expect(segs.length).toEqual(4);
+      const flag = segs.every((num: string, index: number) => {
+        const actualNum = Number(num);
+        if (index === 0) {
+          return !isNaN(actualNum) && actualNum >= 0 && actualNum <= 360;
+        } else if(index === segs.length -1){
+          return !isNaN(actualNum) && actualNum >= 0 && actualNum <= 1;
         } else {
           return /^([1-9][0-9]|[0-9]|100)%$/.test(num);
         }

@@ -69,12 +69,13 @@ export class NSuch extends Such {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const conf = require(configFile);
     const { config, fileCache } = this.store;
+    const rootDir = path.dirname(configFile);
     if (conf.config) {
       // copy all
       deepCopy(config, conf.config);
       (<const>['suchDir', 'dataDir']).map((key) => {
         if (config[key]) {
-          config[key] = path.resolve(config.rootDir, config[key]);
+          config[key] = path.resolve(rootDir, config[key]);
         }
       });
       const { preload, dataDir } = config;
@@ -87,6 +88,7 @@ export class NSuch extends Such {
           });
         };
       }
+      // preload some files
       if (preload && dataDir) {
         if (isArray(preload)) {
           const allFiles: string[] = preload.map((cur: string) => {
@@ -121,45 +123,45 @@ export class NSuch extends Such {
     this.config(conf);
   }
 }
-// find static paths
-const tryConfigFile = (...files: string[]) => {
-  for (let i = 0, j = files.length; i < j; i++) {
-    let filepath;
-    try {
-      filepath = require.resolve(files[i]);
-    } catch (e) {
-      filepath = undefined;
-      continue;
+
+// find the root directory
+
+// config file
+const tryConfigFile = () => {
+  const FILENAME = 'such.config';
+  const tryFiles = [`${FILENAME}.js`, `${FILENAME}.cjs`];
+  const tryGetRootDir = process.env.SUCH_ROOT ? [
+    // if the env variable SUCH_ROOT exist
+    // 1. try find the root in the env variable SUCH_ROOT
+    () => process.env.SUCH_ROOT,
+  ] : [
+    // 2. try find in the current work dir
+    () => process.cwd(),
+    // 3. try find the directory include the node_modules
+    () => path.resolve(__dirname, '../..'),
+  ];
+  const gen = (base: TPath, file: TPath) => path.join(base, file);
+  for (let i = 0, j = tryGetRootDir.length; i < j; i++) {
+    const rootDir = tryGetRootDir[i]();
+    for (let m = 0, n = tryFiles.length; m < n; m++) {
+      try {
+        const filepath = require.resolve(gen(rootDir, tryFiles[m]));
+        return filepath;
+      } catch (e) {
+        // try the next file path
+      }
     }
-    return filepath;
   }
 };
-
-const rootDir = path.resolve(__dirname, '../..');
-const searchConfFilePaths = (() => {
-  const filename = 'such.config';
-  const cwd = process.cwd();
-  const cjsFile = `${filename}.cjs`;
-  const jsFile = `${filename}.js`;
-  const gen = (base: TPath, file: TPath) => path.join(base, file);
-  return [
-    gen(rootDir, cjsFile),
-    gen(cwd, cjsFile),
-    gen(rootDir, jsFile),
-    gen(cwd, jsFile),
-  ];
-})();
-const lastConfFile = tryConfigFile(...searchConfFilePaths);
-// add all builtin mockits first
-addMockitList(builtinMockits);
+const lastConfFile = tryConfigFile();
 // create the root such
 const root = new NSuch();
-// if has config file, auto load the config file
+// add all builtin mockits first
+addMockitList(builtinMockits);
+// if has config file, autoload the config file
 if (lastConfFile) {
-  root.store.config.rootDir = path.dirname(lastConfFile);
+  // load config
   root.loadConf(lastConfFile);
-} else {
-  root.store.config.rootDir = rootDir;
 }
 // add node types
 root.define('dict', ToDict);

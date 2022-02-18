@@ -27,6 +27,8 @@ module.exports = {
     {
       files: [
         'jest.config.js',
+        '.jest.env.js',
+        'such.config.js',
         'webpack.config.js',
         '.prettierrc.js',
         '.eslintrc.js',
