@@ -678,7 +678,7 @@ export default abstract class Mockit<T = unknown> {
           fnsParams[i],
           nsVars,
           result,
-          Object.assign({}, ($config as IPPConfig) || {}, nsVars, nsFns),
+          Object.assign({}, nsVars, nsFns, ($config as IPPConfig) || {}),
           getExpValue,
         ]);
         result = fn(isUserDefined).apply(options, args);

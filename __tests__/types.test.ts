@@ -1,4 +1,4 @@
-import Such from '../src/browser';
+import Such, { createNsSuch } from '../src/browser';
 
 describe('test normal data', () => {
   test("array data type", () => {
@@ -12,6 +12,49 @@ describe('test normal data', () => {
     }
   });
 });
+
+describe('test apis', () => {
+  test("alias", () => {
+    // wrong alias
+    expect(() => {
+      // alias short is empty
+      Such.alias('', 'number');
+    }).toThrow();
+    expect(() => {
+      // alias long is empty
+      Such.alias('num', '');
+    }).toThrow();
+    expect(() => {
+      // alias equal name
+      Such.alias('number', 'number');
+    }).toThrow();
+    expect(() => {
+      // alias short long than alias for
+      Such.alias('numberData', 'number');
+    }).toThrow();
+    expect(() => {
+      // wrong short alias name
+      Such.alias('*number', 'number');
+    }).toThrow();
+    // repeat alias
+    expect(() => {
+      // wrong short alias name
+      Such.alias('num', 'number');
+      Such.alias('num', 'number');
+    }).toThrow();
+    // wrong alias for
+    expect(() => {
+      Such.alias('sometype', 'unexist');
+    }).toThrow();
+    // namespace such alias
+    expect(() => {
+      const mySuch = createNsSuch('alias');
+      mySuch.define('abc', ['a', 'b', 'c']);
+      mySuch.alias('number', 'abc');
+    }).toThrow();
+  });
+});
+
 
 describe('test built-in types', () => {
   const DICTS = ['a', 'b', 'c'];
