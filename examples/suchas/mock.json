@@ -1,0 +1,7 @@
+{
+  "errno": ":number:[0,1]:%d",
+  "errmsg": ":::this is an error:'`:regexp:/([a-z]{3} ){3,5}/`'",
+  "data": {
+    "province": ":cascader:&<dataDir>/city.json:#[root=true]"
+  }
+}
