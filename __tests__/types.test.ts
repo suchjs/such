@@ -440,6 +440,9 @@ describe('test built-in types', () => {
       return Such.as(':regexp://');
     }).toThrow();
     expect(() => {
+      return Such.as(':regexp:/a/it');
+    }).toThrow();
+    expect(() => {
       return Such.as(':regexp:/(/');
     }).toThrow();
     // a normal regexp
@@ -612,6 +615,20 @@ describe('test built-in types', () => {
     const [num, str] = numAndStrSegs;
     expect(!isNaN(num as unknown as number)).toBeTruthy();
     expect(str.length).toEqual(5);
+    // with reference
+    const refTmpl = {
+      a: 'hello',
+      b: 'world',
+      tmpl: ':::`:ref:&./a,./b:@join(" ")`'
+    };
+    const refTmplData = Such.as<typeof refTmpl>(refTmpl);
+    expect(refTmplData.tmpl === [refTmpl.a, refTmpl.b].join(" ")).toBeTruthy();
+    // reference
+    expect(['truetrue', 'falsefalse'].includes(Such.template('`:bool``:ref:&/${0}`').a())).toBeTruthy();
+    // wrong reference
+    expect(() => {
+      Such.as(':::`:ref:&./a,&./b`');
+    }).toThrow();
   });
 });
 

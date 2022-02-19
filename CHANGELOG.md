@@ -2,6 +2,23 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v2.2.0] - 2022-02-19
+
+### Fixed
+
+- Fix the type use a function by `@fn(data)` lost the assigned `data`'s parameter.
+
+- Fix some date formats in `:date` type lost `this` what need reference the `Date` object.
+
+- Fix the user defined type base on template type may also cause an error because can't find the `$template` because it's not initialized. 
+
+### Changed
+
+- Change `loadData` load the config file by checking the `process.env.SUCH_ROOT` env variable firstly. It's useful for the library's tests in node environment and in `such-cli` command line tool.
+
+### Added
+
+- More tests for uncover codes, remove unnecessary codes.
 
 ## [v2.1.8] - 2022-02-15
 

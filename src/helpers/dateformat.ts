@@ -158,17 +158,17 @@ const strToDate = (
   const r5 = new RegExp(
     '^(' +
       mS.concat(mL).join('|') +
-      ')(?:\\s+|\\.)(?:(([13]?1)(?:st)?|([12]?2)(?:nd)?|([12]?3)(?:rd)?|([12]0|[12]?[4-9])(?:th)?|(30)th))(?:\\s*,\\s*(\\d{2}|\\d{4}))?$',
+      ')(?:\\s+|\\.)(?:((?:[4-9]|1[0-9]|2[04-9]|30)(?:th)?|[23]?1(?:st)?|[23]?2(?:nd)?|[23]?3(?:rd)?))(?:\\s*,\\s*(\\d{2}|\\d{4}))?$',
   );
   if ((matchs = dateStr.match(r5))) {
     let month = matchs[1];
-    const day = matchs[3];
-    const year = matchs[8];
+    const day = parseInt(matchs[2], 10).toString();
+    const year = matchs[3];
     const atMS = mS.indexOf(month);
-    const atML = mL.indexOf(month);
     if (atMS > -1) {
       month = (atMS + 1).toString();
     } else {
+      const atML = mL.indexOf(month);
       month = (atML + 1).toString();
     }
     return makeDate(year, month, day);
@@ -248,12 +248,12 @@ export const strtotime = (date: unknown): Date | never => {
     } catch (e) {
       result = new Date(date);
       if (isNaN(+result)) {
-        throw new Error('invalid date');
+        throw new Error('Invalid date');
       }
     }
     return result;
   } else {
-    throw new Error(`invalid date:${date}`);
+    throw new Error(`Invalid date:${date}`);
   }
 };
 
