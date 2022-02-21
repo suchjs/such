@@ -12,6 +12,7 @@ export interface TSSConfig {
   server?: {
     port?: number;
     prefix?: string;
+    directory?: string;
     timeout?: [number, number];
     extContentTypes?: TObj<string>
     pathSegSplit?: string,

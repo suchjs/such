@@ -71,6 +71,7 @@ export class NSuch extends Such {
     const conf = require(configFile);
     const { config, fileCache } = this.store;
     const rootDir = path.dirname(configFile);
+    config.rootDir = rootDir;
     if (conf.config) {
       // copy all
       deepCopy(config, conf.config);
@@ -154,6 +155,7 @@ const tryConfigFile = () => {
     }
   }
 };
+
 const lastConfFile = tryConfigFile();
 // create the root such
 const root = new NSuch();

@@ -35,7 +35,7 @@ globalSuch.assign('city', {
 globalSuch.define(
   'mobile$china',
   'regexp',
-  '/(\\\\+86\\\\-)?(?<service>1[3-8][0-9])\\\\d{8}/',
+  '/(\\+86-)?(?<service>1[3-8][0-9])\\d{8}/',
 );
 console.log(globalSuch.as({
   string: ":string:[65,121]:{10,20}:@concat('_suffix')",
