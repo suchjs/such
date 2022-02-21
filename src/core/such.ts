@@ -1460,7 +1460,7 @@ export class Such {
       globals: 'assign',
     };
     const lastConf: TSuchSettings = {};
-    const curSuch = this as unknown as {
+    const curSuch = this as unknown as ThisType<Such> & {
       loadExtend: (files: TStrList) => TSuchSettings[];
     };
     if (config.extends && typeof curSuch.loadExtend === 'function') {

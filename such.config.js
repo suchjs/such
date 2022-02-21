@@ -4,6 +4,7 @@ module.exports = {
     preload: true,
     suchDir: 'examples/suchas',
     dataDir: 'examples/suchas/data',
+    extensions: ['.json', '.txt'],
   },
   types: {},
   alias: {},

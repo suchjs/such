@@ -26,7 +26,7 @@ function loadExtend(name: string | string[]): TSuchSettings | TSuchSettings[] {
       return isBuilt ? result.default : result;
     } catch (e) {
       // eslint-disable-next-line no-console
-      console.log(`load the file or module failure:${file}`);
+      console.log(`load the extended file or module failure:${file}`);
     }
   } else {
     return name.map((cur: string) => {
@@ -45,7 +45,8 @@ export class NSuch extends Such {
     options?: IAsOptions,
   ): Promise<T> {
     const { config } = this.store;
-    if (typeof target === 'string' && path.extname(target) === '.json') {
+    const { extensions = ['.json']} = config;
+    if (typeof target === 'string' && extensions.includes(path.extname(target))) {
       const lastPath = path.resolve(config.suchDir || config.rootDir, target);
       if (fs.existsSync(lastPath)) {
         const content = await loadTemplate(lastPath);
@@ -53,7 +54,7 @@ export class NSuch extends Such {
       }
     }
     throw new Error(
-      `make sure the target is a json file and exists in suchjs config's root directory or such directory`,
+      `Make sure the target is a file with extension in "${extensions.join(',')}" and exists in suchjs config's root directory or "suchDir"`,
     );
   }
   public loadData(): Promise<unknown> {

@@ -131,7 +131,11 @@ export const loadTemplate = (file: string): Promise<string> => {
             if (e) {
               reject(e);
             } else {
-              const content = JSON.parse(data);
+              let content = data;
+              const isJson = path.extname(file) === '.json';
+              if (isJson) {
+                content = JSON.parse(data);
+              }
               fileCache[file] = {
                 content,
                 mtime: +stat.mtime,

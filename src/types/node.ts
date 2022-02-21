@@ -8,6 +8,15 @@ export interface TSSConfig {
   suchDir?: TPath;
   dataDir?: TPath;
   preload?: boolean | TStrList;
+  extensions?: TStrList;
+  server?: {
+    port?: number;
+    prefix?: string;
+    timeout?: [number, number];
+    extContentTypes?: TObj<string>
+    pathSegSplit?: string,
+    injectContext?: boolean;  
+  } 
 }
 export interface TSSGlobals {
   vars?: TObj;

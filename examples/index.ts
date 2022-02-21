@@ -4,6 +4,8 @@ import PathMap from '../src/helpers/pathmap';
 (async () => {
   await Such.loadData();
   console.log(Such.as(':dict:&<dataDir>/dict.txt'));
+  const txt = await Such.asc('mock.txt');
+  console.log(txt);
   const map = new PathMap(false);
   map.set([0], 1);
   map.set([1], 2);
