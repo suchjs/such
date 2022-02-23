@@ -567,7 +567,7 @@ describe('test filed', () => {
       ],
     });
     const ruleKeys = instance.keys();
-    expect(ruleKeys.hasOwnProperty('/a')).toBeTruthy();
+    expect(hasOwn(ruleKeys, '/a')).toBeTruthy();
     expect(ruleKeys['/a'].optional).toBeTruthy();
     expect(ruleKeys['/a'].min).toEqual(2);
     expect(ruleKeys['/a'].max).toEqual(5);

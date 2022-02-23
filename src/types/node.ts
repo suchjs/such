@@ -3,6 +3,13 @@ import { TPath } from './common';
 import { TMFactoryOptions } from './mockit';
 import { IParserFactory } from './parser';
 import { LoadExtendFunc } from '../node';
+
+export type TQueryDataFunc = (name: string) => string;
+export interface TContextParam {
+  query: TQueryDataFunc;
+  data: TQueryDataFunc;
+  method: string; 
+}
 export interface TSSConfig {
   rootDir?: TPath;
   suchDir?: TPath;
@@ -13,11 +20,16 @@ export interface TSSConfig {
     port?: number;
     prefix?: string;
     directory?: string;
-    timeout?: [number, number];
-    extContentTypes?: TObj<string>
-    pathSegSplit?: string,
-    injectContext?: boolean;  
-  } 
+    timeout?: [number, number] | number;
+    extContentTypes?: TObj<string | string[]>;
+    pathSegSplit?: string;
+    injectContext?: boolean;
+    buildConfig?: (
+      pathname: TPath,
+      context?: TContextParam,
+      config?: TSSConfig,
+    ) => TObj;
+  };
 }
 export interface TSSGlobals {
   vars?: TObj;
