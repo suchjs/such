@@ -2,7 +2,7 @@ import { TFunc, TObj, TStrList } from './common';
 import { TPath } from './common';
 import { TMFactoryOptions } from './mockit';
 import { IParserFactory } from './parser';
-import { LoadExtendFunc } from '../node';
+import { NSuch } from '../node';
 
 export type TQueryDataFunc = (name: string) => string;
 export interface TContextParam {
@@ -56,10 +56,4 @@ export type TSuchSettings = {
   alias?: TObj<string>;
 };
 
-export type TNodeSuch = {
-  loadConf: (configFile: TPath) => void;
-  loadExtend: LoadExtendFunc;
-  loadData: () => Promise<unknown>;
-  reloadData: () => Promise<unknown>;
-  clearCache: () => Promise<unknown>;
-};
+export type TNodeSuch = NSuch;

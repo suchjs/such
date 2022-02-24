@@ -2,6 +2,18 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v2.2.3] - 2022-02-23
+
+### Changed
+
+- Change the method `loadExtend` of such class ignore repeated `extends` items thoes have resolved by the global Such instance. 
+
+## [v2.2.1] & [v2.2.2] - 2022-02-22
+
+### Added
+
+- Added the server config types for such-cli command `such serve`.
+  
 ## [v2.2.0] - 2022-02-19
 
 ### Fixed

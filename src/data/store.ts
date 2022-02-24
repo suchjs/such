@@ -7,7 +7,7 @@ import {
   TMModifierFn,
   TMRuleFn,
 } from '../types/mockit';
-import { TSSConfig } from '../types/node';
+import { TSSConfig, TSuchSettings } from '../types/node';
 type MockitsCache<T> = TObj<{
   rules: TStrList;
   ruleFns: TObj<TMRuleFn>;
@@ -34,6 +34,9 @@ export interface Store {
   aliasTypes: TStrList;
   fileCache: {
     [index: string]: IFileCache | TStrList | string;
+  };
+  extends: {
+    [index: string]: TSuchSettings
   };
   config: TSSConfig;
 }
@@ -65,6 +68,7 @@ const createStore = (): Store => {
   fn.aliasTypes = [];
   fn.fileCache = {};
   fn.config = {};
+  fn.extends = {};
   return fn;
 };
 const globalStore = createStore();

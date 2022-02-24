@@ -1103,7 +1103,7 @@ const warnIfEverDefinedInBuiltin = (name: string, defType: string) => {
 export class Such {
   public readonly utils = utils;
   public readonly store: Store;
-  private readonly hasNs: boolean;
+  protected readonly hasNs: boolean;
   constructor(public readonly namespace?: string) {
     this.hasNs = !!namespace;
     if (this.hasNs) {
@@ -1461,16 +1461,10 @@ export class Such {
     };
     const lastConf: TSuchSettings = {};
     const curSuch = this as unknown as ThisType<Such> & {
-      loadExtend: (files: TStrList) => TSuchSettings[];
+      loadExtend: (files: TStrList | string) => TSuchSettings[];
     };
     if (config.extends && typeof curSuch.loadExtend === 'function') {
-      const confFiles =
-        typeof config.extends === 'string' ? [config.extends] : config.extends;
-      const confs = curSuch.loadExtend(confFiles);
-      confs.map((conf: TSuchSettings) => {
-        delete conf.extends;
-        deepCopy(lastConf, conf);
-      });
+      curSuch.loadExtend(config.extends);
     }
     deepCopy(lastConf, {
       parsers: parsers || {},

@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { deepCopy, isArray } from './helpers/utils';
+import { deepCopy, hasOwn, isArray } from './helpers/utils';
 import { getAllFiles, loadAllData, loadTemplate } from './node/utils';
 import { Such } from './core/such';
 import { TSuchSettings } from './types/node';
@@ -10,43 +10,56 @@ import { TPath } from './types/common';
 import ToCascader from './node/mockit/cascader';
 import ToDict from './node/mockit/dict';
 import { addMockitList, builtinMockits } from './data/mockit';
-import { createNsSuch } from './core/such';
+import globalStore from './data/store';
+
 // load config files
 const builtRule = /such:([a-zA-Z]+)/;
+const globalExtends = globalStore.extends;
+
 // loadExtend method
-function loadExtend(name: string): TSuchSettings;
-function loadExtend(name: string[]): TSuchSettings[];
-function loadExtend(name: string | string[]): TSuchSettings | TSuchSettings[] {
-  if (typeof name === 'string') {
-    const isBuilt = builtRule.test(name);
-    const file = isBuilt ? `./extends/${RegExp.$1}` : name;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const result = require(file);
-      return isBuilt ? result.default : result;
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.log(`load the extended file or module failure:${file}`);
-    }
-  } else {
-    return name.map((cur: string) => {
-      return loadExtend(cur) as TSuchSettings;
-    });
-  }
-}
-export type LoadExtendFunc = typeof loadExtend;
+export type LoadExtendFunc = typeof NSuch.prototype.loadExtend;
 /**
  * Such in nodejs
  */
 export class NSuch extends Such {
-  public loadExtend = loadExtend;
+  public loadExtend(name: string): TSuchSettings;
+  public loadExtend(name: string[]): TSuchSettings[];
+  public loadExtend(name: string | string[]): TSuchSettings | TSuchSettings[] {
+    if (typeof name === 'string') {
+      const isBuilt = builtRule.test(name);
+      const file = isBuilt ? `./extends/${RegExp.$1}` : name;
+      // if the extends has loaded by global such
+      // ignore the extends
+      if (this.hasNs && hasOwn(globalExtends, name)) {
+        return globalExtends[name];
+      }
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const result = require(file);
+        const config = isBuilt ? result.default : result;
+        this.store.extends[name] = config;
+        this.config(config);
+        return config;
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.log(`load the extended file or module failure:${file}`);
+      }
+    } else {
+      return name.map((cur: string) => {
+        return this.loadExtend(cur);
+      });
+    }
+  }
   public async asc<T = unknown>(
     target: unknown,
     options?: IAsOptions,
   ): Promise<T> {
     const { config } = this.store;
-    const { extensions = ['.json']} = config;
-    if (typeof target === 'string' && extensions.includes(path.extname(target))) {
+    const { extensions = ['.json'] } = config;
+    if (
+      typeof target === 'string' &&
+      extensions.includes(path.extname(target))
+    ) {
       const lastPath = path.resolve(config.suchDir || config.rootDir, target);
       if (fs.existsSync(lastPath)) {
         const content = await loadTemplate(lastPath);
@@ -54,7 +67,9 @@ export class NSuch extends Such {
       }
     }
     throw new Error(
-      `Make sure the target is a file with extension in "${extensions.join(',')}" and exists in suchjs config's root directory or "suchDir"`,
+      `Make sure the target is a file with extension in "${extensions.join(
+        ',',
+      )}" and exists in suchjs config's root directory or "suchDir"`,
     );
   }
   public loadData(): Promise<unknown> {
@@ -132,16 +147,18 @@ export class NSuch extends Such {
 const tryConfigFile = () => {
   const FILENAME = 'such.config';
   const tryFiles = [`${FILENAME}.js`, `${FILENAME}.cjs`];
-  const tryGetRootDir = process.env.SUCH_ROOT ? [
-    // if the env variable SUCH_ROOT exist
-    // 1. try find the root in the env variable SUCH_ROOT
-    () => process.env.SUCH_ROOT,
-  ] : [
-    // 2. try find in the current work dir
-    () => process.cwd(),
-    // 3. try find the directory include the node_modules
-    () => path.resolve(__dirname, '../..'),
-  ];
+  const tryGetRootDir = process.env.SUCH_ROOT
+    ? [
+        // if the env variable SUCH_ROOT exist
+        // 1. try find the root in the env variable SUCH_ROOT
+        () => process.env.SUCH_ROOT,
+      ]
+    : [
+        // 2. try find in the current work dir
+        () => process.cwd(),
+        // 3. try find the directory include the node_modules
+        () => path.resolve(__dirname, '../..'),
+      ];
   const gen = (base: TPath, file: TPath) => path.join(base, file);
   for (let i = 0, j = tryGetRootDir.length; i < j; i++) {
     const rootDir = tryGetRootDir[i]();
@@ -171,5 +188,7 @@ root.define('dict', ToDict);
 root.define('cascader', ToCascader);
 export default {
   root,
-  createNsSuch,
+  createNsSuch: function (namespace: string): NSuch {
+    return new NSuch(namespace);
+  },
 };
