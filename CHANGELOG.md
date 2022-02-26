@@ -2,18 +2,34 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v3.0.0] - 2022-02-26
+
+### Changed
+
+- [break change] in the template literal string you need use `//${0}` instead of `/${0}`, with two slashs as a path to reference the data type appeared in template.
+
+- [break change] now in the mockit's `generate` method, the `template` field in `options` now is removed and mounted in the `options`'s `mocker` field.
+
+- Now you can reference the data type out of the template like this `/template/${0}`.
+
+### Fixed
+
+- Fix the `cascader` and `dict` type in node is defined after `loadConf`, so you can't define a new type base on them, now fixed it.
+
+- Fix when check the data attribute if is enable only check the `allowAttrs` of current type, that may cause an unexpected error because the current type may inherit from another type. Now fix it by also check from the inherited base type.
+
 ## [v2.2.3] - 2022-02-23
 
 ### Changed
 
-- Change the method `loadExtend` of such class ignore repeated `extends` items thoes have resolved by the global Such instance. 
+- Change the method `loadExtend` of such class ignore repeated `extends` items thoes have resolved by the global Such instance.
 
 ## [v2.2.1] & [v2.2.2] - 2022-02-22
 
 ### Added
 
 - Added the server config types for such-cli command `such serve`.
-  
+
 ## [v2.2.0] - 2022-02-19
 
 ### Fixed
@@ -22,7 +38,7 @@ Suchjs add changelog since `v1.0.0`.
 
 - Fix some date formats in `:date` type lost `this` what need reference the `Date` object.
 
-- Fix the user defined type base on template type may also cause an error because can't find the `$template` because it's not initialized. 
+- Fix the user defined type base on template type may also cause an error because can't find the `$template` because it's not initialized.
 
 ### Changed
 
@@ -36,47 +52,51 @@ Suchjs add changelog since `v1.0.0`.
 
 ### Fixed
 
-- Fix the `Such.as` call the extended types multiple times may lost the `instance` property because the `instance` was created in `init` method, but the `init` method only call once. 
+- Fix the `Such.as` call the extended types multiple times may lost the `instance` property because the `instance` was created in `init` method, but the `init` method only call once.
 
 ## [v2.1.7] - 2022-02-09
 
 ### Fixed
 
-- Fix the extend `:numeric` type's wrong `$size` config. 
+- Fix the extend `:numeric` type's wrong `$size` config.
 
 ### Changed
 
-- Now `:cascader` type in browser, the top level field just need the `data` config, the `root` config is not required anymore. 
+- Now `:cascader` type in browser, the top level field just need the `data` config, the `root` config is not required anymore.
+
 ## [v2.1.5] - 2022-01-22
 
 ### Added
 
-- Fix wrong building deprecated version `v2.1.4`. 
+- Fix wrong building deprecated version `v2.1.4`.
+
 ## [v2.1.4] - 2022-01-22 [deprecated]
 
 ### Added
 
-- Add support for nodejs load config file in `type: "module"` package. 
+- Add support for nodejs load config file in `type: "module"` package.
+
 ## [v2.1.3] - 2022-01-22
 
 ### Added
 
-- Add support for nodejs `esm` module. 
+- Add support for nodejs `esm` module.
 
 ## [v2.1.2] - 2022-01-19
 
 ### Added
 
-- Add generic type for `.instance()` and `.as()` methods, so if you build an instance like this `.instance<string>()`, `const result = instance.a()` then result is a `string` type, the same for the `as` method, e.g. `as<string>()`. 
+- Add generic type for `.instance()` and `.as()` methods, so if you build an instance like this `.instance<string>()`, `const result = instance.a()` then result is a `string` type, the same for the `as` method, e.g. `as<string>()`.
 
 ### Changed
 
 - In nodejs environment, if you used a `.json` file as the mock template, please use `asc` method instead of `as` method, so keep the `as` method no need to make a special logic to treat that. `asc` as from file code, also means `async`.
+
 ## [v2.1.1] - 2022-01-14
 
 ### Fixed
 
-- Fix the ts file import path error. 
+- Fix the ts file import path error.
 
 ## [v2.1.0] - 2022-01-13 [deprecated]
 
@@ -87,15 +107,17 @@ Suchjs add changelog since `v1.0.0`.
 - Add more recommend character types: `alpha`、`numeric`、`alphaNumeric`
 
 - Now `types` in config file support `enum` and `template` types.
+
 ### Fixed
 
-- Fix `config` parser `#[]` doesn't support keys with number characters, and fix the key-value like `#[a=""]` got a empty string value instead of a wrong boolean value.  
+- Fix `config` parser `#[]` doesn't support keys with number characters, and fix the key-value like `#[a=""]` got a empty string value instead of a wrong boolean value.
 
 - Fix the `typo` named capture group name `ltd` -> `tld` in `url` and `email` type, this is a breakchange.
 
 - Fix the `regexp` type's `namedGroupConf` doesn't make sence because the upgrade changes of the dependecy package `reregexp`.
 
-- Upgrade the eslint packages in project. 
+- Upgrade the eslint packages in project.
+
 ## [v2.0.2] - 2021-10-11
 
 ### NPM

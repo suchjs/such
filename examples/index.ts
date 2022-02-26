@@ -10,6 +10,7 @@ import PathMap from '../src/helpers/pathmap';
     a: ":::`:province`,`:cascader:&//${0}`,`<number>:number`,`:ref:&//${number}`",
     b: ":ref:&./a/${0}"
   });
+  console.log(Such.template('`:province`,`:cascader:&/${0}`,`<number>:number`,`:ref:&//${number}`').a());
   for(let i = 0; i < 10; i++){
     console.log(instance.a());
   }

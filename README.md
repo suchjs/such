@@ -21,6 +21,7 @@ An expandable and powerful library for generating fake data, both in nodejs & br
 
 ```javascript
 import globalSuch from 'suchjs';
+// assign a city data
 globalSuch.assign('city', {
   BeiJing: {
     BeiJing: ['ChaoYang', 'HaiDian', 'DongCheng'],
@@ -32,11 +33,14 @@ globalSuch.assign('city', {
     GuangZhou: ['PanYu', 'YueXiu', 'BaiYun'],
   },
 });
+// assign a type 'mobile$china' base on 'regexp' type
 globalSuch.define(
   'mobile$china',
   'regexp',
   '/(\\+86-)?(?<service>1[3-8][0-9])\\d{8}/',
 );
+// assign a type 'who' as an enum type
+globalSuch.define('who', ["I'm", "He's", "She's"]);
 console.log(globalSuch.as({
   string: ":string:[65,121]:{10,20}:@concat('_suffix')",
   number: ':number:[100,200]:%.2f',
