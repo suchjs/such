@@ -1,9 +1,9 @@
 import Such, { createNsSuch } from '../src/browser';
 
 describe('test normal data', () => {
-  test("array data type", () => {
+  test('array data type', () => {
     const arr = Such.instance<[string, number]>([':string', ':number']);
-    for(let i = 0; i < 100; i++){
+    for (let i = 0; i < 100; i++) {
       const value = arr.a();
       expect(value.length).toEqual(2);
       const [first, second] = value;
@@ -15,9 +15,9 @@ describe('test normal data', () => {
 
 describe('test apis', () => {
   /**
-  * test alias api
-  */
-  test("alias", () => {
+   * test alias api
+   */
+  test('alias', () => {
     // wrong alias
     expect(() => {
       // alias short is empty
@@ -57,12 +57,12 @@ describe('test apis', () => {
     }).toThrow();
   });
   /**
-  * test define
-  */
+   * test define
+   */
   // define a template
   Such.define('sayHello', "'`:number:%d`'\\``:string`");
   Array.from({
-    length: 100
+    length: 100,
   }).forEach(() => {
     expect(/^'-?\d+?'/.test(Such.as(':sayHello:{1,3}'))).toBeTruthy();
   });
@@ -72,7 +72,6 @@ describe('test apis', () => {
   }).toThrow();
 });
 
-
 describe('test built-in types', () => {
   const DICTS = ['a', 'b', 'c'];
   const COUNTRIES = {
@@ -80,12 +79,12 @@ describe('test built-in types', () => {
     America: ['Washington', 'New York', 'Los Angeles'],
   };
   const globalConfig = {
-    suffix: 'ok'
+    suffix: 'ok',
   };
   Such.assign('dict', DICTS);
   Such.assign('countries', COUNTRIES);
   Such.assign('globalConfig', globalConfig);
-  Such.assign('addSuffix', function(value: string, suffix: string){
+  Such.assign('addSuffix', function (value: string, suffix: string) {
     return value + '_' + suffix;
   });
   // test string
@@ -173,7 +172,7 @@ describe('test built-in types', () => {
     }
     // use a function
     const suffixString = Such.instance<string>(
-      ":string:{3}:@addSuffix(globalConfig.suffix)"
+      ':string:{3}:@addSuffix(globalConfig.suffix)',
     );
     for (let i = 0; i < 100; i++) {
       const value = suffixString.a();
@@ -619,12 +618,20 @@ describe('test built-in types', () => {
     const refTmpl = {
       a: 'hello',
       b: 'world',
-      tmpl: ':::`:ref:&./a,./b:@join(" ")`'
+      tmpl: ':::`<helloworld>:ref:&./a,./b:@join(" ")`',
+      refTmplIndex: ":ref:&./tmpl/${0}",
+      refTmplName: ":ref:&./tmpl/${helloworld}"
     };
     const refTmplData = Such.as<typeof refTmpl>(refTmpl);
-    expect(refTmplData.tmpl === [refTmpl.a, refTmpl.b].join(" ")).toBeTruthy();
+    expect(refTmplData.tmpl === [refTmpl.a, refTmpl.b].join(' ')).toBeTruthy();
+    expect(refTmplData.tmpl === refTmplData.refTmplIndex).toBeTruthy();
+    expect(refTmplData.tmpl === refTmplData.refTmplName).toBeTruthy();
     // reference
-    expect(['truetrue', 'falsefalse'].includes(Such.template('`:bool``:ref:&//${0}`').a())).toBeTruthy();
+    expect(
+      ['truetrue', 'falsefalse'].includes(
+        Such.template('`:bool``:ref:&//${0}`').a(),
+      ),
+    ).toBeTruthy();
     // wrong reference
     expect(() => {
       Such.as(':::`:ref:&./a,&./b`');
@@ -662,7 +669,7 @@ describe('test built-in recommend types', () => {
     let finded = false;
     for (let i = 0; i < 100; i++) {
       const value = protocol.a() as string;
-      if(ps.includes(value)){
+      if (ps.includes(value)) {
         finded = true;
         break;
       }
@@ -676,7 +683,7 @@ describe('test built-in recommend types', () => {
     let finded = false;
     for (let i = 0; i < 100; i++) {
       const value = tld.a() as string;
-      if(ps.includes(value)){
+      if (ps.includes(value)) {
         finded = true;
         break;
       }
@@ -694,7 +701,7 @@ describe('test built-in recommend types', () => {
       const suffix = value.slice(label.length);
       expect(value.startsWith(label)).toBeTruthy();
       expect(suffix.charAt(0) === '.').toBeTruthy();
-      if(ps.includes(suffix.slice(1))){
+      if (ps.includes(suffix.slice(1))) {
         finded = true;
         break;
       }
@@ -713,7 +720,7 @@ describe('test built-in recommend types', () => {
       const segs = ip6.split(':');
       segs.map((seg) => {
         expect(/^[0-9a-f]{0,4}$/.test(seg)).toBeTruthy();
-      })
+      });
     }
     // test ip config options
     expect(() => {
@@ -738,10 +745,15 @@ describe('test built-in recommend types', () => {
     expect(eIpFirst >= 240 && eIpFirst <= 247).toBeTruthy();
     // IPV6 with compress
     const ipv6compress = Such.instance<string>(':ipv6:#[compress=0.5]');
-    for(let i = 0; i < 100; i++){
-      expect(ipv6compress.a().split(':').every((seg: string) => {
-        return seg === '' || seg === '0' || /^[0-9a-f]{1,4}$/.test(seg);
-      })).toBeTruthy();
+    for (let i = 0; i < 100; i++) {
+      expect(
+        ipv6compress
+          .a()
+          .split(':')
+          .every((seg: string) => {
+            return seg === '' || seg === '0' || /^[0-9a-f]{1,4}$/.test(seg);
+          }),
+      ).toBeTruthy();
     }
   });
   // uppsercase
@@ -820,7 +832,9 @@ describe('test built-in recommend types', () => {
       ).toBeTruthy();
     }
     // argb
-    const argbColor$hex = Such.instance(':color$hex:#[argb=true,lowercase=true]');
+    const argbColor$hex = Such.instance(
+      ':color$hex:#[argb=true,lowercase=true]',
+    );
     for (let i = 0; i < 100; i++) {
       const value = argbColor$hex.a() as string;
       expect(
@@ -894,7 +908,7 @@ describe('test built-in recommend types', () => {
         const actualNum = Number(num);
         if (index === 0) {
           return !isNaN(actualNum) && actualNum >= 0 && actualNum <= 360;
-        } else if(index === segs.length -1){
+        } else if (index === segs.length - 1) {
           return !isNaN(actualNum) && actualNum >= 0 && actualNum <= 1;
         } else {
           return /^([1-9][0-9]|[0-9]|100)%$/.test(num);
@@ -904,11 +918,15 @@ describe('test built-in recommend types', () => {
     }
   });
   // test multiple called
-  test("multiple called", () => {
-    for(let i = 0; i < 5; i++){
-      expect(Object.keys(Such.as<{ip:string}>({
-        ip: ":ip"
-      })).includes('ip')).toBeTruthy();
+  test('multiple called', () => {
+    for (let i = 0; i < 5; i++) {
+      expect(
+        Object.keys(
+          Such.as<{ ip: string }>({
+            ip: ':ip',
+          }),
+        ).includes('ip'),
+      ).toBeTruthy();
     }
-  }); 
+  });
 });

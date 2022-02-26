@@ -31,7 +31,7 @@ const parser: IParserFactory = {
             variable = prefix.slice(1, -1);
             break;
           case '.':
-            depth = prefix.split('/').length - (prefix.charAt(1) === '/' ? 1 : 0);
+            depth = prefix.split('/').length - (prefix === '.' ? 1 : 0);
             break;
           case '/':
             fix = true;

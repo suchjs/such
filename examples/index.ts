@@ -7,10 +7,15 @@ import PathMap from '../src/helpers/pathmap';
   // const txt = await Such.asc('mock.txt');
   // console.log(txt);
   const instance = Such.instance({
-    a: ":::`:province`,`:cascader:&//${0}`,`<number>:number`,`:ref:&//${number}`",
-    b: ":ref:&./a/${0}"
+    "errno:{1}": [0, 1],
+    "errmsg": ":string:{10,30}",
+    "data?": {
+        "province": ":province",
+        "city": ":cascader:&./province",
+        "area": ":cascader:&./city"
+    }
   });
-  console.log(Such.template('`:province`,`:cascader:&/${0}`,`<number>:number`,`:ref:&//${number}`').a());
+  // console.log(Such.template('`:province`,`:cascader:&/${0}`,`<number>:number`,`:ref:&//${number}`').a());
   for(let i = 0; i < 10; i++){
     console.log(instance.a());
   }
