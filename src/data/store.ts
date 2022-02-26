@@ -19,8 +19,11 @@ export interface IFileCache {
   mtime: number;
   content: string;
 }
+
+export type TFileCacheData = IFileCache | TStrList | string;
 export interface Store {
   (name: string, value: unknown, alwaysVar: boolean): void;
+  namespace?: string;
   vars: TObj;
   fns: TObj<TFunc>;
   mockits: TMClassList;
@@ -33,10 +36,10 @@ export interface Store {
   alias: TObj<string>;
   aliasTypes: TStrList;
   fileCache: {
-    [index: string]: IFileCache | TStrList | string;
+    [index: string]: TFileCacheData;
   };
   extends: {
-    [index: string]: TSuchSettings
+    [index: string]: TSuchSettings;
   };
   config: TSSConfig;
 }
@@ -45,7 +48,7 @@ export const isFileCache = (
 ): target is IFileCache => {
   return isObject(target) && typeof target.mtime === 'number';
 };
-const createStore = (): Store => {
+const createStore = (namespace?: string): Store => {
   const fns: TObj<TFunc> = {};
   const vars: TObj = {};
   const fn = ((name: string, value: unknown, alwaysVar: boolean): void => {
@@ -55,6 +58,7 @@ const createStore = (): Store => {
       fns[name] = value as TFunc;
     }
   }) as Store;
+  fn.namespace = namespace;
   fn.fns = fns;
   fn.vars = vars;
   fn.mockits = {};
@@ -88,7 +92,7 @@ export const createNsStore = (namespace: string): Store | never => {
       `The store namespace '${namespace}' has been in used when you called the method 'createNsStore'.`,
     );
   }
-  const store = createStore();
+  const store = createStore(namespace);
   nsStoreHashs[namespace] = nsStores.length;
   nsStores.push(store);
   return store;

@@ -54,6 +54,7 @@ export class NSuch extends Such {
     target: unknown,
     options?: IAsOptions,
   ): Promise<T> {
+    const { store } = this;
     const { config } = this.store;
     const { extensions = ['.json'] } = config;
     if (
@@ -62,7 +63,7 @@ export class NSuch extends Such {
     ) {
       const lastPath = path.resolve(config.suchDir || config.rootDir, target);
       if (fs.existsSync(lastPath)) {
-        const content = await loadTemplate(lastPath);
+        const content = await loadTemplate(lastPath, store);
         return super.as(content, options);
       }
     }
@@ -84,6 +85,7 @@ export class NSuch extends Such {
   public loadConf(configFile: TPath): void {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const conf = require(configFile);
+    const { store } = this;
     const { config, fileCache } = this.store;
     const rootDir = path.dirname(configFile);
     config.rootDir = rootDir;
@@ -101,7 +103,7 @@ export class NSuch extends Such {
         this.reloadData = () => {
           this.store.fileCache = {};
           return getAllFiles(dataDir).then((files) => {
-            return loadAllData(files);
+            return loadAllData(files, store);
           });
         };
       }
@@ -113,7 +115,7 @@ export class NSuch extends Such {
           });
           // load data
           this.loadData = async () => {
-            await loadAllData(allFiles);
+            await loadAllData(allFiles, store);
           };
           this.clearCache = async () => {
             allFiles.map((key: string) => {
@@ -125,7 +127,7 @@ export class NSuch extends Such {
           // load data
           this.loadData = async () => {
             const allFiles = await getAllFiles(dataDir);
-            await loadAllData(allFiles);
+            await loadAllData(allFiles, store);
           };
           this.clearCache = async () => {
             const allFiles = await getAllFiles(dataDir);
