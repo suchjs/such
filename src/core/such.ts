@@ -9,7 +9,7 @@ import {
 } from '../data/config';
 import PathMap, { TFieldPath } from '../helpers/pathmap';
 import * as utils from '../helpers/utils';
-import Mockit from './mockit';
+import Mockit, { BaseExtendMockit } from './mockit';
 import ToTemplate from '../mockit/template';
 import Dispatcher from '../data/parser';
 import globalStore, {
@@ -194,6 +194,9 @@ export class Mocker {
   protected readonly storeData: TObj = {};
   public result: unknown;
   public isEnum: boolean;
+  public next?: Mocker;
+  public template?: Template;
+  public mockit: Mockit;
   public readonly target: unknown;
   public readonly config: IMockerKeyRule = {};
   public readonly path: TFieldPath;
@@ -207,7 +210,6 @@ export class Mocker {
   public readonly namespace: string;
   public readonly such: Such;
   public readonly mockFn: (dpath: TFieldPath) => unknown;
-  public readonly mockit: Mockit;
   /**
    * Creates an instance of Mocker.
    * @param {IMockerOptions} options
@@ -217,10 +219,12 @@ export class Mocker {
    */
   constructor(
     options: IMockerOptions,
-    such?: Such,
-    namespace?: string,
-    rootInstances?: PathMap<Mocker>,
-    rootDatas?: PathMap<unknown>,
+    owner?: {
+      such?: Such;
+      namespace?: string;
+      instances?: PathMap<Mocker>;
+      datas?: PathMap<unknown>;
+    },
   ) {
     // set the mocker properties
     const { target, path, config, parent } = options;
@@ -228,11 +232,14 @@ export class Mocker {
     this.path = path;
     this.config = config || {};
     this.isRoot = path.length === 0;
-    if (this.isRoot) {
+    if (owner) {
+      const { such, namespace, instances, datas } = owner;
       this.such = such;
       this.namespace = namespace;
-      this.instances = rootInstances;
-      this.datas = rootDatas;
+      this.instances = instances;
+      this.datas = datas;
+    }
+    if (this.isRoot) {
       this.root = this;
       this.parent = this;
     } else {
@@ -277,15 +284,15 @@ export class Mocker {
                 }
                 return makeRandom(0, totalIndex);
               })();
-        const nowPath = path.concat(mIndex);
-        let instance = instances.get(nowPath);
+        const curPath = path.concat(mIndex);
+        let instance = instances.get(curPath);
         if (!(instance instanceof Mocker)) {
           instance = new Mocker({
             target: target[mIndex],
-            path: nowPath,
+            path: curPath,
             parent: this,
           });
-          instances.set(nowPath, instance);
+          instances.set(curPath, instance);
         }
         return instance;
       };
@@ -439,12 +446,12 @@ export class Mocker {
           keys.map((item) => {
             const { key, config, target } = item;
             const { optional } = config;
-            const nowPath = prevPath.concat(key);
-            const nowDpath = dpath.concat(key);
+            const curPath = prevPath.concat(key);
+            const curDpath = dpath.concat(key);
             if (optional) {
               const needReturn = getOptional(
                 this.root.instanceOptions,
-                nowPath,
+                curPath,
                 config,
               );
               // optional data
@@ -452,19 +459,19 @@ export class Mocker {
                 return;
               }
             }
-            let instance = instances.get(nowPath);
+            let instance = instances.get(curPath);
             if (!(instance instanceof Mocker)) {
               instance = new Mocker({
                 target,
                 config,
-                path: nowPath,
+                path: curPath,
                 parent: this,
               });
-              instances.set(nowPath, instance);
+              instances.set(curPath, instance);
             }
-            const value = instance.mock(nowDpath);
+            const value = instance.mock(curDpath);
             result[key] = value;
-            datas.set(nowDpath, value);
+            datas.set(curDpath, value);
           });
           return result;
         };
@@ -484,7 +491,7 @@ export class Mocker {
             // otherwise, take it as a normal string
             if (klass) {
               this.type = realType;
-              const instance = new klass(this.root.namespace, path);
+              const instance = new klass(this.root.namespace);
               const { specialType } = instance.getStaticProps();
               this.isEnum = specialType === EnumSpecialType.Enum;
               let meta = target.replace(match[0], '');
@@ -543,8 +550,8 @@ export class Mocker {
                 datas,
                 dpath,
                 mocker: this,
-                template,
               });
+            this.template = template;
             isMockFnOk = true;
           } else {
             // string, but begin with translated splitor
@@ -556,10 +563,14 @@ export class Mocker {
             }
           }
         }
+        // dataType is not a mockit type
+        // just return the original value
         if (!isMockFnOk) {
           this.mockFn = (_dpath: TFieldPath) => target;
         }
       }
+      // if the key has a length
+      // generate the data for length times
       if (hasLength) {
         // if the key set the config of length
         const origMockFn = this.mockFn;
@@ -575,8 +586,8 @@ export class Mocker {
           }
           const result = [];
           for (let i = 0; i < total; i++) {
-            const nowDpath = dpath.concat(i);
-            result.push(origMockFn(nowDpath));
+            const curDpath = dpath.concat(i);
+            result.push(origMockFn(curDpath));
           }
           return result;
         };
@@ -674,6 +685,7 @@ interface TemplateIndexData {
 interface TemplateIndexHash {
   [index: number]: string;
 }
+
 interface TemplateNamedData {
   [index: string]: TemplateData | TemplateData[];
 }
@@ -686,16 +698,19 @@ export class Template {
   private indexHash: TemplateIndexHash = {};
   private namedData: TemplateNamedData = {};
   private index = 0;
+  private typeContexts: TemplateIndexHash = {};
   public meta = '';
   public params: TMParams = {};
   public mockit: Mockit;
+  public mocker?: Mocker;
+  public isValued = false;
   /**
    * constructor
    */
   constructor(
     public readonly context = '',
     public readonly such: Such,
-    public readonly path: TFieldPath,
+    public readonly path: TFieldPath = [],
   ) {
     // nothing to do
   }
@@ -711,8 +726,13 @@ export class Template {
    * @param instance
    * @param optional
    */
-  public addInstance(instance: Mockit, refName = ''): void {
+  public addInstance(
+    instance: Mockit,
+    typeContext: string,
+    refName = '',
+  ): void {
     this.segments.push(instance);
+    this.typeContexts[this.index] = typeContext;
     if (refName) {
       this.indexHash[this.index] = refName;
     }
@@ -723,8 +743,8 @@ export class Template {
    * @param index [number]
    * @returns the reference instance's values
    */
-  public getRefValue(index: string): TemplateData | TemplateData[] {
-    if (!isNaN(index as unknown as number)) {
+  public getRefValue(index: string | number): TemplateData | TemplateData[] {
+    if (!isNaN(index as number)) {
       return this.indexData[Number(index)];
     }
     return this.namedData[index];
@@ -763,7 +783,6 @@ export class Template {
       dpath: [],
       mocker: null,
       config: null,
-      template: this,
     },
   ): T {
     if (!this.mockit) {
@@ -780,13 +799,56 @@ export class Template {
       dpath: [],
       mocker: null,
       config: null,
-      template: this,
     },
   ): string {
     let index = 0;
     // clear the indexData and namedData
     // so every time get the values only generated
+    const mocker =
+      options.mocker || this.mocker ||
+      (() => {
+        const { mocker } = this.such.instance(this.context);
+        mocker.template = this;
+        this.mocker  = options.mocker = mocker;
+        return mocker;
+      })();
+    const { path, typeContexts } = this;
+    const { instances } = mocker.root;
     const namedData: TemplateNamedData = {};
+    const setInstanceMocker = !this.isValued
+      ? (index: number, refName: string, mockit: Mockit): Mocker => {
+          const curPath = path.concat('${' + index + '}');
+          let curMocker = instances.get(curPath);
+          if (!curMocker) {
+            // define a new mocker for the template inner types
+            curMocker = new Mocker({
+              target: typeContexts[index],
+              path: curPath,
+              parent: mocker,
+            });
+            // set the inner mocker's mockit
+            curMocker.mockit = mockit;
+            // add the inner mocker into instances
+            instances.set(curPath, curMocker);
+          }
+          if (refName) {
+            // also add a named inner mocker
+            const refPath = path.concat('${' + refName + '}');
+            const refMocker = instances.get(refPath);
+            if (!refMocker) {
+              instances.set(refPath, curMocker);
+            } else {
+              // use a linkedlist save the inner mocker
+              refMocker.next = curMocker;
+            }
+          }
+          return curMocker;
+        }
+      : (index: number, _refName: string): Mocker => {
+          // do nothing
+          const curPath = path.concat('${' + index + '}');
+          return instances.get(curPath);
+        };
     this.indexData = {};
     this.namedData = namedData;
     const result = this.segments.reduce(
@@ -815,6 +877,7 @@ export class Template {
               }
             }
           }
+          const curMocker = setInstanceMocker(index, refName, item);
           index++;
           // it's a mockit instance, generate a value
           const value = item.make(options, this.such);
@@ -833,12 +896,16 @@ export class Template {
               instanceData.result = '';
             }
           }
+          // set the result of current mocker
+          curMocker.result = instanceData.result;
+          // concat the result
           result += instanceData.result;
         }
         return result;
       },
       '',
     ) as string;
+    this.isValued = true;
     return result;
   }
 }
@@ -878,10 +945,7 @@ export default class SuchMocker<T = unknown> {
         path: [],
         config: options?.config,
       },
-      this.such,
-      this.namespace,
-      this.instances,
-      this.datas,
+      this,
     );
     // set root mocker instance
     this.instances.set([], this.mocker);
@@ -923,13 +987,13 @@ export default class SuchMocker<T = unknown> {
         for (const curKey in obj) {
           if (hasOwn(obj, curKey)) {
             const { config, key } = Mocker.parseKey(curKey);
-            const nowPath = path.concat(key);
+            const curPath = path.concat(key);
             // if has config
             if (isNoEmptyObject(config)) {
-              ruleKeys[path2str(nowPath)] = config;
+              ruleKeys[path2str(curPath)] = config;
             }
             // recursive
-            loop(obj[curKey], nowPath);
+            loop(obj[curKey], curPath);
           }
         }
       } else if (isArray(obj)) {
@@ -1064,21 +1128,6 @@ export default class SuchMocker<T = unknown> {
 }
 
 /**
- * BaseExtendMockit
- * Just for types
- */
-class BaseExtendMockit extends Mockit {
-  init(): void {
-    // nothing to do
-  }
-  test(): boolean {
-    return false;
-  }
-  generate(): void {
-    // nothing to do
-  }
-}
-/**
  *
  * @param name [string]
  * @param defType [string]
@@ -1183,6 +1232,7 @@ export class Such {
       );
     }
     let config: Partial<TMFactoryOptions> = {};
+    // do with the config for different define types
     let isTemplate = false;
     let isEnum = false;
     const isExtend = !!frozen;
@@ -1274,6 +1324,7 @@ export class Such {
           // set static properties
           public static readonly chainNames =
             BaseClass.chainNames.concat(realBaseType);
+          public static baseType = BaseClass;
           public static readonly constrName = constrName;
           public static readonly namespace = namespace;
           public static selfConfigOptions = configOptions;
@@ -1309,7 +1360,7 @@ export class Such {
               this.initTemplate();
             }
             // init template
-            private initTemplate(){
+            private initTemplate() {
               const $template = self.template(
                 base as string,
                 this.path,
@@ -1323,10 +1374,10 @@ export class Such {
             }
             // generate
             public generate(options: TSuchInject): string {
-                if(!this.$template){
-                  this.initTemplate();
-                }
-                return super.generate(options);
+              if (!this.$template) {
+                this.initTemplate();
+              }
+              return super.generate(options);
             }
           };
         } else if (isEnum) {
@@ -1345,7 +1396,7 @@ export class Such {
               this.initInstance();
             }
             // init instance
-            private initInstance(){
+            private initInstance() {
               this.instance = self.instance(base, {
                 config: enumConfig,
               });
@@ -1355,7 +1406,7 @@ export class Such {
               // the init method will only call once
               // but the generate function is cached will call by other instance
               // so here need a judgement, fix #14
-              if(!this.instance){
+              if (!this.instance) {
                 this.initInstance();
               }
               if (options?.config) {
@@ -1515,15 +1566,17 @@ export class Such {
         // store the index for error index
         const storeIndex = curIndex;
         const params = {};
+        const type = '';
         let mockit: Mockit;
         let meta = '';
-        const type = '';
         let refName = '';
+        let typeContext = '';
         // parse mockit until end
         while (curIndex++ < total) {
           const curCh = code.charAt(curIndex);
           if (curCh === symbol) {
             hasEndSymbol = true;
+            typeContext = meta;
             if (mockit) {
               // if the mockit has initial
               // need parse again
@@ -1628,7 +1681,7 @@ export class Such {
           mockit.setParams(params);
         }
         // add the mockit to segments
-        template.addInstance(mockit, refName);
+        template.addInstance(mockit, typeContext, refName);
       } else if (ch === '\\') {
         curIndex++;
         if (curIndex < total) {

@@ -1,5 +1,12 @@
 import { IMockerKeyRule } from '../types/instance';
-import { encodeRegexpChars } from '../helpers/utils';
+/**
+ *
+ * @param chars [string] regexp instance context string
+ * @returns [string] escaped context string
+ */
+export const encodeRegexpChars = (chars: string): string => {
+  return chars.replace(/([()[{^$.*+?/-])/g, '\\$1');
+};
 export const splitor = ':';
 export const templateSplitor = splitor.repeat(3);
 export const encodeSplitor = encodeRegexpChars(splitor);
@@ -18,7 +25,7 @@ export const enumConfig: IMockerKeyRule = {
 const tmplNamedContext = '[a-zA-Z_]\\w*';
 export const tmplNamedRule = new RegExp(`^<(${tmplNamedContext})>`);
 export const tmplRefRule = new RegExp(
-  `^\\/\\$\\{([1-9]\\d+|[0-9]|${tmplNamedContext})\\}$`,
+  `(^|\\/)\\$\\{([1-9]\\d+|[0-9]|${tmplNamedContext})\\}$`,
 );
 // class Varaible
 export class Variable {

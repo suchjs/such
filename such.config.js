@@ -6,6 +6,8 @@ module.exports = {
     dataDir: 'examples/suchas/data',
     extensions: ['.json', '.txt'],
   },
-  types: {},
+  types: {
+    "province": ["cascader", "&<dataDir>/city.json:#[root=true]"]
+  },
   alias: {},
 };

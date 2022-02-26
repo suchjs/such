@@ -225,6 +225,8 @@ type TPartStaticMockit = Partial<TStaticMockit>;
 export default abstract class Mockit<T = unknown> {
   // chain names
   public static chainNames: string[] = [];
+  // inherit base mockit type
+  public static baseType: typeof BaseExtendMockit;
   // constructor name, for cache
   public static readonly constrName: string;
   // namespace
@@ -308,28 +310,25 @@ export default abstract class Mockit<T = unknown> {
    *
    * @param {string} name
    * @param {TMModifierFn<T>} fn
-   * @param {string} [pos]
    * @returns
    * @memberof Mockit
    */
   public addModifier(
     name: string,
-    fn: TMModifierFn<T>,
-    pos?: string,
+    fn: TMModifierFn<T>
   ): void | never {
-    return this.add('modifier', name, fn, pos);
+    return this.add('modifier', name, fn);
   }
   /**
    *
    *
    * @param {string} name
    * @param {TMRuleFn} fn
-   * @param {string} [pos]
    * @returns
    * @memberof Mockit
    */
-  public addRule(name: string, fn: TMRuleFn, pos?: string): void | never {
-    return this.add('rule', name, fn, pos);
+  public addRule(name: string, fn: TMRuleFn): void | never {
+    return this.add('rule', name, fn);
   }
   /**
    *
@@ -457,8 +456,7 @@ export default abstract class Mockit<T = unknown> {
   private add(
     type: 'rule' | 'modifier',
     name: string,
-    fn: TMRuleFn | TMModifierFn<T>,
-    pos?: string,
+    fn: TMRuleFn | TMModifierFn<T>
   ): never | void {
     const { namespace, constrName } = this.getStaticProps();
     const curName = constrName;
@@ -489,26 +487,7 @@ export default abstract class Mockit<T = unknown> {
     if (isRuleType) {
       this.setAllowAttrs(name);
     }
-    // add by position
-    if (pos === undefined || pos.trim() === '') {
-      target.push(name);
-    } else {
-      let prepend = false;
-      if (pos.charAt(0) === '^') {
-        prepend = true;
-        pos = pos.slice(1);
-      }
-      if (pos === '') {
-        target.unshift(name);
-      } else {
-        const findIndex = target.indexOf(pos);
-        if (findIndex < 0) {
-          throw new Error(`no exists ${type} name of ${pos}`);
-        } else {
-          target.splice(findIndex + (prepend ? 0 : 1), 0, name);
-        }
-      }
-    }
+    target.push(name);
     fns[name] = fn;
   }
   /**
@@ -525,6 +504,7 @@ export default abstract class Mockit<T = unknown> {
       configOptions,
       selfConfigOptions,
       specialType,
+      baseType
     } = staticMockit;
     return {
       constrName,
@@ -534,6 +514,7 @@ export default abstract class Mockit<T = unknown> {
       configOptions,
       selfConfigOptions,
       specialType,
+      baseType
     };
   }
   /**
@@ -698,5 +679,21 @@ export default abstract class Mockit<T = unknown> {
   private runAll(result: unknown, options: TSuchInject): unknown {
     result = this.runModifiers(result, options);
     return this.runFuncs(result, options);
+  }
+}
+
+/**
+ * BaseExtendMockit
+ * Just for types
+ */
+export class BaseExtendMockit extends Mockit {
+  init(): void {
+    // nothing to do
+  }
+  test(): boolean {
+    return false;
+  }
+  generate(): void {
+    // nothing to do
   }
 }

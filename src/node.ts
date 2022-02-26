@@ -176,6 +176,9 @@ const tryConfigFile = () => {
 const lastConfFile = tryConfigFile();
 // create the root such
 const root = new NSuch();
+// keep the order, add the node types first
+root.define('dict', ToDict);
+root.define('cascader', ToCascader);
 // add all builtin mockits first
 addMockitList(builtinMockits);
 // if has config file, autoload the config file
@@ -183,9 +186,7 @@ if (lastConfFile) {
   // load config
   root.loadConf(lastConfFile);
 }
-// add node types
-root.define('dict', ToDict);
-root.define('cascader', ToCascader);
+
 export default {
   root,
   createNsSuch: function (namespace: string): NSuch {

@@ -109,6 +109,7 @@ export interface IPPPathItem {
   path: Array<string | number>;
   fullpath: string;
   variable: string;
+  fix: boolean;
 }
 export type IPPPath = IPPPathItem[];
 /**

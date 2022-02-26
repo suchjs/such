@@ -3,13 +3,24 @@ import Such, { createNsSuch } from '../src/index';
 import PathMap from '../src/helpers/pathmap';
 (async () => {
   await Such.loadData();
-  console.log(Such.as(':dict:&<dataDir>/dict.txt'));
-  const txt = await Such.asc('mock.txt');
-  console.log(txt);
-  const map = new PathMap(false);
-  map.set([0], 1);
-  map.set([1], 2);
-  console.log(map.get([]));
+  // console.log(Such.as(':dict:&<dataDir>/dict.txt'));
+  // const txt = await Such.asc('mock.txt');
+  // console.log(txt);
+  const instance = Such.instance({
+    a: ":::`:province`,`:cascader:&//${0}`,`<number>:number`,`:ref:&//${number}`",
+    b: ":ref:&./a/${0}"
+  });
+  for(let i = 0; i < 10; i++){
+    console.log(instance.a());
+  }
+  // console.log(Such.template('`:bool``:ref:&//${0}`').a());
+  // const tmplRef = {
+  //   a: 'hello',
+  //   b: 'world',
+  //   c: ':::`:ref:&./a`:`:regexp:/abc/`;`:ref:&./b`:`:ref:&//${1}`;',
+  // };
+  // const tmplRefData = Such.as(tmplRef);
+  // console.log(tmplRefData);
   // const globalConfig = {
   //   suffix: 'ok'
   // };

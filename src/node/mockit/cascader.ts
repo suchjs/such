@@ -4,6 +4,7 @@ import store from '../../data/store';
 import { getRealPath } from '../utils';
 import { TSuchInject } from '../../types/instance';
 import { TStrList } from '../../types/common';
+import Mockit from '../../core/mockit';
 
 export default {
   // config options
@@ -34,7 +35,7 @@ export default {
    * @param options [TSuchReject]
    * @returns [unkown]
    */
-  generate(options: TSuchInject): unknown | never {
+  generate(this: Mockit<unknown>, options: TSuchInject): unknown | never {
     const { fileCache } = store;
     const { mocker } = options;
     const { handle, values, lastPath } = makeCascaderData(this.params, mocker);

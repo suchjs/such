@@ -1,12 +1,11 @@
 import PathMap, { TFieldPath } from '../helpers/pathmap';
-import { Mocker, Template } from '../core/such';
+import { Mocker } from '../core/such';
 import Mockit from '../core/mockit';
 export type TSuchInject = {
   datas: PathMap<unknown>;
   dpath: TFieldPath;
   mocker: Mocker;
   config?: Required<TEnumedIndex>;
-  template?: Template;
 };
 
 export type TEnumedIndex = {

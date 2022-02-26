@@ -362,14 +362,14 @@ describe('test built-in types', () => {
       // in a template
       return Such.as({
         a: 1,
-        b: ':::`:string``:ref:&/${2}`',
+        b: ':::`:string``:ref:&//${2}`',
       });
     }).toThrow();
     expect(() => {
       // in a template
       const instance = Such.instance({
         a: 1,
-        b: ':::`:string``:ref:&/${2}``:number`',
+        b: ':::`:string``:ref:&//${2}``:number`',
       });
       for (let i = 0; i < 10; i++) {
         instance.a();
@@ -379,7 +379,7 @@ describe('test built-in types', () => {
       // in a template with named
       const instance = Such.instance({
         a: 1,
-        b: ':::`:string``:ref:&/${mystr}``:number`',
+        b: ':::`:string``:ref:&//${mystr}``:number`',
       });
       for (let i = 0; i < 10; i++) {
         instance.a();
@@ -415,7 +415,7 @@ describe('test built-in types', () => {
     const tmplRef = {
       a: 'hello',
       b: 'world',
-      c: ':::`:ref:&./a`:`:regexp:/abc/`;`:ref:&./b`:`:ref:&/${1}`;',
+      c: ':::`:ref:&./a`:`:regexp:/abc/`;`:ref:&./b`:`:ref:&//${1}`;',
     };
     const tmplRefData = Such.as(tmplRef) as typeof tmplRef;
     expect(tmplRefData.c === `${tmplRef.a}:abc;${tmplRef.b}:abc;`).toBeTruthy();
@@ -423,7 +423,7 @@ describe('test built-in types', () => {
     const namedTmplRef = {
       a: 'hello',
       b: 'world',
-      c: ':::`<say>:ref:&./a`,`<say>:ref:&./b`!`<helloworld>:ref:&/${say}:@join(",")`!`:ref:&/${helloworld}`!',
+      c: ':::`<say>:ref:&./a`,`<say>:ref:&./b`!`<helloworld>:ref:&//${say}:@join(",")`!`:ref:&//${helloworld}`!',
     };
     const namedTmplRefData = Such.as(namedTmplRef) as typeof namedTmplRef;
     expect(
@@ -624,7 +624,7 @@ describe('test built-in types', () => {
     const refTmplData = Such.as<typeof refTmpl>(refTmpl);
     expect(refTmplData.tmpl === [refTmpl.a, refTmpl.b].join(" ")).toBeTruthy();
     // reference
-    expect(['truetrue', 'falsefalse'].includes(Such.template('`:bool``:ref:&/${0}`').a())).toBeTruthy();
+    expect(['truetrue', 'falsefalse'].includes(Such.template('`:bool``:ref:&//${0}`').a())).toBeTruthy();
     // wrong reference
     expect(() => {
       Such.as(':::`:ref:&./a,&./b`');

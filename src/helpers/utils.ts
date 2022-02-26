@@ -85,15 +85,6 @@ export const isNoEmptyObject = (target: unknown): boolean => {
 
 /**
  *
- * @param chars [string] regexp instance context string
- * @returns [string] escaped context string
- */
-export const encodeRegexpChars = (chars: string): string => {
-  return chars.replace(/([()[{^$.*+?/-])/g, '\\$1');
-};
-
-/**
- *
  * @param min [number] the min of the random number
  * @param max [number] the max of the random number
  * @returns [number] a random number between min and max
@@ -367,23 +358,33 @@ export const getPathInfo = (
   mocker: Mocker,
 ): TFieldPath | never => {
   let lastPath: TFieldPath;
-  const { path } = mocker;
+  const { path, template } = mocker;
+  const curPath = item.path;
   if (!item.relative) {
-    lastPath = item.path;
+    lastPath = curPath;
   } else {
-    if (path.length < item.depth + 1) {
-      // the path not exists
-      throw new Error(
-        `the path of "${
-          lastPath ? '/' + lastPath.join('/') : item.fullpath
-        }" is not exists in the instances.`,
-      );
+    if (item.fix) {
+      if (!template) {
+        throw new Error(
+          `wrong path '${item.fullpath}', now only the template type support a fix path begin with '//'`,
+        );
+      }
+      lastPath = path.concat(curPath);
     } else {
-      // get the relative path
-      lastPath = path.slice(0, -(1 + item.depth)).concat(item.path);
+      if (path.length < item.depth) {
+        // the path not exists
+        throw new Error(
+          `the path of "${
+            lastPath ? '/' + lastPath.join('/') : item.fullpath
+          }" is not exists in the instances.`,
+        );
+      } else {
+        // get the relative path
+        lastPath = path.slice(0, -(1 + item.depth)).concat(curPath);
+      }
     }
   }
-  if (isRelativePath(path, lastPath)) {
+  if (!item.fix && isRelativePath(path, lastPath)) {
     // the mocker path and the reference path has relation of parent and descendants
     throw new Error(
       `the ref path of "${path.join('/')}" and "${lastPath.join(

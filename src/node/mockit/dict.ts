@@ -3,6 +3,7 @@ import { IPPPath, IPPPathItem } from '../../types/parser';
 import store from '../../data/store';
 import { getRealPath } from '../utils';
 import { hasOwn, makeDictData } from '../../helpers/utils';
+import Mockit from '../../core/mockit';
 
 export default {
   /**
@@ -29,7 +30,7 @@ export default {
    *
    * @returns [TMultiStr] return items of the dict
    */
-  generate(): TMultiStr {
+  generate(this: Mockit<TMultiStr>): TMultiStr {
     const { $path } = this.params;
     const lastPaths = $path.map((item: IPPPathItem) => {
       return getRealPath(item);

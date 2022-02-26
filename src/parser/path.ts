@@ -8,10 +8,10 @@ const parser: IParserFactory = {
     endTag: [],
     separator: ',',
     pattern: new RegExp(
-      `^(\\.{1,2}(?:\\/\\.\\.)*|<\\w+?>)?((?:/(?:\\\\.?|[^\\/.,${encodeSplitor}]|\\.(?![.\\/,${encodeSplitor}]|$))+)+)`,
+      `^(\\.{1,2}(?:\\/\\.\\.)*|<\\w+?>|\\/)?((?:/(?:\\\\.?|[^\\/.,${encodeSplitor}]|\\.(?![.\\/,${encodeSplitor}]|$))+)+)`,
     ),
     rule: new RegExp(
-      `^&(?:(?:\\.{1,2}(?:\\/\\.\\.)*|<\\w+?>)?(?:\\/(?:\\\\.?|[^\\/.,${encodeSplitor}]|\\.(?![.\\/,${encodeSplitor}]|$))+)+(?=(,)|${encodeSplitor}|$)\\1?)+`,
+      `^&(?:(?:\\.{1,2}(?:\\/\\.\\.)*|<\\w+?>|\\/)?(?:\\/(?:\\\\.?|[^\\/.,${encodeSplitor}]|\\.(?![.\\/,${encodeSplitor}]|$))+)+(?=(,)|${encodeSplitor}|$)\\1?)+`,
     ),
   },
   parse(this: AParser): IPPPath | never {
@@ -20,12 +20,23 @@ const parser: IParserFactory = {
     patterns.forEach((match) => {
       const [fullpath, prefix, curPath] = match;
       const relative = !!prefix;
-      const variable =
-        relative && prefix.charAt(0) === '<' ? prefix.slice(1, -1) : undefined;
+      let variable;
       let depth = 0;
-      if (relative && !variable) {
-        const segs = prefix.split('/');
-        depth = segs.length - (segs[0] === '.' ? 1 : 0);
+      let fix = false;
+      // do with the prefix
+      if(relative){
+        const firstCh = prefix.charAt(0);
+        switch(firstCh){
+          case '<':
+            variable = prefix.slice(1, -1);
+            break;
+          case '.':
+            depth = prefix.split('/').length - (prefix.charAt(1) === '/' ? 1 : 0);
+            break;
+          case '/':
+            fix = true;
+            break;
+        }
       }
       const cur: IPPPathItem = {
         relative,
@@ -33,6 +44,7 @@ const parser: IParserFactory = {
         depth,
         fullpath,
         variable,
+        fix
       };
       result.push(cur);
     });

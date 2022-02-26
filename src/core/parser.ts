@@ -1,6 +1,6 @@
 import { IParserConfig } from '../types/parser';
-import { encodeSplitor, splitor as confSplitor } from '../data/config';
-import { encodeRegexpChars, hasOwn, isArray } from '../helpers/utils';
+import { encodeSplitor, encodeRegexpChars, splitor as confSplitor } from '../data/config';
+import { hasOwn, isArray } from '../helpers/utils';
 import { TMatchResult, TObj, TStrList } from '../types/common';
 import Mockit from './mockit';
 export interface Tags {
@@ -341,8 +341,9 @@ export class Dispatcher {
         );
       } else {
         if (mockit) {
-          const { constrName, allowAttrs } = mockit.getStaticProps();
-          if (!allowAttrs.includes(type)) {
+          const { constrName, allowAttrs, baseType } = mockit.getStaticProps();
+          // when no base type, check the allow attrs
+          if (!baseType && !allowAttrs.includes(type)) {
             switch (type) {
               case '$config':
                 throw new Error(
