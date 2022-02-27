@@ -1,3 +1,4 @@
+import * as path from 'path';
 import Such from '../src/index';
 
 describe('validate built-in types in nodejs', () => {
@@ -87,5 +88,19 @@ describe('validate built-in types in nodejs', () => {
       expect(typeof data.errmsg === 'string').toBeTruthy();
       expect(typeof data.data === undefined || typeof data.data.province === 'string').toBeTruthy();
     }
+  });
+  // test clear store
+  test("clear store", () => {
+    const { rootDir } = Such.store.config;
+    // boolean is an extended type 
+    expect("boolean" in Such.store.mockits).toBeTruthy();
+    // clear the store
+    Such.store.clear();
+    // now the extended types has been cleared
+    expect("boolean" in Such.store.mockits).toBeFalsy();
+    // reload the config
+    Such.loadConf(path.join(rootDir, 'such.config.js'));
+    // now the config has been reload
+    expect("boolean" in Such.store.mockits).toBeTruthy();
   });
 });

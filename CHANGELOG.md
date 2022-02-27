@@ -2,6 +2,13 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v3.0.3] - 2022-02-27
+
+### Added
+
+- Add the `clear` method for `store` object, it's necessary for reloading the such config.
+
+- Add more types for server's config. see the [`such-cli`](https://github.com/suchjs/such-cli) README.
 ## [v3.0.2] - 2022-02-26
 
 ### Fixed
