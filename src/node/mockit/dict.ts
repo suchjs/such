@@ -3,8 +3,8 @@ import { IPPPath, IPPPathItem } from '../../types/parser';
 import { getFileCacheData } from '../utils';
 import { makeDictData } from '../../helpers/utils';
 import Mockit from '../../core/mockit';
-import { Such } from 'src/core/such';
-import { TSuchInject } from 'src/types/instance';
+import { Such } from '../../core/such';
+import { TSuchInject } from '../../types/instance';
 
 export default {
   /**

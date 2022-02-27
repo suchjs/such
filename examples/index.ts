@@ -6,23 +6,28 @@ import PathMap from '../src/helpers/pathmap';
   // console.log(Such.as(':dict:&<dataDir>/dict.txt'));
   // const txt = await Such.asc('mock.txt');
   // console.log(txt);
-  const instance = Such.instance({
-    "errno:{1}": [0, 1],
-    "errmsg": ":string:{10,30}",
-    "data?": {
-      "list{3,10}": {
-        "province": ":province",
-        "city": ":cascader:&./province",
-        "area": ":cascader:&./city"
-      }
-    }
-  });
-  // console.log(Such.template('`:province`,`:cascader:&/${0}`,`<number>:number`,`:ref:&//${number}`').a());
-  for(let i = 0; i < 10; i++){
-    console.log(instance.a({
-      keys: {}
-    }));
-  }
+  console.log(Such.store);
+  Such.store.clear();
+  console.log(Such.store);
+  // Such.store.clear();
+  // console.log(Such.store);
+  // const instance = Such.instance({
+  //   "errno:{1}": [0, 1],
+  //   "errmsg": ":string:{10,30}",
+  //   "data?": {
+  //     "list{3,10}": {
+  //       "province": ":province",
+  //       "city": ":cascader:&./province",
+  //       "area": ":cascader:&./city"
+  //     }
+  //   }
+  // });
+  // // console.log(Such.template('`:province`,`:cascader:&/${0}`,`<number>:number`,`:ref:&//${number}`').a());
+  // for(let i = 0; i < 10; i++){
+  //   console.log(instance.a({
+  //     keys: {}
+  //   }));
+  // }
   // console.log(Such.template('`:bool``:ref:&//${0}`').a());
   // const tmplRef = {
   //   a: 'hello',

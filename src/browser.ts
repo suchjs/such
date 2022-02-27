@@ -6,11 +6,11 @@ import cascader from './browser/mockit/cascader';
 // add mockit list
 import { addMockitList, builtinMockits } from './data/mockit';
 // add dict/cascader
-addMockitList(builtinMockits);
+addMockitList(builtinMockits, true);
 addMockitList({
   dict,
   cascader,
-});
+}, true);
 const rootSuch = new Such();
 rootSuch.config(Conf);
 

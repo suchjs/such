@@ -8,6 +8,7 @@ import {
   TMRuleFn,
 } from '../types/mockit';
 import { TSSConfig, TSuchSettings } from '../types/node';
+// import { builtinMockits } from './mockit';
 type MockitsCache<T> = TObj<{
   rules: TStrList;
   ruleFns: TObj<TMRuleFn>;
@@ -35,6 +36,7 @@ export interface Store {
   mockitsCache: MockitsCache<unknown>;
   alias: TObj<string>;
   aliasTypes: TStrList;
+  builtins: TStrList;
   fileCache: {
     [index: string]: TFileCacheData;
   };
@@ -42,6 +44,7 @@ export interface Store {
     [index: string]: TSuchSettings;
   };
   config: TSSConfig;
+  clear: (clearCache?: boolean) => void;
 }
 export const isFileCache = (
   target: IFileCache | string | TStrList,
@@ -49,52 +52,67 @@ export const isFileCache = (
   return isObject(target) && typeof target.mtime === 'number';
 };
 const createStore = (namespace?: string): Store => {
-  const fns: TObj<TFunc> = {};
-  const vars: TObj = {};
   const fn = ((name: string, value: unknown, alwaysVar: boolean): void => {
     if (typeof value !== 'function' || alwaysVar) {
-      vars[name] = value;
+      fn.vars[name] = value;
     } else {
-      fns[name] = value as TFunc;
+      fn.fns[name] = value as TFunc;
     }
   }) as Store;
-  fn.namespace = namespace;
-  fn.fns = fns;
-  fn.vars = vars;
-  fn.mockits = {};
-  fn.exports = {
-    vars: {},
-    fns: {},
-    types: [],
+  fn.builtins = [];
+  // initialize the store data
+  const init = (clearCache?: boolean) => {
+    fn.fns = {};
+    fn.vars = {};
+    fn.exports = {
+      vars: {},
+      fns: {},
+      types: [],
+    };
+    fn.mockitsCache = {};
+    fn.alias = {};
+    fn.aliasTypes = [];
+    if (clearCache) fn.fileCache = {};
+    fn.config = {};
+    fn.extends = {};
   };
-  fn.mockitsCache = {};
-  fn.alias = {};
-  fn.aliasTypes = [];
-  fn.fileCache = {};
-  fn.config = {};
-  fn.extends = {};
+  const clearMockits = namespace
+    ? () => {
+        // if has namespace, just clear
+        fn.mockits = {};
+      }
+    : () => {
+        const mockits = fn.builtins.reduce((ret, key) => {
+          ret[key] = fn.mockits[key];
+          return ret;
+        }, {} as TMClassList);
+        fn.mockits = mockits;
+      };
+  fn.mockits = {};
+  fn.namespace = namespace;
+  fn.clear = (clearCache?: boolean) => {
+    init(clearCache);
+    clearMockits();
+  };
+  init(true);
   return fn;
 };
 const globalStore = createStore();
 // namespace stores
-const nsStores: Store[] = [];
-const nsStoreHashs: {
-  [index: string]: number;
-} = {};
+const nsStores: TObj<Store> = {};
 /**
  * return a store with namespace
  * @param namespace [string]
  * @returns Store|never
  */
 export const createNsStore = (namespace: string): Store | never => {
-  if (hasOwn(nsStoreHashs, namespace)) {
+  if (!namespace || hasOwn(nsStores, namespace)) {
     throw new Error(
-      `The store namespace '${namespace}' has been in used when you called the method 'createNsStore'.`,
+      `The store with namespace '${namespace}' has been created.`,
     );
   }
   const store = createStore(namespace);
-  nsStoreHashs[namespace] = nsStores.length;
-  nsStores.push(store);
+  nsStores[namespace] = store;
   return store;
 };
 /**
@@ -102,8 +120,8 @@ export const createNsStore = (namespace: string): Store | never => {
  * @returns Store|undefined
  */
 export const getNsStore = (namespace: string): Store => {
-  if (hasOwn(nsStoreHashs, namespace)) {
-    return nsStores[nsStoreHashs[namespace]];
+  if (hasOwn(nsStores, namespace)) {
+    return nsStores[namespace];
   }
 };
 /**

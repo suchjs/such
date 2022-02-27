@@ -4,7 +4,7 @@ import { getFileCacheData } from '../utils';
 import { TSuchInject } from '../../types/instance';
 import { TStrList } from '../../types/common';
 import Mockit from '../../core/mockit';
-import { Such } from 'src/core/such';
+import { Such } from '../../core/such';
 
 export default {
   // config options

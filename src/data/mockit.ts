@@ -9,6 +9,7 @@ import template from '../mockit/template';
 import { TMClassList } from '../types/mockit';
 import globalStore from './store';
 import { tmplMockitName } from './config';
+import { TStrList } from '../types/common';
 // all mockits
 export const builtinMockits = {
   number,
@@ -20,9 +21,24 @@ export const builtinMockits = {
   [tmplMockitName]: template,
 };
 
-// add new mockits
-export const addMockitList = (mockitList: TMClassList): void => {
+/**
+ * 
+ * @param mockitList TMClassList
+ * @param isBuiltin boolean
+ */
+export const addMockitList = (mockitList: TMClassList, isBuiltin?: boolean): void => {
   Object.keys(mockitList).map((key: string) => {
     globalStore.mockits[key] = mockitList[key];
+    if(isBuiltin){
+      addBuiltinTypes(key);
+    }
   });
 };
+
+/**
+ * 
+ * @param args TStrList
+ */
+export const addBuiltinTypes = (...args: TStrList): void => {
+  globalStore.builtins.push(...args);
+}

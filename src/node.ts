@@ -9,7 +9,7 @@ import { TPath } from './types/common';
 // dict & cascader types for nodejs
 import ToCascader from './node/mockit/cascader';
 import ToDict from './node/mockit/dict';
-import { addMockitList, builtinMockits } from './data/mockit';
+import { addBuiltinTypes, addMockitList, builtinMockits } from './data/mockit';
 import globalStore from './data/store';
 
 // load config files
@@ -178,11 +178,12 @@ const tryConfigFile = () => {
 const lastConfFile = tryConfigFile();
 // create the root such
 const root = new NSuch();
+// add all builtin mockits first
+addMockitList(builtinMockits, true);
 // keep the order, add the node types first
 root.define('dict', ToDict);
 root.define('cascader', ToCascader);
-// add all builtin mockits first
-addMockitList(builtinMockits);
+addBuiltinTypes('dict', 'cascader');
 // if has config file, autoload the config file
 if (lastConfFile) {
   // load config

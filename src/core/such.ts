@@ -1763,6 +1763,9 @@ export class Such {
     return new SuchMocker<T>(target, this, this.namespace, options);
   }
   /**
+   * 
+   */
+  /**
    *
    *
    * @memberof Such
