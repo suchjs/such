@@ -8,6 +8,7 @@ import {
   strtotime,
 } from '../helpers/utils';
 import Mockit from '../core/mockit';
+import { TSuchInject } from '../types/instance';
 const makeDate = (param: string | number): Date | never => {
   let date: Date;
   if (typeof param === 'number') {
@@ -74,8 +75,14 @@ export default class ToDate extends Mockit<string | Date> {
       return dateformat(format, result as Date);
     } as TMModifierFn<string>);
   }
-  public generate(): Date {
-    const { $size } = this.params;
+  public generate(options: TSuchInject): Date {
+    let { $size } = this.params;
+    if ($size && options.param?.$size) {
+      $size = {
+        ...$size,
+        ...options.param.$size,
+      };
+    }
     const range = (
       $size ?? {
         range: [

@@ -1,8 +1,7 @@
-import { regexpRule } from 'reregexp';
 import { IParserFactory, IPPConfig } from '../types/parser';
 import { decodeTrans, getExp, hasOwn } from '../helpers/utils';
 import { AParser } from '../core/parser';
-import { Variable } from '../data/config';
+import { VariableExpression } from '../data/config';
 
 const parser: IParserFactory = {
   /**
@@ -13,7 +12,7 @@ const parser: IParserFactory = {
     endTag: [']'],
     separator: ',',
     pattern:
-      /\s*([a-zA-Z_$][\w$]*)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|([^\s,\]]+))\s*)?/,
+      /\s*([a-zA-Z_$][\w$]*)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|((?:\[(?:\d+|(['"])(?:(?!\5)[^\\]|\\.)*\5)\]|[^\s,\]])+))\s*)?/,
   },
   /**
    *
@@ -25,7 +24,7 @@ const parser: IParserFactory = {
     const config: IPPConfig = {};
     if (params.length) {
       const rule =
-        /^\s*([a-zA-Z_$][\w$]*)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|([^\s,\]]+))\s*)?$/;
+        /^\s*([a-zA-Z_$][\w$]*)\s*(?:=\s*(?:(['"])((?:(?!\2)[^\\]|\\.)*)\2|((?:\[(?:\d+|(['"])(?:(?!\5)[^\\]|\\.)*\5)\]|[^\s,\]])+))\s*)?$/;
       const nativeValues = ['true', 'false', 'null', 'undefined', 'NaN'];
       for (let i = 0, j = params.length; i < j; i++) {
         const param = params[i];
@@ -40,19 +39,13 @@ const parser: IParserFactory = {
             config[key] = decodeTrans(strValue);
           } else if (plainValue) {
             const value = plainValue;
-            if (value.charAt(0) === '/') {
-              if (regexpRule.test(value)) {
-                config[key] = getExp(value);
-              } else {
-                this.halt(`wrong regexp:${value}`);
-              }
-            } else if (!isNaN(Number(value))) {
+            if (!isNaN(Number(value))) {
               config[key] = Number(value);
             } else if (nativeValues.indexOf(value) > -1) {
               config[key] = getExp(value);
             } else {
-              // variable
-              config[key] = new Variable(value);
+              // expression or variable
+              config[key] = new VariableExpression(value);
             }
           } else {
             config[key] = true;

@@ -1,6 +1,6 @@
 {
   "name": "suchjs",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "description": "Generating fake data, define your own types easily, expandable and powerful.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -54,6 +54,7 @@
   },
   "scripts": {
     "start": "tsc && node lib/index.js",
+    "dev": "tsc --watch",
     "test": "jest --forceExit",
     "lint": "eslint 'src/**/*.{ts,js}'",
     "check": "madge --warning --circular --extensions ts ./src/",

@@ -23,7 +23,7 @@ import {
 } from '../types/mockit';
 import { EnumSpecialType, TSuchInject } from '../types/instance';
 import type { Such } from './such';
-import { Variable } from '../data/config';
+import { VariableExpression } from '../data/config';
 import { TFieldPath } from '../helpers/pathmap';
 
 const { fns: globalFns, vars: globalVars } = globalStore;
@@ -102,7 +102,7 @@ const getNsMockitsCache = (
 const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
   const PRE_PROCESS_STAND = '__pre_process_fn__';
   const isPreProcessFn = (fn: (...args: unknown[]) => unknown): boolean => {
-    return hasOwn((fn as unknown as TObj), PRE_PROCESS_STAND);
+    return hasOwn(fn as unknown as TObj, PRE_PROCESS_STAND);
   };
   const setPreProcessFn = <T = (...args: unknown[]) => unknown>(fn: T): T => {
     (fn as unknown as TObj)[PRE_PROCESS_STAND] = true;
@@ -145,18 +145,20 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
     },
     $config: function (this: Mockit, $config: IPPConfig = {}): IPPConfig {
       const last: IPPConfig = {};
-      const { nsVars } = getNsValues(...this.getCurrentNs());
+      const { nsVars, nsFns } = getNsValues(...this.getCurrentNs());
       for (const key in $config) {
         if (hasOwn($config, key)) {
           const value = $config[key];
-          if (value instanceof Variable) {
-            const { name } = value;
-            if (!hasOwn(nsVars, name)) {
-              throw new Error(
-                `The configuration of key "${key}" use a variable name "${name}" is not found in the assigned values, you need assign it first.`,
-              );
-            }
-            last[key] = nsVars[name];
+          if (value instanceof VariableExpression) {
+            const { expression } = value;
+            const func =  new Function(
+              '__CONTEXT__',
+              'with(__CONTEXT__){ return ' + expression + '}',
+            );
+            last[key] = func({
+              ...nsFns,
+              ...nsVars,
+            });
           } else {
             last[key] = value;
           }
@@ -313,10 +315,7 @@ export default abstract class Mockit<T = unknown> {
    * @returns
    * @memberof Mockit
    */
-  public addModifier(
-    name: string,
-    fn: TMModifierFn<T>
-  ): void | never {
+  public addModifier(name: string, fn: TMModifierFn<T>): void | never {
     return this.add('modifier', name, fn);
   }
   /**
@@ -456,7 +455,7 @@ export default abstract class Mockit<T = unknown> {
   private add(
     type: 'rule' | 'modifier',
     name: string,
-    fn: TMRuleFn | TMModifierFn<T>
+    fn: TMRuleFn | TMModifierFn<T>,
   ): never | void {
     const { namespace, constrName } = this.getStaticProps();
     const curName = constrName;
@@ -504,7 +503,7 @@ export default abstract class Mockit<T = unknown> {
       configOptions,
       selfConfigOptions,
       specialType,
-      baseType
+      baseType,
     } = staticMockit;
     return {
       constrName,
@@ -514,7 +513,7 @@ export default abstract class Mockit<T = unknown> {
       configOptions,
       selfConfigOptions,
       specialType,
-      baseType
+      baseType,
     };
   }
   /**
@@ -543,10 +542,7 @@ export default abstract class Mockit<T = unknown> {
     ) {
       const transformedKey = cacheName || '__TRANSFORMED__';
       // if the rule name has ever validated, ignore this rule
-      if (
-        isObject(params[name]) &&
-        hasOwn(params[name], transformedKey)
-      ) {
+      if (isObject(params[name]) && hasOwn(params[name], transformedKey)) {
         return;
       }
       // validate the rule

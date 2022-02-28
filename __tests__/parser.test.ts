@@ -1,3 +1,4 @@
+import { VariableExpression } from '../src/data/config';
 import Parser from '../src/data/parser';
 import { IPPFunc } from '../src/types/parser';
 const getFunc = (context: string): IPPFunc => {
@@ -42,7 +43,7 @@ describe('validate parser and dispatch', () => {
   });
   test('config parser', () => {
     // kinds of config
-    expect(Parser.parse('#[a=true,b="333",c=1e10,d,f=false,g="\\"",h=/a{3}/]')).toEqual({
+    expect(Parser.parse('#[a=true,b="333",c=1e10,d,f=false,g="\\"",h=a*3+4]')).toEqual({
       $config: {
         a: true,
         b: '333',
@@ -50,11 +51,11 @@ describe('validate parser and dispatch', () => {
         d: true,
         f: false,
         g: '"',
-        h: /a{3}/
+        h: new VariableExpression('a*3+4')
       },
     });
     // wrong exp
-    expect(() => Parser.parse('#[a=/abc]')).toThrow();
+    expect(() => Parser.parse('#[a= b + 1]')).toThrow();
     // repeated config
     expect(() => Parser.parse('#[a=1,a=2]')).toThrow();
     // wrong config

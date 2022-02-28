@@ -516,12 +516,22 @@ export class Mocker {
                   dpath,
                   mocker: this,
                 };
-                if (instanceOptions?.keys) {
-                  const config = instanceOptions.keys[strPath];
-                  if (config && hasOwn(config, 'index')) {
-                    inject.config = {
-                      index: config.index,
-                    };
+                if (instanceOptions) {
+                  // inject the current key config
+                  if (instanceOptions.keys) {
+                    const config = instanceOptions.keys[strPath];
+                    if (config && hasOwn(config, 'index')) {
+                      inject.key = {
+                        index: config.index,
+                      };
+                    }
+                  }
+                  // inject the current override params
+                  if(instanceOptions.params){
+                    const param = instanceOptions.params[strPath];
+                    if (param) {
+                      inject.param = param;
+                    }
                   }
                 }
                 return instance.make(inject, root.such);
@@ -782,7 +792,8 @@ export class Template {
       datas: null,
       dpath: [],
       mocker: null,
-      config: null,
+      key: null,
+      param: null
     },
   ): T {
     if (!this.mockit) {
@@ -798,18 +809,20 @@ export class Template {
       datas: null,
       dpath: [],
       mocker: null,
-      config: null,
+      key: null,
+      param: null
     },
   ): string {
     let index = 0;
     // clear the indexData and namedData
     // so every time get the values only generated
     const mocker =
-      options.mocker || this.mocker ||
+      options.mocker ||
+      this.mocker ||
       (() => {
         const { mocker } = this.such.instance(this.context);
         mocker.template = this;
-        this.mocker  = options.mocker = mocker;
+        this.mocker = options.mocker = mocker;
         return mocker;
       })();
     const { path, typeContexts } = this;
@@ -1409,12 +1422,19 @@ export class Such {
               if (!this.instance) {
                 this.initInstance();
               }
-              if (options?.config) {
-                return this.instance.a({
-                  keys: {
-                    '/': options.config,
-                  },
-                });
+              if (options) {
+                const instanceOptions: IAInstanceOptions = {};
+                if (options.key) {
+                  instanceOptions.keys = {
+                    '/': options.key,
+                  };
+                }
+                if (options.param) {
+                  instanceOptions.params = {
+                    '/': options.param,
+                  };
+                }
+                return this.instance.a(instanceOptions);
               }
               return this.instance.a();
             }
@@ -1763,7 +1783,7 @@ export class Such {
     return new SuchMocker<T>(target, this, this.namespace, options);
   }
   /**
-   * 
+   *
    */
   /**
    *

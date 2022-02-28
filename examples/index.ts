@@ -6,9 +6,19 @@ import PathMap from '../src/helpers/pathmap';
   // console.log(Such.as(':dict:&<dataDir>/dict.txt'));
   // const txt = await Such.asc('mock.txt');
   // console.log(txt);
-  console.log(Such.store);
-  Such.store.clear();
-  console.log(Such.store);
+  const instance = Such.instance(":string:[97,99]:{3,10}");
+  console.log(instance.a({
+    params: {
+      '/': {
+        $length: {
+          least: 10
+        },
+        $size: {
+          range: [97, 97]
+        }
+      }
+    }
+  }));
   // Such.store.clear();
   // console.log(Such.store);
   // const instance = Such.instance({

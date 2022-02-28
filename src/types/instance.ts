@@ -1,11 +1,18 @@
 import PathMap, { TFieldPath } from '../helpers/pathmap';
 import { Mocker } from '../core/such';
 import Mockit from '../core/mockit';
+import { TMParams } from './mockit';
+
+export type NestedPartial<T> = {
+  [P in keyof T]: Partial<T[P]>
+};
+export type TOverrideParams = NestedPartial<Pick<TMParams, '$config' | '$length' | '$size'>>;
 export type TSuchInject = {
   datas: PathMap<unknown>;
   dpath: TFieldPath;
   mocker: Mocker;
-  config?: Required<TEnumedIndex>;
+  key?: Required<TEnumedIndex>;
+  param?: TOverrideParams;
 };
 
 export type TEnumedIndex = {
@@ -48,6 +55,9 @@ export interface IAInstanceOptions {
     [index: string]: Pick<IMockerKeyRule, 'min' | 'max'> &
       TEnumedIndex &
       TOptionalExist;
+  };
+  params?: {
+    [index: string]: TOverrideParams;
   };
 }
 /**

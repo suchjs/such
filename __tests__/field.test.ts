@@ -579,4 +579,31 @@ describe('test filed', () => {
     expect(ruleKeys['/b/1/d'].max).toEqual(3);
     expect(ruleKeys['/b/1/d'].alwaysArray).toBeTruthy();
   });
+  // test inject params
+  test("test inject param", () => {
+    const strInstance = Such.instance<string>(":string:[97,99]:{5,10}");
+    for(let i = 0; i < 100; i++){
+      const value = strInstance.a();
+      expect(value.length >= 5 && value.length <= 10).toBeTruthy();
+      expect(Array.from(value).every((ch) => {
+        return 'abc'.includes(ch);
+      })).toBeTruthy();
+      const overrideValue = strInstance.a({
+        params: {
+          '/': {
+            $length: {
+              least: 8
+            },
+            $size: {
+              range: [97, 97]
+            } 
+          }
+        }
+      });
+      expect(overrideValue.length >= 8 && overrideValue.length <= 10).toBeTruthy();
+      expect(Array.from(overrideValue).every((ch) => {
+        return ch === 'a';
+      })).toBeTruthy();
+    }
+  });
 });
