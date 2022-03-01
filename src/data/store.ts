@@ -14,6 +14,7 @@ type MockitsCache<T> = TObj<{
   ruleFns: TObj<TMRuleFn>;
   modifiers: TStrList;
   modifierFns: TObj<TMModifierFn<T>>;
+  mutates?: TStrList;
   define?: Partial<TMFactoryOptions>;
 }>;
 export interface IFileCache {

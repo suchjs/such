@@ -581,29 +581,35 @@ describe('test filed', () => {
   });
   // test inject params
   test("test inject param", () => {
+    // string
     const strInstance = Such.instance<string>(":string:[97,99]:{5,10}");
     for(let i = 0; i < 100; i++){
       const value = strInstance.a();
       expect(value.length >= 5 && value.length <= 10).toBeTruthy();
-      expect(Array.from(value).every((ch) => {
-        return 'abc'.includes(ch);
-      })).toBeTruthy();
       const overrideValue = strInstance.a({
         params: {
           '/': {
             $length: {
               least: 8
-            },
-            $size: {
-              range: [97, 97]
             } 
           }
         }
       });
       expect(overrideValue.length >= 8 && overrideValue.length <= 10).toBeTruthy();
-      expect(Array.from(overrideValue).every((ch) => {
-        return ch === 'a';
-      })).toBeTruthy();
     }
+    // increment
+    const incInstance = Such.instance<{ id: number[]}>({
+      id: ":increment:#[start=1,step=2]:{3}"
+    });
+    expect(incInstance.a().id).toEqual([1, 3, 5]);
+    expect(incInstance.a({
+      params: {
+        "/id": {
+          $config: {
+            step: 3
+          }
+        }
+      }
+    }).id).toEqual([8, 11, 14]);
   });
 });

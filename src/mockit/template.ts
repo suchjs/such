@@ -28,11 +28,9 @@ export default class ToTemplate extends Mockit<string> {
   // generate
   public generate(options: TSuchInject): string {
     const { $template } = this;
-    const params = this.params;
-    let { $length } = params;
+    const { $length } = this.getCurrentParams(options);
     const result = $template.value(options);
     if ($length) {
-      $length = Object.assign({}, $length, options.param?.$length);
       const least = Number($length.least);
       const most = Number($length.most);
       const total = makeRandom(least, most);

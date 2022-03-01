@@ -1,4 +1,9 @@
-import { TResult, TStrList, TObj, TConstructor } from '../types/common';
+import {
+  TResult,
+  TStrList,
+  TObj,
+  TConstructor,
+} from '../types/common';
 import { IPPConfig, IPPFunc, IPPFuncOptions } from '../types/parser';
 import {
   deepCopy,
@@ -21,9 +26,13 @@ import {
   TMFactoryOptions,
   TMConfigRule,
 } from '../types/mockit';
-import { EnumSpecialType, TSuchInject } from '../types/instance';
+import {
+  EnumSpecialType,
+  TOverrideParams,
+  TSuchInject,
+} from '../types/instance';
 import type { Such } from './such';
-import { VariableExpression } from '../data/config';
+import { allowdOverrideParams, VariableExpression } from '../data/config';
 import { TFieldPath } from '../helpers/pathmap';
 
 const { fns: globalFns, vars: globalVars } = globalStore;
@@ -151,7 +160,7 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
           const value = $config[key];
           if (value instanceof VariableExpression) {
             const { expression } = value;
-            const func =  new Function(
+            const func = new Function(
               '__CONTEXT__',
               'with(__CONTEXT__){ return ' + expression + '}',
             );
@@ -283,6 +292,7 @@ export default abstract class Mockit<T = unknown> {
         ruleFns: {},
         modifiers: [],
         modifierFns: {},
+        mutates: [],
       };
       // intialize
       this.init();
@@ -293,7 +303,7 @@ export default abstract class Mockit<T = unknown> {
       if (isNoEmptyObject(configOptions)) {
         this.addRule(
           '$config',
-          setPreProcessFn(PRE_PROCESS.$config.bind(this)),
+          setPreProcessFn(PRE_PROCESS.$config.bind(this))
         );
       }
       // cached the mockit, frozen all data
@@ -326,8 +336,8 @@ export default abstract class Mockit<T = unknown> {
    * @returns
    * @memberof Mockit
    */
-  public addRule(name: string, fn: TMRuleFn): void | never {
-    return this.add('rule', name, fn);
+  public addRule(name: string, fn: TMRuleFn, mutate?: boolean): void | never {
+    return this.add('rule', name, fn, mutate);
   }
   /**
    *
@@ -365,6 +375,40 @@ export default abstract class Mockit<T = unknown> {
     // must after copy,otherwise will override modified values
     this.validate();
     return this.initParams;
+  }
+  /**
+   * Merge params and override params
+   * @param {TSuchInject} options
+   * @returns {TMParams}
+   *
+   */
+  public getCurrentParams(options: TSuchInject): TMParams {
+    if (options.param) {
+      const { namespace, constrName } = this.getStaticProps();
+      const mockitsCache = getNsMockitsCache(namespace);
+      const { ruleFns, mutates } = mockitsCache[constrName];
+      const params = {
+        ...this.params,
+      };
+      Object.keys(options.param).map((key) => {
+        if (hasOwn(this.params, key) && allowdOverrideParams.includes(key)) {
+          const curParam = options.param[key as keyof TOverrideParams];
+          const origParam = this.params[key];
+          params[key] = Object.assign(
+            {},
+            origParam,
+            (mutates.includes(key)
+              ? ruleFns[key](curParam)
+              : curParam)
+          );
+        } else {
+          // eslint-disable-next-line no-console
+          console.warn(`You set a '${key}' param in instanceOptions's params not allowed.`);
+        }
+      });
+      return params;
+    }
+    return this.params;
   }
   /**
    * setAllowAttrs
@@ -448,7 +492,7 @@ export default abstract class Mockit<T = unknown> {
    * @param {("rule"|"modifier")} type
    * @param {string} name
    * @param {(TMRuleFn|TMModifierFn<T>)} fn
-   * @param {string} [pos]
+   * @param {boolean} [mutate]
    * @returns {(never|void)}
    * @memberof Mockit
    */
@@ -456,11 +500,13 @@ export default abstract class Mockit<T = unknown> {
     type: 'rule' | 'modifier',
     name: string,
     fn: TMRuleFn | TMModifierFn<T>,
+    mutate?: boolean,
   ): never | void {
     const { namespace, constrName } = this.getStaticProps();
     const curName = constrName;
     const mockitsCache = getNsMockitsCache(namespace);
-    const { rules, ruleFns, modifiers, modifierFns } = mockitsCache[curName];
+    const { rules, ruleFns, modifiers, modifierFns, mutates } =
+      mockitsCache[curName];
     const isRuleType = type === 'rule';
     let target;
     let fns;
@@ -485,6 +531,10 @@ export default abstract class Mockit<T = unknown> {
     // when add a rule, auto add the rule name to allowAttrs
     if (isRuleType) {
       this.setAllowAttrs(name);
+      // mutate function
+      if (mutate) {
+        mutates.push(name);
+      }
     }
     target.push(name);
     fns[name] = fn;

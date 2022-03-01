@@ -106,23 +106,9 @@ export default class ToNumber extends Mockit<number> {
    * @returns [number]
    */
   public generate(options: TSuchInject): number {
-    let { $size, $config } = this.params;
+    const { $size, $config } = this.getCurrentParams(options);
     let result: number;
-    if ($config && options.param?.$config) {
-      // set the current $config
-      $config = {
-        ...$config,
-        ...options.param.$config
-      };
-    }
     if ($size) {
-      // set the current $size
-      if(options.param?.$size){
-        $size = {
-          ...$size, 
-          ...options.param.$size
-        };
-      }
       const { range } = $size;
       const step = $config && ($config.step as number);
       const [min, max] = range as number[];

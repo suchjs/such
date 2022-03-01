@@ -161,7 +161,7 @@ const confs: TSuchSettings = {
         },
       },
       generate(options: TSuchInject, such: Such): string {
-        const { $config } = this.params;
+        const { $config } = this.getCurrentParams(options);
         const { v6 } = $config;
         const { mocker } = options;
         let gen = mocker.store(STORE_KEY) as StoreGenerateFn;
@@ -201,7 +201,7 @@ const confs: TSuchSettings = {
         const { mocker } = options;
         let gen = mocker.store(STORE_KEY) as () => string;
         if (!(typeof gen === 'function')) {
-          const { $config } = this.params;
+          const { $config } = this.getCurrentParams(options);
           const { compress } = $config;
           if (compress > 0) {
             const instance = such.instance(':regexp/[0-9a-f]{3,4}/');
@@ -280,7 +280,7 @@ const confs: TSuchSettings = {
         const { mocker } = options;
         let gen = mocker.store(STORE_KEY) as StoreGenerateFn;
         if (typeof gen !== 'function') {
-          const { $config } = this.params;
+          const { $config } = this.getCurrentParams(options);
           const { type } = $config;
           const { min, max } = $config;
           let minSegs: number[], maxSegs: number[];
@@ -368,8 +368,8 @@ const confs: TSuchSettings = {
           type: Number,
         },
       },
-      generate(_: TSuchInject, such: Such): string {
-        const { $config = {} } = this.params;
+      generate(options: TSuchInject, such: Such): string {
+        const { $config = {} } = this.getCurrentParams(options);
         const { lowercase, argb, min, max } = $config;
         const { makeRandom } = such.utils;
         let hexValue: number;

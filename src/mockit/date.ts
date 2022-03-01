@@ -56,7 +56,7 @@ export default class ToDate extends Mockit<string | Date> {
           };
         }
       }
-    });
+    }, true);
     // $format rule
     this.addRule('$format', function ($format: IPPFormat) {
       if (!$format) {
@@ -68,21 +68,16 @@ export default class ToDate extends Mockit<string | Date> {
       return {
         format,
       };
-    });
+    }, true);
     // modifier
     this.addModifier('$format', function (result: unknown, $format: IPPFormat) {
       const { format } = $format;
       return dateformat(format, result as Date);
     } as TMModifierFn<string>);
   }
+  // generate
   public generate(options: TSuchInject): Date {
-    let { $size } = this.params;
-    if ($size && options.param?.$size) {
-      $size = {
-        ...$size,
-        ...options.param.$size,
-      };
-    }
+    const { $size } = this.getCurrentParams(options);
     const range = (
       $size ?? {
         range: [

@@ -4,6 +4,7 @@ import { IPPRegexp } from '../types/parser';
 import Mockit from '../core/mockit';
 import { TMAttrs } from '../types/mockit';
 import { isArray } from '../helpers/utils';
+import { TSuchInject } from '../types/instance';
 export default class ToRegexp extends Mockit<string> {
   // parser
   private instance: RegexpParser;
@@ -57,12 +58,12 @@ export default class ToRegexp extends Mockit<string> {
         }
       });
       return result;
-    });
+    }, true);
   }
   // generate
-  public generate(): string {
+  public generate(options: TSuchInject): string {
     let { instance } = this;
-    const { $config = {}, $regexp } = this.params;
+    const { $config = {}, $regexp } = this.getCurrentParams(options);
     if (!instance) {
       const groupConf = Object.keys($config).reduce(
         (ret: TObj, key: string) => {

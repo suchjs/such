@@ -31,3 +31,4 @@ export const tmplRefRule = new RegExp(
 export class VariableExpression {
   constructor(public readonly expression: string) {}
 }
+export const allowdOverrideParams = ['$config', '$length'];

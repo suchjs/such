@@ -6,7 +6,7 @@ import { TMParams } from './mockit';
 export type NestedPartial<T> = {
   [P in keyof T]: Partial<T[P]>
 };
-export type TOverrideParams = NestedPartial<Pick<TMParams, '$config' | '$length' | '$size'>>;
+export type TOverrideParams = NestedPartial<Pick<TMParams, '$config' | '$length'>>;
 export type TSuchInject = {
   datas: PathMap<unknown>;
   dpath: TFieldPath;

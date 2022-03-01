@@ -2,6 +2,16 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v3.0.4] - 2022-03-01
+
+### Added
+
+- Add the `params` config for `instanceOptions`, it allowed you to override the mockit's `$config` and `$length` parameter, so you can generate the data more exactly.
+
+### Changed
+
+- [break change] Now config not support a regexp literal `/xxx/xx`, but support expression without whitespaces `a*1+2`.
+
 ## [v3.0.3] - 2022-02-27
 
 ### Added
