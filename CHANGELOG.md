@@ -12,6 +12,8 @@ Suchjs add changelog since `v1.0.0`.
 
 - [break change] Now config not support a regexp literal `/xxx/xx`, but support expression without whitespaces `a*1+2`.
 
+- [break change] The `config` field in `options` of the generate methods's first parameter has renamed to `key` to make the meaning more clear.  
+
 ## [v3.0.3] - 2022-02-27
 
 ### Added
