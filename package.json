@@ -1,7 +1,7 @@
 {
   "name": "suchjs",
-  "version": "3.0.4",
-  "description": "Generating fake data, define your own types easily, expandable and powerful.",
+  "version": "3.0.5",
+  "description": "A powerful fake data library, configurable and customizable.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "exports": {
@@ -13,17 +13,12 @@
   "author": "jxz_211@163.com",
   "keywords": [
     "fake",
-    "generate",
     "mock",
+    "dummy",
     "random",
-    "regex",
     "data",
     "json",
     "template",
-    "string",
-    "intercept",
-    "xmlHttpRequest",
-    "fetch",
     "browser"
   ],
   "license": "MIT",

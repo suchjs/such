@@ -2,6 +2,12 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v3.0.4] - 2022-03-02
+
+### Changed
+
+- [break change] Change the `Such` instance's `store` from a property to a method, now you should use this new method to get the data in `store`, and a new method `clearStore` is added to allow you clear the store's data.
+
 ## [v3.0.4] - 2022-03-01
 
 ### Added
