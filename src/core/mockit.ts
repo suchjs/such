@@ -15,7 +15,7 @@ import {
   isObject,
   typeOf,
 } from '../helpers/utils';
-import globalStore, { getNsStore } from '../data/store';
+import globalStoreData, { getNsStore } from '../data/store';
 import {
   TMConfig,
   TMModifierFn,
@@ -35,7 +35,7 @@ import type { Such } from './such';
 import { allowdOverrideParams, VariableExpression } from '../data/config';
 import { TFieldPath } from '../helpers/pathmap';
 
-const { fns: globalFns, vars: globalVars } = globalStore;
+const { fns: globalFns, vars: globalVars } = globalStoreData;
 // get namespace assigned values
 const getNsValues = (
   callerNs: string,
@@ -68,8 +68,8 @@ const getNsValues = (
     };
   }
   // now call the none root
-  const store = getNsStore(ownerNs);
-  const { fns, vars } = store.exports;
+  const storeData = getNsStore(ownerNs);
+  const { fns, vars } = storeData.exports;
   if (isCallerRoot) {
     return {
       nsFns: {
@@ -100,12 +100,12 @@ const getNsValues = (
 // get namespace mockits cache
 const getNsMockitsCache = (
   namespace?: string,
-): typeof globalStore.mockitsCache => {
+): typeof globalStoreData.mockitsCache => {
   if (!namespace) {
-    return globalStore.mockitsCache;
+    return globalStoreData.mockitsCache;
   }
-  const store = getNsStore(namespace);
-  return store && store.mockitsCache;
+  const storeData = getNsStore(namespace);
+  return storeData && storeData.mockitsCache;
 };
 // pre process data and methods
 const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {

@@ -38,7 +38,7 @@ export default {
   generate(this: Mockit<unknown>, options: TSuchInject, such: Such): unknown | never {
     const { mocker } = options;
     const { handle, values, lastPath } = makeCascaderData(this.params, mocker);
-    const data = getFileCacheData(lastPath, such.store);
+    const data = getFileCacheData(lastPath, such.store('config', 'fileCache'));
     return handle(data, values as TStrList);
   },
 };

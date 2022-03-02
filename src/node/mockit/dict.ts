@@ -34,7 +34,7 @@ export default {
   generate(this: Mockit<TMultiStr>, _options: TSuchInject, such: Such): TMultiStr {
     const { $path } = this.params;
     const queues = $path.map((item: IPPPathItem) => {
-      const content = getFileCacheData(item, such.store);
+      const content = getFileCacheData(item, such.store('config', 'fileCache'));
       if(content === undefined){
         throw new Error(`the dict of '${item.fullpath}' is not loaded or not found`);
       }

@@ -12,13 +12,16 @@ import PathMap from '../src/helpers/pathmap';
       '/': {
         $length: {
           least: 10
-        },
-        $size: {
-          range: [97, 97]
         }
       }
     }
   }));
+  const mockits = Such.store('mockits'); 
+  console.log(mockits);
+  Such.clearStore({
+    changeOrigin: true
+  });
+  console.log(mockits);
   // Such.store.clear();
   // console.log(Such.store);
   // const instance = Such.instance({

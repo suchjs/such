@@ -7,7 +7,7 @@ import ref from '../mockit/ref';
 import increment from '../mockit/increment';
 import template from '../mockit/template';
 import { TMClassList } from '../types/mockit';
-import globalStore from './store';
+import globalStoreData from './store';
 import { tmplMockitName } from './config';
 import { TStrList } from '../types/common';
 // all mockits
@@ -28,7 +28,7 @@ export const builtinMockits = {
  */
 export const addMockitList = (mockitList: TMClassList, isBuiltin?: boolean): void => {
   Object.keys(mockitList).map((key: string) => {
-    globalStore.mockits[key] = mockitList[key];
+    globalStoreData.mockits[key] = mockitList[key];
     if(isBuiltin){
       addBuiltinTypes(key);
     }
@@ -40,5 +40,5 @@ export const addMockitList = (mockitList: TMClassList, isBuiltin?: boolean): voi
  * @param args TStrList
  */
 export const addBuiltinTypes = (...args: TStrList): void => {
-  globalStore.builtins.push(...args);
+  globalStoreData.builtins.push(...args);
 }

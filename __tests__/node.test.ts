@@ -91,16 +91,43 @@ describe('validate built-in types in nodejs', () => {
   });
   // test clear store
   test("clear store", () => {
-    const { rootDir } = Such.store.config;
+    const { config, mockits, vars, fns } = Such.store('config', 'mockits', 'vars', 'fns');
+    const { rootDir } = config;
+    const storeVarKey = '__store__';
+    const storeFnKey = '__store_fn__';
+    // assign a new variable
+    Such.assign(storeVarKey, true);
+    Such.assign(storeFnKey, function(){
+      // a function
+    });
+    expect(vars[storeVarKey]).toBe(true);
     // boolean is an extended type 
-    expect("boolean" in Such.store.mockits).toBeTruthy();
+    expect("boolean" in mockits).toBeTruthy();
     // clear the store
-    Such.store.clear();
+    Such.clearStore({
+      exclude: ['vars', 'fns']
+    });
     // now the extended types has been cleared
-    expect("boolean" in Such.store.mockits).toBeFalsy();
+    expect("boolean" in mockits).toBeFalsy();
+    // the vars and fns is exclude
+    expect(vars[storeVarKey]).toBe(true);
+    expect(typeof fns[storeFnKey] === 'function').toBeTruthy();
     // reload the config
     Such.loadConf(path.join(rootDir, 'such.config.js'));
     // now the config has been reload
-    expect("boolean" in Such.store.mockits).toBeTruthy();
+    expect("boolean" in mockits).toBeTruthy();
+    // now clear with a reset
+    Such.clearStore({
+      reset: true,
+      exclude: 'vars'
+    });
+    // the origin mockits keep the value
+    expect(vars[storeVarKey]).toBe(true);
+    expect(typeof fns[storeFnKey] === 'function').toBeTruthy();
+    expect(Such.store('vars') === vars).toBeTruthy();
+    expect(Such.store('fns') === fns).toBeFalsy();
+    const newMockits = Such.store('mockits');
+    expect("boolean" in mockits).toBeTruthy();
+    expect("boolean" in newMockits).toBeFalsy();
   });
 });

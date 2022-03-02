@@ -84,6 +84,24 @@ export const isNoEmptyObject = (target: unknown): boolean => {
 };
 
 /**
+ * 
+ * @param obj [TObj]
+ */
+export const setObjectEmpty = (obj: TObj) => {
+  for(const key of Object.getOwnPropertyNames(obj)){
+    delete obj[key];
+  }
+};
+
+/**
+ * 
+ * @param arr [Array<unknown>]
+ */
+export const setArrayEmtpy = (arr: Array<unknown>) => {
+  arr.length = 0;
+};
+
+/**
  *
  * @param min [number] the min of the random number
  * @param max [number] the max of the random number

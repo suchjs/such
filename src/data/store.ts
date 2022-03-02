@@ -1,4 +1,10 @@
-import { hasOwn, isObject } from '../helpers/utils';
+import {
+  hasOwn,
+  isArray,
+  isObject,
+  setArrayEmtpy,
+  setObjectEmpty,
+} from '../helpers/utils';
 import { TObj, TFunc, TStrList } from '../types/common';
 import {
   TMClass,
@@ -26,18 +32,13 @@ export type TFileCacheData = IFileCache | TStrList | string;
 export interface Store {
   (name: string, value: unknown, alwaysVar: boolean): void;
   namespace?: string;
+  builtins: TStrList;
   vars: TObj;
   fns: TObj<TFunc>;
   mockits: TMClassList;
-  exports: {
-    vars: TObj;
-    fns: TObj<TFunc>;
-    types: string[];
-  };
   mockitsCache: MockitsCache<unknown>;
   alias: TObj<string>;
   aliasTypes: TStrList;
-  builtins: TStrList;
   fileCache: {
     [index: string]: TFileCacheData;
   };
@@ -45,13 +46,43 @@ export interface Store {
     [index: string]: TSuchSettings;
   };
   config: TSSConfig;
-  clear: (clearCache?: boolean) => void;
+  exports: {
+    vars: TObj;
+    fns: TObj<TFunc>;
+    types: string[];
+  };
+  clear: (options?: {
+    reset?: boolean;
+    exclude?: Array<TStoreAllowedClearFileds> | TStoreAllowedClearFileds;
+  }) => void;
 }
+
+export type TStoreAllowedClearFileds =
+  | 'vars'
+  | 'fns'
+  | 'mockits'
+  | 'mockitsCache'
+  | 'alias'
+  | 'aliasTypes'
+  | 'fileCache'
+  | 'config'
+  | 'extends'
+  | 'exports';
+
 export const isFileCache = (
   target: IFileCache | string | TStrList,
 ): target is IFileCache => {
   return isObject(target) && typeof target.mtime === 'number';
 };
+const plainObjectFields = [
+  'fns',
+  'vars',
+  'mockitsCache',
+  'alias',
+  'fileCache',
+  'config',
+  'extends',
+] as const;
 const createStore = (namespace?: string): Store => {
   const fn = ((name: string, value: unknown, alwaysVar: boolean): void => {
     if (typeof value !== 'function' || alwaysVar) {
@@ -60,61 +91,113 @@ const createStore = (namespace?: string): Store => {
       fn.fns[name] = value as TFunc;
     }
   }) as Store;
-  fn.builtins = [];
-  // initialize the store data
-  const init = (clearCache?: boolean) => {
-    fn.fns = {};
-    fn.vars = {};
-    fn.exports = {
-      vars: {},
-      fns: {},
-      types: [],
-    };
-    fn.mockitsCache = {};
-    fn.alias = {};
-    fn.aliasTypes = [];
-    if (clearCache) fn.fileCache = {};
-    fn.config = {};
-    fn.extends = {};
+  fn.clear = (options?: {
+    reset?: boolean;
+    exclude?: Array<TStoreAllowedClearFileds> | TStoreAllowedClearFileds;
+  }) => {
+    const reset = options?.reset;
+    const exclude = options?.exclude
+      ? isArray(options.exclude)
+        ? options.exclude
+        : [options.exclude]
+      : [];
+    if (reset) {
+      clearByInit(...exclude);
+    } else {
+      clearOrigin(...exclude);
+    }
   };
   const clearMockits = namespace
-    ? () => {
-        // if has namespace, just clear
-        fn.mockits = {};
+    ? (reset?: boolean) => {
+        if (reset) {
+          fn.mockits = {};
+        } else {
+          // if has namespace, just clear
+          setObjectEmpty(fn.mockits);
+        }
       }
-    : () => {
-        const mockits = fn.builtins.reduce((ret, key) => {
-          ret[key] = fn.mockits[key];
-          return ret;
-        }, {} as TMClassList);
-        fn.mockits = mockits;
+    : (reset?: boolean) => {
+        if (reset) {
+          const mockits = fn.builtins.reduce((ret, key) => {
+            ret[key] = fn.mockits[key];
+            return ret;
+          }, {} as TMClassList);
+          fn.mockits = mockits;
+        } else {
+          for (const key of Object.getOwnPropertyNames(fn.mockits)) {
+            if (!fn.builtins.includes(key)) {
+              delete fn.mockits[key];
+            }
+          }
+        }
       };
-  fn.mockits = {};
-  fn.namespace = namespace;
-  fn.clear = (clearCache?: boolean) => {
-    init(clearCache);
-    clearMockits();
+  // clear but also re init
+  const clearByInit = (...excludes: Array<TStoreAllowedClearFileds>) => {
+    plainObjectFields.forEach((key) => {
+      if (!excludes.includes(key)) {
+        fn[key] = {};
+      }
+    });
+    if (!excludes.includes('mockits')) {
+      clearMockits(true);
+    }
+    if (!excludes.includes('exports')) {
+      fn.exports = {
+        vars: {},
+        fns: {},
+        types: [],
+      };
+    }
+    if (!excludes.includes('aliasTypes')) {
+      fn.aliasTypes = [];
+    }
   };
-  init(true);
+  // clear the origin data
+  const clearOrigin = (...excludes: Array<TStoreAllowedClearFileds>) => {
+    plainObjectFields.forEach((key) => {
+      if (!excludes.includes(key)) {
+        setObjectEmpty(fn[key] as TObj);
+      }
+    });
+    if (!excludes.includes('mockits')) {
+      clearMockits();
+    }
+    if (!excludes.includes('exports')) {
+      setArrayEmtpy(fn.exports.types);
+      setObjectEmpty(fn.exports.vars);
+      setObjectEmpty(fn.exports.fns);
+    }
+    if (!excludes.includes('aliasTypes')) {
+      setArrayEmtpy(fn.aliasTypes);
+    }
+  };
+  // initialize the origin data
+  fn.namespace = namespace;
+  fn.builtins = [];
+  fn.mockits = {};
+  fn.clear({
+    reset: true,
+    exclude: 'mockits',
+  });
   return fn;
 };
-const globalStore = createStore();
+const globalStoreData = createStore();
 // namespace stores
 const nsStores: TObj<Store> = {};
 /**
- * return a store with namespace
+ * return a storeData with namespace
  * @param namespace [string]
  * @returns Store|never
  */
 export const createNsStore = (namespace: string): Store | never => {
   if (!namespace || hasOwn(nsStores, namespace)) {
     throw new Error(
-      `The store with namespace '${namespace}' has been created.`,
+      `The storeData with namespace '${namespace}' has been created.`,
     );
   }
-  const store = createStore(namespace);
-  nsStores[namespace] = store;
-  return store;
+  const storeData = createStore(namespace);
+  nsStores[namespace] = storeData;
+  return storeData;
 };
 /**
  * @param namespace [string]
@@ -141,10 +224,10 @@ export const getNsMockit = (
   namespace?: string,
   thirdNs?: string,
 ): INsRealMockit => {
-  let curStore: Store;
+  let curStoreData: Store;
   let useSelfNs = false;
-  const handle = (store: Store): INsRealMockit => {
-    const { alias, mockits } = store;
+  const handle = (storeData: Store): INsRealMockit => {
+    const { alias, mockits } = storeData;
     let realType = type;
     if (hasOwn(alias, type)) {
       realType = alias[type];
@@ -157,28 +240,28 @@ export const getNsMockit = (
   let ret: INsRealMockit;
   if (!namespace) {
     // from the root builtin
-    ret = handle(globalStore);
+    ret = handle(globalStoreData);
   } else if (!thirdNs || (useSelfNs = thirdNs === namespace)) {
     // from self
-    curStore = getNsStore(namespace);
+    curStoreData = getNsStore(namespace);
     // use self namespace, always return data from
     if (useSelfNs) {
-      ret = handle(curStore);
+      ret = handle(curStoreData);
     } else {
-      // seek self namespace store first
-      if (curStore) {
-        ret = handle(curStore);
+      // seek self namespace storeData first
+      if (curStoreData) {
+        ret = handle(curStoreData);
       }
       // if not found, seek for global
       if (!ret.klass) {
-        ret = handle(globalStore);
+        ret = handle(globalStoreData);
       }
     }
   } else {
     // from the third
-    curStore = getNsStore(thirdNs);
-    if (curStore && curStore.exports.types.includes(type)) {
-      ret = handle(curStore);
+    curStoreData = getNsStore(thirdNs);
+    if (curStoreData && curStoreData.exports.types.includes(type)) {
+      ret = handle(curStoreData);
     }
   }
   // if found at last, return
@@ -190,5 +273,5 @@ export const getNsMockit = (
     realType: type,
   };
 };
-/* The global store */
-export default globalStore;
+/* The global storeData */
+export default globalStoreData;

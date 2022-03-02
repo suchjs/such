@@ -10,11 +10,11 @@ import { TPath } from './types/common';
 import ToCascader from './node/mockit/cascader';
 import ToDict from './node/mockit/dict';
 import { addBuiltinTypes, addMockitList, builtinMockits } from './data/mockit';
-import globalStore from './data/store';
+import globalStoreData from './data/store';
 
 // load config files
 const builtRule = /such:([a-zA-Z]+)/;
-const globalExtends = globalStore.extends;
+const globalExtends = globalStoreData.extends;
 
 // loadExtend method
 export type LoadExtendFunc = typeof NSuch.prototype.loadExtend;
@@ -37,7 +37,7 @@ export class NSuch extends Such {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         const result = require(file);
         const config = isBuilt ? result.default : result;
-        this.store.extends[name] = config;
+        this.storeData.extends[name] = config;
         this.config(config);
         return config;
       } catch (e) {
@@ -54,8 +54,8 @@ export class NSuch extends Such {
     target: unknown,
     options?: IAsOptions,
   ): Promise<T> {
-    const { store } = this;
-    const { config } = this.store;
+    const { storeData } = this;
+    const { config } = storeData;
     const { extensions = ['.json'] } = config;
     if (
       typeof target === 'string' &&
@@ -63,7 +63,7 @@ export class NSuch extends Such {
     ) {
       const lastPath = path.resolve(config.suchDir || config.rootDir, target);
       if (fs.existsSync(lastPath)) {
-        const content = await loadTemplate(lastPath, store);
+        const content = await loadTemplate(lastPath, storeData);
         return super.as(content, options);
       }
     }
@@ -85,8 +85,8 @@ export class NSuch extends Such {
   public loadConf(configFile: TPath): void {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const conf = require(configFile);
-    const { store } = this;
-    const { config, fileCache } = this.store;
+    const { storeData } = this;
+    const { config, fileCache } = storeData;
     const rootDir = path.dirname(configFile);
     config.rootDir = rootDir;
     if (conf.config) {
@@ -101,9 +101,9 @@ export class NSuch extends Such {
       if (dataDir) {
         // redefine reloadData
         this.reloadData = () => {
-          this.store.fileCache = {};
+          this.storeData.fileCache = {};
           return getAllFiles(dataDir).then((files) => {
-            return loadAllData(files, store);
+            return loadAllData(files, storeData);
           });
         };
       }
@@ -115,7 +115,7 @@ export class NSuch extends Such {
           });
           // load data
           this.loadData = async () => {
-            await loadAllData(allFiles, store);
+            await loadAllData(allFiles, storeData);
           };
           this.clearCache = async () => {
             allFiles.map((key: string) => {
@@ -127,7 +127,7 @@ export class NSuch extends Such {
           // load data
           this.loadData = async () => {
             const allFiles = await getAllFiles(dataDir);
-            await loadAllData(allFiles, store);
+            await loadAllData(allFiles, storeData);
           };
           this.clearCache = async () => {
             const allFiles = await getAllFiles(dataDir);

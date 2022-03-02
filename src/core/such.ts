@@ -12,11 +12,12 @@ import * as utils from '../helpers/utils';
 import Mockit, { BaseExtendMockit } from './mockit';
 import ToTemplate from '../mockit/template';
 import Dispatcher from '../data/parser';
-import globalStore, {
+import globalStoreData, {
   createNsStore,
   getNsMockit,
   getNsStore,
   Store,
+  TStoreAllowedClearFileds,
 } from '../data/store';
 import { TFunc, TObj, TStrList, ValueOf } from '../types/common';
 import {
@@ -527,7 +528,7 @@ export class Mocker {
                     }
                   }
                   // inject the current override params
-                  if(instanceOptions.params){
+                  if (instanceOptions.params) {
                     const param = instanceOptions.params[strPath];
                     if (param) {
                       inject.param = param;
@@ -765,7 +766,7 @@ export class Template {
    */
   public end(meta = ''): void {
     meta = meta.trim();
-    const klass = globalStore.mockits[
+    const klass = globalStoreData.mockits[
       tmplMockitName
     ] as unknown as typeof ToTemplate;
     const instance = new klass(this.such.namespace);
@@ -793,7 +794,7 @@ export class Template {
       dpath: [],
       mocker: null,
       key: null,
-      param: null
+      param: null,
     },
   ): T {
     if (!this.mockit) {
@@ -810,7 +811,7 @@ export class Template {
       dpath: [],
       mocker: null,
       key: null,
-      param: null
+      param: null,
     },
   ): string {
     let index = 0;
@@ -1147,7 +1148,7 @@ export default class SuchMocker<T = unknown> {
  */
 const warnIfEverDefinedInBuiltin = (name: string, defType: string) => {
   // warn if the short alias name or data type name is defined in builtin
-  const { mockits, alias } = globalStore;
+  const { mockits, alias } = globalStoreData;
   if (hasOwn(mockits, name) || hasOwn(alias, name)) {
     // warn that the name in used in builtin
     // eslint-disable-next-line no-console
@@ -1164,14 +1165,14 @@ const warnIfEverDefinedInBuiltin = (name: string, defType: string) => {
  */
 export class Such {
   public readonly utils = utils;
-  public readonly store: Store;
+  protected readonly storeData: Store;
   protected readonly hasNs: boolean;
   constructor(public readonly namespace?: string) {
     this.hasNs = !!namespace;
     if (this.hasNs) {
-      this.store = createNsStore(namespace);
+      this.storeData = createNsStore(namespace);
     } else {
-      this.store = globalStore;
+      this.storeData = globalStoreData;
     }
   }
   /**
@@ -1182,7 +1183,43 @@ export class Such {
    * @memberof Such
    */
   public assign(name: string, value: unknown, alwaysVar = false): void {
-    this.store(name, value, alwaysVar);
+    this.storeData(name, value, alwaysVar);
+  }
+  
+  /**
+   * get store data
+   * @param name 
+   */
+  public store<T extends keyof Store>(name: T): Store[T];
+  public store<T extends keyof Store>(name: Array<T>): Pick<Store, T>;
+  public store<T extends keyof Store>(name: T, ...args: T[]): Pick<Store, T>;
+  public store<T extends keyof Store>(
+    name: T | Array<T>,
+    ...args: T[]
+  ): Store[T] | Pick<Store, T> {
+    const { storeData } = this;
+    const pick = (names: T[]): Pick<Store, T> =>
+      names.reduce((ret, key: T) => {
+        ret[key] = storeData[key];
+        return ret;
+      }, {} as Pick<Store, T>);
+    if (args.length > 0) {
+      return pick(args.concat(name));
+    }
+    if (isArray(name)) {
+      return pick(name);
+    }
+    return storeData[name];
+  }
+  /**
+   * clear store data
+   * @param {Array<TStoreAllowedClearFileds> | TStoreAllowedClearFileds} options 
+   */
+  public clearStore(options?: {
+    reset?: boolean;
+    exclude?: Array<TStoreAllowedClearFileds> | TStoreAllowedClearFileds
+  }){
+    this.storeData.clear(options);
   }
   /**
    *
@@ -1302,7 +1339,7 @@ export class Such {
         this.setParams(params, true);
       }
     };
-    const { mockits, alias } = this.store;
+    const { mockits, alias } = this.storeData;
     if (!(hasOwn(mockits, type) || hasOwn(alias, type))) {
       let klass: TMClass;
       const { namespace, hasNs } = this;
@@ -1314,7 +1351,7 @@ export class Such {
         const realBaseType = alias[baseType] || baseType;
         const BaseClass = (hasNs
           ? mockits[realBaseType] ||
-            globalStore.mockits[globalStore.alias[baseType] || baseType]
+            globalStoreData.mockits[globalStoreData.alias[baseType] || baseType]
           : mockits[realBaseType]) as unknown as typeof BaseExtendMockit;
         if (!BaseClass) {
           throw new Error(
@@ -1490,7 +1527,7 @@ export class Such {
       throw new Error(`wrong alias params:'${short}' short for '${long}'`);
     }
     // alias can only set for your own defined types
-    const { aliasTypes, alias, mockits } = this.store;
+    const { aliasTypes, alias, mockits } = this.storeData;
     if (aliasTypes.includes(long)) {
       throw new Error(
         `The data type of "${long}" has an alias yet, can't use "${short}" for an alias name.`,
@@ -1782,9 +1819,7 @@ export class Such {
   ): SuchMocker<T> {
     return new SuchMocker<T>(target, this, this.namespace, options);
   }
-  /**
-   *
-   */
+
   /**
    *
    *
@@ -1793,14 +1828,14 @@ export class Such {
   public setExportType(type: string): void | never {
     if (this.namespace) {
       const { namespace } = this;
-      const store = getNsStore(namespace);
-      const { types } = store.exports;
+      const storeData = getNsStore(namespace);
+      const { types } = storeData.exports;
       if (types.includes(type)) {
         warn(
           `The export type "${type}" has ever exported, you don't need export it again.`,
         );
       } else {
-        const { alias, mockits } = store;
+        const { alias, mockits } = storeData;
         if (!(hasOwn(mockits, type) || hasOwn(alias, type))) {
           throw new Error(
             `The export type "${type}" is not exist when you call the "setExportType", make sure you have defined the type.`,
@@ -1818,14 +1853,14 @@ export class Such {
    */
   public setExportVar(name: string): void {
     if (this.namespace) {
-      const store = getNsStore(this.namespace);
-      const { vars } = store;
+      const storeData = getNsStore(this.namespace);
+      const { vars } = storeData;
       if (!hasOwn(vars, name)) {
         throw new Error(
           `The export variable "${name}" is not exist when you call the "setExportVar", make sure you have assigned the variable.`,
         );
       }
-      store.exports.vars[name] = vars[name];
+      storeData.exports.vars[name] = vars[name];
     } else {
       setExportWarn('setExportVar', name);
     }
@@ -1836,14 +1871,14 @@ export class Such {
    */
   public setExportFn(name: string): void {
     if (this.namespace) {
-      const store = getNsStore(this.namespace);
-      const { fns } = store;
+      const storeData = getNsStore(this.namespace);
+      const { fns } = storeData;
       if (!hasOwn(fns, name)) {
         throw new Error(
           `The export function "${name}" is not exist when you call the "setExportFn", make sure you have assigned the function.`,
         );
       }
-      store.exports.fns[name] = fns[name];
+      storeData.exports.fns[name] = fns[name];
     } else {
       setExportWarn('setExportVar', name);
     }

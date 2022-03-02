@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as readline from 'readline';
 import { IPPPathItem } from '../types/parser';
 import { hasOwn, typeOf } from '../helpers/utils';
-import globalStore, {
+import globalStoreData, {
   IFileCache,
   isFileCache,
   Store,
@@ -11,20 +11,24 @@ import globalStore, {
 } from '../data/store';
 import { TStrList } from '../types/common';
 
+type PickStore<T extends keyof Store> = Pick<Store, T>;
+type FileCacheStore = PickStore<'fileCache'>; 
+type FileCacheAndConfigStore = PickStore<'fileCache'|'config'>;
+
 export const loadDict: (
   filePath: string | TStrList,
-  store: Store,
+  storeData: FileCacheStore,
   useCache?: boolean,
 ) => Promise<TStrList | TStrList[]> = function (
   filePath: string | TStrList,
-  store: Store,
+  storeData: FileCacheStore,
   useCache = true,
 ) {
-  const { fileCache } = store;
+  const { fileCache } = storeData;
   if (typeOf(filePath) === 'Array') {
     const queues: Array<Promise<TStrList>> = [];
     (filePath as TStrList).map((curFile: string) => {
-      queues.push(loadDict(curFile, store, useCache) as Promise<TStrList>);
+      queues.push(loadDict(curFile, storeData, useCache) as Promise<TStrList>);
     });
     return Promise.all(queues);
   }
@@ -96,13 +100,13 @@ export const getAllFiles = (directory: string): Promise<TStrList> => {
 // load json files
 export const loadJson = (
   filePath: string | TStrList,
-  store: Store,
+  storeData: FileCacheStore,
 ): Promise<TStrList | TStrList[]> => {
-  const { fileCache } = store;
+  const { fileCache } = storeData;
   if (typeOf(filePath) === 'Array') {
     const queues: Array<Promise<TStrList>> = [];
     (filePath as TStrList).map((curFile: string) => {
-      queues.push(loadJson(curFile, store) as Promise<TStrList>);
+      queues.push(loadJson(curFile, storeData) as Promise<TStrList>);
     });
     return Promise.all(queues);
   }
@@ -113,7 +117,7 @@ export const loadJson = (
 // load all data files
 export const loadAllData = (
   allFiles: TStrList,
-  store: Store,
+  storeData: FileCacheStore,
 ): Promise<unknown> => {
   const dictFiles: TStrList = [];
   const jsonFiles = allFiles.filter((file) => {
@@ -123,11 +127,11 @@ export const loadAllData = (
       dictFiles.push(file);
     }
   });
-  return Promise.all([loadJson(jsonFiles, store), loadDict(dictFiles, store)]);
+  return Promise.all([loadJson(jsonFiles, storeData), loadDict(dictFiles, storeData)]);
 };
 // load template json
-export const loadTemplate = (file: string, store: Store): Promise<string> => {
-  const { fileCache } = store;
+export const loadTemplate = (file: string, storeData: FileCacheStore): Promise<string> => {
+  const { fileCache } = storeData;
   return new Promise((resolve, reject) => {
     fs.stat(file, (err, stat) => {
       if (err) {
@@ -164,10 +168,10 @@ export const loadTemplate = (file: string, store: Store): Promise<string> => {
 // get real path
 export const getFileCacheData = (
   item: IPPPathItem,
-  store: Store,
+  storeData: FileCacheAndConfigStore,
 ): TFileCacheData => {
-  const getDataFromCache = (store: Store) => {
-    const { config, fileCache } = store;
+  const getDataFromCache = (storeData: FileCacheAndConfigStore) => {
+    const { config, fileCache } = storeData;
     const { variable } = item;
     let { fullpath } = item;
     if (variable) {
@@ -183,9 +187,9 @@ export const getFileCacheData = (
       content: fileCache[fullpath],
     };
   };
-  const { exist, content } = getDataFromCache(store);
-  if (!exist && store !== globalStore) {
-    return getDataFromCache(globalStore).content;
+  const { exist, content } = getDataFromCache(storeData);
+  if (!exist && storeData !== globalStoreData) {
+    return getDataFromCache(globalStoreData).content;
   }
   return content;
 };
