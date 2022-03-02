@@ -1,6 +1,6 @@
 {
   "name": "suchjs",
-  "version": "3.0.5",
+  "version": "3.0.6",
   "description": "A powerful fake data library, configurable and customizable.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",

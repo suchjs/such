@@ -2,7 +2,7 @@
 
 Suchjs add changelog since `v1.0.0`.
 
-## [v3.0.4] - 2022-03-02
+## [v3.0.6] - 2022-03-02
 
 ### Changed
 
