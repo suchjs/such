@@ -4,9 +4,11 @@ import Mockit from '../core/mockit';
 import { TMParams } from './mockit';
 
 export type NestedPartial<T> = {
-  [P in keyof T]: Partial<T[P]>
+  [P in keyof T]: Partial<T[P]>;
 };
-export type TOverrideParams = NestedPartial<Pick<TMParams, '$config' | '$length'>>;
+export type TOverrideParams = NestedPartial<
+  Pick<TMParams, '$config' | '$length'>
+>;
 export type TSuchInject = {
   datas: PathMap<unknown>;
   dpath: TFieldPath;
@@ -47,19 +49,23 @@ export interface IMockerKeyRule {
 export interface IMockerPathRuleKeys {
   [index: string]: IMockerKeyRule;
 }
+
+export type TInstanceKeysConfig = Pick<IMockerKeyRule, 'min' | 'max'> &
+  TEnumedIndex &
+  TOptionalExist;
 /**
  *
  */
 export interface IAInstanceOptions {
   keys?: {
-    [index: string]: Pick<IMockerKeyRule, 'min' | 'max'> &
-      TEnumedIndex &
-      TOptionalExist;
+    [index: string]: TInstanceKeysConfig;
   };
   params?: {
     [index: string]: TOverrideParams;
   };
 }
+
+export type TInstanceDynamicConfig = TInstanceKeysConfig & TOverrideParams;
 /**
  *
  *

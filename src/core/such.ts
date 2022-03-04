@@ -19,7 +19,7 @@ import globalStoreData, {
   Store,
   TStoreAllowedClearFileds,
 } from '../data/store';
-import { TFunc, TObj, TStrList, ValueOf } from '../types/common';
+import { TFunc, TObj, TPath, TStrList, ValueOf } from '../types/common';
 import {
   TMClass,
   TMFactoryOptions,
@@ -37,6 +37,7 @@ import {
   IMockerPathRuleKeys,
   EnumSpecialType,
   TSuchInject,
+  TInstanceDynamicConfig,
 } from '../types/instance';
 // import { NSuch } from '../index';
 const {
@@ -1138,6 +1139,20 @@ export default class SuchMocker<T = unknown> {
         }
       }
     }
+  }
+  /**
+   * Add dynamic config or value
+   * @param target 
+   * @param depends 
+   * @param callback 
+   * @returns 
+   */
+   public dynamic(target: TPath, depends: TPath | Array<TPath>, callback: (...args: Array<{
+    index?: number;
+    value?: unknown;
+  }>) => TInstanceDynamicConfig | void) : SuchMocker{
+    console.log(target, depends, callback);
+    return this;
   }
 }
 

@@ -6,7 +6,17 @@ import PathMap from '../src/helpers/pathmap';
   // console.log(Such.as(':dict:&<dataDir>/dict.txt'));
   // const txt = await Such.asc('mock.txt');
   // console.log(txt);
-  const instance = Such.instance(":string:[97,99]:{3,10}");
+  const instance = Such.instance({
+    "errno:{1}": [0, 1],
+    "errmsg:{1}": ["", "some message"]
+  });
+  instance.dynamic("/errmsg", "/errno", function(errno){
+    if(errno.index === 1){
+      return {
+        index: 1
+      }
+    }
+  });
   console.log(instance.a({
     params: {
       '/': {
@@ -16,12 +26,6 @@ import PathMap from '../src/helpers/pathmap';
       }
     }
   }));
-  const mockits = Such.store('mockits'); 
-  console.log(mockits);
-  Such.clearStore({
-    changeOrigin: true
-  });
-  console.log(mockits);
   // Such.store.clear();
   // console.log(Such.store);
   // const instance = Such.instance({
