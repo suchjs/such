@@ -2,6 +2,7 @@ import PathMap, { TFieldPath } from '../helpers/pathmap';
 import { Mocker } from '../core/such';
 import Mockit from '../core/mockit';
 import { TMParams } from './mockit';
+import { TObj, TPath } from './common';
 
 export type NestedPartial<T> = {
   [P in keyof T]: Partial<T[P]>;
@@ -9,6 +10,14 @@ export type NestedPartial<T> = {
 export type TOverrideParams = NestedPartial<
   Pick<TMParams, '$config' | '$length'>
 >;
+
+export type TDynamicDependValue = {
+  index?: string;
+  value: unknown;
+};
+
+export type TDynamicConfig = [TPath | TPath[], (...args: Array<TDynamicDependValue>) => TInstanceDynamicConfig];
+
 export type TSuchInject = {
   datas: PathMap<unknown>;
   dpath: TFieldPath;
@@ -44,6 +53,7 @@ export interface IMockerKeyRule {
   optional?: boolean;
   oneOf?: boolean;
   alwaysArray?: boolean;
+  dynamics?: TObj<TDynamicConfig>
 }
 
 export interface IMockerPathRuleKeys {
@@ -65,7 +75,10 @@ export interface IAInstanceOptions {
   };
 }
 
-export type TInstanceDynamicConfig = TInstanceKeysConfig & TOverrideParams;
+export type TInstanceDynamicConfig = {
+  key?: TInstanceKeysConfig 
+  param?: TOverrideParams;
+}
 /**
  *
  *
@@ -90,4 +103,22 @@ export interface IMockerOptions {
 export enum EnumSpecialType {
   Enum = 1,
   Template = 2,
+}
+
+/**
+ * AssignType for assign method
+ */
+export enum AssignType {
+  None = 0b0,
+  AlwaysVariable = 0b1,
+  // assign type
+  MustNotOverride = 0b10,
+  OverrideIfNotExist = 0b100,
+  Override = 0b1000
+}
+
+export type TAssignedData = {
+  value: unknown;
+  exist: boolean;
+  type?: AssignType;
 }

@@ -19,7 +19,7 @@ import globalStoreData, {
   Store,
   TStoreAllowedClearFileds,
 } from '../data/store';
-import { TFunc, TObj, TPath, TStrList, ValueOf } from '../types/common';
+import { TFunc, TObj, TStrList, ValueOf } from '../types/common';
 import {
   TMClass,
   TMFactoryOptions,
@@ -37,7 +37,9 @@ import {
   IMockerPathRuleKeys,
   EnumSpecialType,
   TSuchInject,
-  TInstanceDynamicConfig,
+  AssignType,
+  TAssignedData,
+  TDynamicConfig,
 } from '../types/instance';
 // import { NSuch } from '../index';
 const {
@@ -964,6 +966,20 @@ export default class SuchMocker<T = unknown> {
     );
     // set root mocker instance
     this.instances.set([], this.mocker);
+    // dynamics
+    if (options?.config?.dynamics) {
+      this.initDynamics(options.config.dynamics);
+    }
+  }
+  /**
+   * Add dynamic config or value
+   * @param target
+   * @param depends
+   * @param callback
+   * @returns
+   */
+  private initDynamics(_dynamics: TObj<TDynamicConfig>): void {
+    // judge if has loop dependence
   }
   /**
    *
@@ -1140,20 +1156,6 @@ export default class SuchMocker<T = unknown> {
       }
     }
   }
-  /**
-   * Add dynamic config or value
-   * @param target 
-   * @param depends 
-   * @param callback 
-   * @returns 
-   */
-   public dynamic(target: TPath, depends: TPath | Array<TPath>, callback: (...args: Array<{
-    index?: number;
-    value?: unknown;
-  }>) => TInstanceDynamicConfig | void) : SuchMocker{
-    console.log(target, depends, callback);
-    return this;
-  }
 }
 
 /**
@@ -1197,13 +1199,28 @@ export class Such {
    * @param {*} value
    * @memberof Such
    */
-  public assign(name: string, value: unknown, alwaysVar = false): void {
-    this.storeData(name, value, alwaysVar);
+  public assign(
+    name: string,
+    value: unknown,
+    assignType: boolean | AssignType = false,
+  ): void {
+    if (typeof assignType === 'boolean') {
+      assignType = assignType ? AssignType.AlwaysVariable : AssignType.None;
+    }
+    this.storeData(name, value, assignType);
   }
-  
+
+  /**
+   * get the assigned value by name
+   * @param {string} name
+   */
+  public getAssigned(name: string): TAssignedData {
+    return this.storeData.get(name);
+  }
+
   /**
    * get store data
-   * @param name 
+   * @param name
    */
   public store<T extends keyof Store>(name: T): Store[T];
   public store<T extends keyof Store>(name: Array<T>): Pick<Store, T>;
@@ -1228,12 +1245,12 @@ export class Such {
   }
   /**
    * clear store data
-   * @param {Array<TStoreAllowedClearFileds> | TStoreAllowedClearFileds} options 
+   * @param {Array<TStoreAllowedClearFileds> | TStoreAllowedClearFileds} options
    */
   public clearStore(options?: {
     reset?: boolean;
-    exclude?: Array<TStoreAllowedClearFileds> | TStoreAllowedClearFileds
-  }){
+    exclude?: Array<TStoreAllowedClearFileds> | TStoreAllowedClearFileds;
+  }) {
     this.storeData.clear(options);
   }
   /**

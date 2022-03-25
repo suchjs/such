@@ -1,3 +1,4 @@
+import { AssignType, TAssignedData } from '../types/instance';
 import {
   hasOwn,
   isArray,
@@ -30,11 +31,13 @@ export interface IFileCache {
 
 export type TFileCacheData = IFileCache | TStrList | string;
 export interface Store {
-  (name: string, value: unknown, alwaysVar: boolean): void;
+  (name: string, value: unknown, assignType: AssignType): void;
   namespace?: string;
   builtins: TStrList;
   vars: TObj;
   fns: TObj<TFunc>;
+  varsTypes: TObj<AssignType>;
+  fnsTypes: TObj<AssignType>;
   mockits: TMClassList;
   mockitsCache: MockitsCache<unknown>;
   alias: TObj<string>;
@@ -51,6 +54,7 @@ export interface Store {
     fns: TObj<TFunc>;
     types: string[];
   };
+  get(name: string): TAssignedData;
   clear: (options?: {
     reset?: boolean;
     exclude?: Array<TStoreAllowedClearFileds> | TStoreAllowedClearFileds;
@@ -75,8 +79,6 @@ export const isFileCache = (
   return isObject(target) && typeof target.mtime === 'number';
 };
 const plainObjectFields = [
-  'fns',
-  'vars',
   'mockitsCache',
   'alias',
   'fileCache',
@@ -84,13 +86,69 @@ const plainObjectFields = [
   'extends',
 ] as const;
 const createStore = (namespace?: string): Store => {
-  const fn = ((name: string, value: unknown, alwaysVar: boolean): void => {
+  const fn = ((name: string, value: unknown, assignType: AssignType): void => {
+    const alwaysVar = (assignType & 0b1) > 0;
+    const isVar = typeof value !== 'function' || alwaysVar;
+    const assignTypes = isVar ? fn.varsTypes : fn.fnsTypes;
+    const lastAssignType: AssignType = (assignType >> 1) << 1;
+    const isEqualNameDiffType = hasOwn(isVar ? fn.fns : fn.vars, name);
+    if (isEqualNameDiffType) {
+      const names = ['variable', 'function'];
+      const reversed = +!isVar;
+      throw new Error(
+        `The field '${name}' that assigned as a ${
+          names[0 ^ reversed]
+        } was also assigned as a ${names[1 ^ reversed]} before.`,
+      );
+    }
+    if (hasOwn(assignTypes, name)) {
+      const origAssignType = assignTypes[name];
+      // must strict or equal than before
+      if (lastAssignType < origAssignType) {
+        throw new Error(
+          `The variable '${name}' has ever assigned with a assign type '${AssignType[origAssignType]}', can't re assigned with a less strictly type '${AssignType[lastAssignType]}' again.`,
+        );
+      }
+      switch (lastAssignType) {
+        case AssignType.MustNotOverride:
+          throw new Error(
+            `The variable '${name}' with a assign type '${AssignType[lastAssignType]}' has ever exist,can't assign it again.`,
+          );
+        case AssignType.OverrideIfNotExist:
+          return;
+        case AssignType.Override:
+        default:
+          break;
+      }
+    } else {
+      assignTypes[name] = lastAssignType;
+    }
     if (typeof value !== 'function' || alwaysVar) {
       fn.vars[name] = value;
     } else {
       fn.fns[name] = value as TFunc;
     }
   }) as Store;
+  fn.get = (name: string): TAssignedData => {
+    if (hasOwn(fn.vars, name)) {
+      return {
+        exist: true,
+        value: fn.vars[name],
+        type: fn.varsTypes[name],
+      };
+    }
+    if (hasOwn(fn.fns, name)) {
+      return {
+        exist: true,
+        value: fn.fns[name],
+        type: fn.fnsTypes[name],
+      };
+    }
+    return {
+      exist: false,
+      value: undefined,
+    };
+  };
   fn.clear = (options?: {
     reset?: boolean;
     exclude?: Array<TStoreAllowedClearFileds> | TStoreAllowedClearFileds;
@@ -133,6 +191,14 @@ const createStore = (namespace?: string): Store => {
       };
   // clear but also re init
   const clearByInit = (...excludes: Array<TStoreAllowedClearFileds>) => {
+    // clear the assigned variables
+    (['fns', 'vars'] as const).forEach((key) => {
+      if (!excludes.includes(key)) {
+        fn[key] = {};
+        fn[`${key}Types`] = {};
+      }
+    });
+    // clear other object types
     plainObjectFields.forEach((key) => {
       if (!excludes.includes(key)) {
         fn[key] = {};
@@ -154,6 +220,14 @@ const createStore = (namespace?: string): Store => {
   };
   // clear the origin data
   const clearOrigin = (...excludes: Array<TStoreAllowedClearFileds>) => {
+    // clear the assigned variables
+    (['fns', 'vars'] as const).forEach((key) => {
+      if (!excludes.includes(key)) {
+        setObjectEmpty(fn[key]);
+        setObjectEmpty(fn[`${key}Types`]);
+      }
+    });
+    // clear other object types
     plainObjectFields.forEach((key) => {
       if (!excludes.includes(key)) {
         setObjectEmpty(fn[key] as TObj);
