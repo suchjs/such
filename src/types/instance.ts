@@ -13,10 +13,13 @@ export type TOverrideParams = NestedPartial<
 
 export type TDynamicDependValue = {
   index?: string;
-  value: unknown;
+  value?: unknown;
+  loop?: number;
 };
 
-export type TDynamicConfig = [TPath | TPath[], (...args: Array<TDynamicDependValue>) => TInstanceDynamicConfig];
+export type TDynamicDependCallback = (...args: Array<TDynamicDependValue>) => TInstanceDynamicConfig;
+
+export type TDynamicConfig = [TPath | TPath[], TDynamicDependCallback];
 
 export type TSuchInject = {
   datas: PathMap<unknown>;

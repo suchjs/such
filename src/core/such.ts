@@ -19,7 +19,7 @@ import globalStoreData, {
   Store,
   TStoreAllowedClearFileds,
 } from '../data/store';
-import { TFunc, TObj, TStrList, ValueOf } from '../types/common';
+import { TFunc, TObj, TPath, TStrList, ValueOf } from '../types/common';
 import {
   TMClass,
   TMFactoryOptions,
@@ -40,6 +40,9 @@ import {
   AssignType,
   TAssignedData,
   TDynamicConfig,
+  TDynamicDependCallback,
+  TDynamicDependValue,
+  TInstanceDynamicConfig,
 } from '../types/instance';
 // import { NSuch } from '../index';
 const {
@@ -928,6 +931,186 @@ export class Template {
 }
 
 /**
+ * Class DependTreeNode
+ */
+class DependTreeNode {
+  // child nodes
+  public childs: DependTreeNode[] = [];
+  // parent nodes
+  public parents: DependTreeNode[] = [];
+  // static method, check if equal node
+  public static isSameNode(one: DependTreeNode, another: DependTreeNode) {
+    return one.id === another.id;
+  }
+  // constructor
+  constructor(public readonly id: TPath, public readonly depender: Depender) {
+    // nothing to do
+  }
+  // check the node if not exist then add
+  private checkThenAdd(nodes: DependTreeNode[], node: DependTreeNode): boolean {
+    // check if the node is exist, if not exist then add
+    const index = nodes.findIndex((curNode) => curNode.id === node.id);
+    if (index < 0) {
+      nodes.push(node);
+      return true;
+    }
+    return false;
+  }
+  // add a child node
+  public addChild(node: DependTreeNode) {
+    this.checkThenAdd(this.childs, node);
+  }
+  // add a parent node
+  public addParent(node: DependTreeNode) {
+    this.checkThenAdd(this.parents, node);
+    this.depender.setRootNode(this, node);
+  }
+}
+
+type TDynamicExecuteFn = {
+  checked: boolean;
+  fn: () => TInstanceDynamicConfig;
+};
+class Depender {
+  // the root nodes
+  private rootNodes: DependTreeNode[] = [];
+  // all nodes
+  private allNodes: DependTreeNode[] = [];
+  // the dependencies
+  private dependencies: DependTreeNode[][] = [];
+  // depend value update execute fns
+  private dependValuedUpdateFns: TObj<
+    Array<(value: TDynamicDependValue) => void>
+  > = {};
+  // dynamic execute fns
+  private dynamicExecuteFns: TObj<TDynamicExecuteFn> = {};
+  // add depend value update fns
+  private addDependValuedUpdateFns<
+    T extends (value: TDynamicDependValue) => void,
+  >(id: TPath, fn: T) {
+    if (isArray(this.dependValuedUpdateFns[id])) {
+      this.dependValuedUpdateFns[id].push(fn);
+    } else {
+      this.dependValuedUpdateFns[id] = [fn];
+    }
+  }
+  // get node if node exist then return
+  // otherwise add a new node and return
+  private getNode(id: TPath): DependTreeNode {
+    const { allNodes } = this;
+    let node = allNodes.find((node) => node.id === id);
+    if (!node) {
+      node = new DependTreeNode(id, this);
+      allNodes.push(node);
+    }
+    return node;
+  }
+  // add a node by id
+  public addNode(
+    parentId: TPath,
+    childIds: TPath[],
+    callback: TDynamicDependCallback,
+  ) {
+    const parentNode = this.getNode(parentId);
+    const args: Array<TDynamicDependValue> = [];
+    for (const childId of childIds) {
+      const childNode = this.getNode(childId);
+      parentNode.addChild(childNode);
+      childNode.addParent(parentNode);
+      // argument
+      const curArg: TDynamicDependValue = {};
+      args.push(curArg);
+      this.addDependValuedUpdateFns(childId, (value: TDynamicDependValue) => {
+        const origLoop = curArg.loop || 0;
+        utils.setObjectEmpty(curArg);
+        Object.assign(curArg, value);
+        curArg.loop = origLoop + 1;
+      });
+    }
+    const dynamic: TDynamicExecuteFn = (this.dynamicExecuteFns[parentId] = {
+      checked: false,
+      fn: () => {
+        if (!dynamic.checked) {
+          let index = 0;
+          for (const arg of args) {
+            if (!hasOwn(arg, 'value')) {
+              throw new Error(
+                `The path ${parentId} depend a path of '${childIds[index]}' not make a value yet, make sure the depend path is appear before the current path.`,
+              );
+            }
+            index++;
+          }
+          dynamic.checked = true;
+        }
+        return callback(...args);
+      },
+    });
+  }
+  // refresh the root node
+  public setRootNode(node: DependTreeNode, parent: DependTreeNode) {
+    const index = this.rootNodes.findIndex((curNode) =>
+      DependTreeNode.isSameNode(curNode, node),
+    );
+    // if found, remove the child node and add the parent node
+    // otherwise, just push the parent node as a root node
+    if (index > -1) {
+      this.rootNodes.splice(index, 1, parent);
+    } else {
+      this.rootNodes.push(parent);
+    }
+  }
+  // check loop dependence
+  private checkLoopDependence(
+    parentNodes: DependTreeNode[],
+    curNode: DependTreeNode,
+  ) {
+    const curId = curNode.id;
+    if (parentNodes.find((node) => node.id === curId)) {
+      throw new Error(
+        `The depend path of '${parentNodes[parentNodes.length - 1].id}' and '${
+          curNode.id
+        }' cause a loop dependencies.`,
+      );
+    }
+  }
+  // loop the tree node
+  private loopTree(
+    node: DependTreeNode,
+    parentNodes: DependTreeNode[],
+    result: DependTreeNode[][],
+  ) {
+    this.checkLoopDependence(parentNodes, node);
+    const nowParentNodes = parentNodes.concat(node);
+    if (node.childs.length) {
+      for (const childNode of node.childs) {
+        this.loopTree(childNode, nowParentNodes, result);
+      }
+    } else {
+      result.push(nowParentNodes);
+    }
+  }
+  // check dependencies
+  public check(): void | never {
+    for (const rootNode of this.rootNodes) {
+      this.loopTree(rootNode, [], this.dependencies);
+    }
+  }
+  // get dynamic config
+  public getDynamicConfig(path: TPath): TInstanceDynamicConfig | void {
+    return this.dynamicExecuteFns[path]?.fn();
+  }
+  // trigger depend value
+  public triggerDenpendValued(path: TPath, value: TDynamicDependValue): void {
+    const fns = this.dependValuedUpdateFns[path];
+    if (isArray(fns)) {
+      for (const fn of fns) {
+        fn(value);
+      }
+    }
+  }
+}
+
+/**
  *
  *
  * @export
@@ -941,6 +1124,7 @@ export default class SuchMocker<T = unknown> {
   public readonly instances: PathMap<Mocker>;
   public readonly mockits: PathMap<TObj>;
   public readonly datas: PathMap<unknown>;
+  public readonly depender: Depender;
   private initail = false;
   private ruleKeys: IMockerPathRuleKeys;
   /**
@@ -968,7 +1152,8 @@ export default class SuchMocker<T = unknown> {
     this.instances.set([], this.mocker);
     // dynamics
     if (options?.config?.dynamics) {
-      this.initDynamics(options.config.dynamics);
+      this.depender = new Depender();
+      this.initDynamics(options.config.dynamics, this.depender);
     }
   }
   /**
@@ -978,8 +1163,14 @@ export default class SuchMocker<T = unknown> {
    * @param callback
    * @returns
    */
-  private initDynamics(_dynamics: TObj<TDynamicConfig>): void {
+  private initDynamics(
+    dynamics: TObj<TDynamicConfig>,
+    depender: Depender,
+  ): void {
     // judge if has loop dependence
+    Object.keys(dynamics).forEach((curPath) => {
+      const [dependPaths, callback] = dynamics[curPath];
+    });
   }
   /**
    *
