@@ -20,6 +20,15 @@ const makeDate = (param: string | number): Date | never => {
   }
   return date;
 };
+const configOptions = {
+  now: {
+    type: Date,
+    default: new Date,
+    validator(value: unknown): boolean | never {
+      return value instanceof Date;
+    },
+  },
+};
 export default class ToDate extends Mockit<string | Date> {
   // set constructor name
   // keep the name in parameter
@@ -28,47 +37,58 @@ export default class ToDate extends Mockit<string | Date> {
   public static readonly constrName: string = 'ToDate';
   // allowed data attribute
   public static readonly allowAttrs: TMAttrs = [];
+  // set config options
+  public static configOptions = configOptions;
+  public static selfConfigOptions = configOptions;
   // init
   public init(): void {
     // range
-    this.addRule('$size', function ($size: IPPSize) {
-      if (!$size) {
-        return;
-      }
-      const { range } = $size;
-      if (range.length !== 2) {
-        throw new Error(
-          `the time range should supply 2 arguments,but got ${range.length}`,
-        );
-      } else {
-        const [start, end] = range;
-        const startDate: Date | never = makeDate(start);
-        const endDate: Date | never = makeDate(end);
-        const startTime = startDate.getTime();
-        const endTime = endDate.getTime();
-        if (endTime < startTime) {
+    this.addRule(
+      '$size',
+      function ($size: IPPSize) {
+        if (!$size) {
+          return;
+        }
+        const { range } = $size;
+        if (range.length !== 2) {
           throw new Error(
-            `the time range of start time ${start} is big than end time ${end}.`,
+            `the time range should supply 2 arguments,but got ${range.length}`,
           );
         } else {
-          return {
-            range: [startTime, endTime],
-          };
+          const [start, end] = range;
+          const startDate: Date | never = makeDate(start);
+          const endDate: Date | never = makeDate(end);
+          const startTime = startDate.getTime();
+          const endTime = endDate.getTime();
+          if (endTime < startTime) {
+            throw new Error(
+              `the time range of start time ${start} is big than end time ${end}.`,
+            );
+          } else {
+            return {
+              range: [startTime, endTime],
+            };
+          }
         }
-      }
-    }, true);
+      },
+      true,
+    );
     // $format rule
-    this.addRule('$format', function ($format: IPPFormat) {
-      if (!$format) {
-        return;
-      }
-      // nothing
-      let { format } = $format;
-      format = decodeTrans(format.slice(1));
-      return {
-        format,
-      };
-    }, true);
+    this.addRule(
+      '$format',
+      function ($format: IPPFormat) {
+        if (!$format) {
+          return;
+        }
+        // nothing
+        let { format } = $format;
+        format = decodeTrans(format.slice(1));
+        return {
+          format,
+        };
+      },
+      true,
+    );
     // modifier
     this.addModifier('$format', function (result: unknown, $format: IPPFormat) {
       const { format } = $format;
@@ -77,18 +97,21 @@ export default class ToDate extends Mockit<string | Date> {
   }
   // generate
   public generate(options: TSuchInject): Date {
-    const { $size } = this.getCurrentParams(options);
+    const { $size, $config = {} } = this.getCurrentParams(options);
+    const now = $config.now as Date;
     const range = (
       $size ?? {
         range: [
-          strtotime('-10 year').getTime(),
-          strtotime('+10 year').getTime(),
+          strtotime('-10 years').getTime(),
+          strtotime('+10 years').getTime(),
         ],
       }
     ).range as number[];
     const time = makeRandom(range[0], range[1]);
     const date = new Date();
-    date.setTime(time);
+    date.setTime(
+      time + (now instanceof Date ? now.getTime() - date.getTime() : 0),
+    );
     return date;
   }
   public test(): boolean {

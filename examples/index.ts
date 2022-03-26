@@ -6,14 +6,12 @@ import PathMap from '../src/helpers/pathmap';
   // console.log(Such.as(':dict:&<dataDir>/dict.txt'));
   // const txt = await Such.asc('mock.txt');
   // console.log(txt);
+  const date = new Date;
+  date.setDate(date.getDate() + 5);
+  Such.assign('now', date);
   const instance = Such.instance({
     'errno:{1}': [0, 1],
-    'errmsg?': ':string:{10,20}',
-    'data{5,10}?': {
-      'title': ':string',
-      'url': ':url'
-    },
-    'other:{1}': [':string', ':number'] 
+    'date': ':date:["today","tomorrow"]:#[now=now]'
   }, {
     config: {
       dynamics: {

@@ -238,13 +238,13 @@ const strToDate = (
  * @param date [unkown]
  * @returns [Date|never] return a Date object from the date
  */
-export const strtotime = (date: unknown): Date | never => {
+export const strtotime = (date: unknown, now?: Date): Date | never => {
   if (typeof date === 'number') {
     return new Date(date);
   } else if (typeof date === 'string') {
     let result: Date;
     try {
-      result = strToDate(date);
+      result = strToDate(date, now);
     } catch (e) {
       result = new Date(date);
       if (isNaN(+result)) {

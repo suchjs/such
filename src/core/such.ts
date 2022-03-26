@@ -1036,7 +1036,6 @@ class Depender {
   public static validateIfRelatviePath(a: TPath, b: TPath): never | void {
     const aLen = a.length;
     const bLen = b.length;
-
     if (aLen === bLen) {
       if (a === b) {
         throw new Error(
