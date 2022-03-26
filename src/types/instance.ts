@@ -12,12 +12,15 @@ export type TOverrideParams = NestedPartial<
 >;
 
 export type TDynamicDependValue = {
-  index?: string;
+  index?: number;
   value?: unknown;
+  count?: number;
   loop?: number;
 };
 
-export type TDynamicDependCallback = (...args: Array<TDynamicDependValue>) => TInstanceDynamicConfig;
+export type TDynamicDependCallback = (
+  ...args: Array<TDynamicDependValue>
+) => TInstanceDynamicConfig | void | undefined;
 
 export type TDynamicConfig = [TPath | TPath[], TDynamicDependCallback];
 
@@ -56,7 +59,7 @@ export interface IMockerKeyRule {
   optional?: boolean;
   oneOf?: boolean;
   alwaysArray?: boolean;
-  dynamics?: TObj<TDynamicConfig>
+  dynamics?: TObj<TDynamicConfig>;
 }
 
 export interface IMockerPathRuleKeys {
@@ -79,9 +82,9 @@ export interface IAInstanceOptions {
 }
 
 export type TInstanceDynamicConfig = {
-  key?: TInstanceKeysConfig 
+  key?: TInstanceKeysConfig;
   param?: TOverrideParams;
-}
+};
 /**
  *
  *
@@ -117,11 +120,11 @@ export enum AssignType {
   // assign type
   MustNotOverride = 0b10,
   OverrideIfNotExist = 0b100,
-  Override = 0b1000
+  Override = 0b1000,
 }
 
 export type TAssignedData = {
   value: unknown;
   exist: boolean;
   type?: AssignType;
-}
+};

@@ -66,6 +66,7 @@ const {
  */
 const getOptional = (
   instanceOptions: IAInstanceOptions,
+  depender: Depender,
   path: TFieldPath,
   config: IMockerKeyRule,
 ): boolean | never => {
@@ -73,33 +74,37 @@ const getOptional = (
   const instanceConfig = instanceOptions?.keys;
   let needReturn = false;
   let needOptional = true;
-  if (instanceConfig) {
-    const curConfig = instanceConfig[strPath];
-    if (curConfig) {
-      if (typeof curConfig.exist === 'boolean') {
-        needOptional = false;
-        // when not exist, just return
-        needReturn = !curConfig.exist;
-      } else if (!hasOwn(config, 'min')) {
-        const hasMin = hasOwn(curConfig, 'min');
-        const hasMax = hasOwn(curConfig, 'max');
-        // if the field set min, it's maybe an array field
-        // don't set min or max instead of exist
-        // ignore the min and max if config has min
-        // no need check count because not hasLength
-        if (hasMin || hasMax) {
-          const min = hasMin ? curConfig.min : 0;
-          const max = hasMax ? curConfig.max : 1;
-          if (min === max) {
-            needOptional = false;
-            // not needOptional
-            if (max === 0) {
-              // must not exists
-              needReturn = true;
-            } else {
-              // must exists
-              needReturn = false;
-            }
+  let curConfig = (instanceConfig && instanceConfig[strPath]) || {};
+  if (depender) {
+    const config = depender.getDynamicConfig(strPath);
+    if (config) {
+      curConfig = Object.assign(config.key || {}, curConfig);
+    }
+  }
+  if (isNoEmptyObject(curConfig)) {
+    if (typeof curConfig.exist === 'boolean') {
+      needOptional = false;
+      // when not exist, just return
+      needReturn = !curConfig.exist;
+    } else if (!hasOwn(config, 'min')) {
+      const hasMin = hasOwn(curConfig, 'min');
+      const hasMax = hasOwn(curConfig, 'max');
+      // if the field set min, it's maybe an array field
+      // don't set min or max instead of exist
+      // ignore the min and max if config has min
+      // no need check count because not hasLength
+      if (hasMin || hasMax) {
+        const min = hasMin ? curConfig.min : 0;
+        const max = hasMax ? curConfig.max : 1;
+        if (min === max) {
+          needOptional = false;
+          // not needOptional
+          if (max === 0) {
+            // must not exists
+            needReturn = true;
+          } else {
+            // must exists
+            needReturn = false;
           }
         }
       }
@@ -120,21 +125,26 @@ const getOptional = (
  */
 const getMinAndMax = (
   instanceOptions: IAInstanceOptions,
+  depender: Depender,
   path: TFieldPath,
   config: IMockerKeyRule,
 ): Pick<IMockerKeyRule, 'min' | 'max'> | never => {
   let { min, max } = config;
   const strPath = path2str(path);
   const instanceConfig = instanceOptions?.keys;
-  if (instanceConfig) {
-    const curConfig = instanceConfig[strPath];
-    if (curConfig) {
-      if (hasOwn(curConfig, 'min')) {
-        min = curConfig.min;
-      }
-      if (hasOwn(curConfig, 'max')) {
-        max = curConfig.max;
-      }
+  let curConfig = (instanceConfig && instanceConfig[strPath]) || {};
+  if (depender) {
+    const config = depender.getDynamicConfig(strPath);
+    if (config) {
+      curConfig = Object.assign(config.key || {}, curConfig);
+    }
+  }
+  if (isNoEmptyObject(curConfig)) {
+    if (hasOwn(curConfig, 'min')) {
+      min = curConfig.min;
+    }
+    if (hasOwn(curConfig, 'max')) {
+      max = curConfig.max;
     }
   }
   return {
@@ -204,6 +214,8 @@ export class Mocker {
   public next?: Mocker;
   public template?: Template;
   public mockit: Mockit;
+  public count = 1;
+  public index = -1;
   public readonly target: unknown;
   public readonly config: IMockerKeyRule = {};
   public readonly path: TFieldPath;
@@ -216,6 +228,7 @@ export class Mocker {
   public readonly isRoot: boolean;
   public readonly namespace: string;
   public readonly such: Such;
+  public readonly depender: Depender;
   public readonly mockFn: (dpath: TFieldPath) => unknown;
   /**
    * Creates an instance of Mocker.
@@ -231,6 +244,7 @@ export class Mocker {
       namespace?: string;
       instances?: PathMap<Mocker>;
       datas?: PathMap<unknown>;
+      depender?: Depender;
     },
   ) {
     // set the mocker properties
@@ -240,11 +254,12 @@ export class Mocker {
     this.config = config || {};
     this.isRoot = path.length === 0;
     if (owner) {
-      const { such, namespace, instances, datas } = owner;
+      const { such, namespace, instances, datas, depender } = owner;
       this.such = such;
       this.namespace = namespace;
       this.instances = instances;
       this.datas = datas;
+      this.depender = depender;
     }
     if (this.isRoot) {
       this.root = this;
@@ -257,7 +272,7 @@ export class Mocker {
     this.dataType = dataType;
     // check config and target
     const { oneOf, alwaysArray } = this.config;
-    const { instances, datas } = this.root;
+    const { instances, datas, depender } = this.root;
     const hasLength = !isNaN(this.config.min);
     // use oneOf key rule for the none array field
     if (oneOf && !isArray(target)) {
@@ -277,19 +292,27 @@ export class Mocker {
             : (() => {
                 let keys;
                 // if have keys and a config of current path with index
-                if ((keys = this.root.instanceOptions?.keys)) {
+                if ((keys = this.root.instanceOptions?.keys) || depender) {
                   const strPath = path2str(path);
-                  const curConfig = keys[strPath];
+                  const curConfig =
+                    keys && keys[strPath]
+                      ? keys[strPath]
+                      : (() => {
+                          const config = depender.getDynamicConfig(strPath);
+                          if (config && config.key) {
+                            return config.key;
+                          }
+                        })();
                   if (curConfig && typeof curConfig.index === 'number') {
                     if (curConfig.index > totalIndex) {
                       throw new Error(
                         `The target's field with a path '${strPath}' in instanceOptions keys set a 'index' ${curConfig.index} bigger than the max index ${totalIndex}.`,
                       );
                     }
-                    return curConfig.index;
+                    return (this.index = curConfig.index);
                   }
                 }
-                return makeRandom(0, totalIndex);
+                return (this.index = makeRandom(0, totalIndex));
               })();
         const curPath = path.concat(mIndex);
         let instance = instances.get(curPath);
@@ -338,11 +361,14 @@ export class Mocker {
               : (() => {
                   const { min, max } = getMinAndMax(
                     this.root.instanceOptions,
+                    depender,
                     this.path,
                     this.config,
                   );
                   return makeRandom(min, max);
                 })();
+          // set count if has length
+          this.count = total;
           for (let i = 0; i < total; i++) {
             const cur = makeInstance(i);
             const curDpath = dpath.concat(i);
@@ -371,17 +397,20 @@ export class Mocker {
         let resultFn: (dpath: TFieldPath, instance: Mocker) => unknown;
         if (oneOf) {
           if (alwaysArray) {
-            // e.g {"a:[0,1]":[{b:1},{"c":1},{"d":1}]}
+            // e.g {"a:{+0,1}":[{b:1},{"c":1},{"d":1}]}
             resultFn = makeArrFn;
           } else {
             // e.g {"a:{0,5}":["amd","cmd","umd"]}
             resultFn = (dpath: TFieldPath, instance: Mocker) => {
               const { min, max } = getMinAndMax(
                 this.root.instanceOptions,
+                depender,
                 this.path,
                 this.config,
               );
               const total = makeRandom(min, max);
+              // set count num
+              this.count = total;
               if (total <= 1) {
                 return makeOptional(dpath, instance, total);
               }
@@ -400,11 +429,14 @@ export class Mocker {
               : (() => {
                   const { min, max } = getMinAndMax(
                     this.root.instanceOptions,
+                    depender,
                     this.path,
                     this.config,
                   );
                   return makeRandom(min, max);
                 })();
+            // set count
+            this.count = total;
             const targets = Array.from({
               length: total,
             }).map(() => {
@@ -421,6 +453,7 @@ export class Mocker {
             this.mockFn = (dpath: TFieldPath) => {
               const { min, max } = getMinAndMax(
                 this.root.instanceOptions,
+                depender,
                 this.path,
                 this.config,
               );
@@ -458,6 +491,7 @@ export class Mocker {
             if (optional) {
               const needReturn = getOptional(
                 this.root.instanceOptions,
+                depender,
                 curPath,
                 config,
               );
@@ -523,6 +557,14 @@ export class Mocker {
                   dpath,
                   mocker: this,
                 };
+                // execute depender
+                if (depender) {
+                  const config = depender.getDynamicConfig(strPath);
+                  if (config) {
+                    Object.assign(inject, config);
+                  }
+                }
+                // execute options
                 if (instanceOptions) {
                   // inject the current key config
                   if (instanceOptions.keys) {
@@ -541,7 +583,8 @@ export class Mocker {
                     }
                   }
                 }
-                return instance.make(inject, root.such);
+                const value = instance.make(inject, root.such);
+                return value;
               };
               isMockFnOk = true;
             }
@@ -594,10 +637,12 @@ export class Mocker {
         this.mockFn = (dpath: TFieldPath) => {
           const { min, max } = getMinAndMax(
             this.root.instanceOptions,
+            depender,
             this.path,
             this.config,
           );
           const total = makeRandom(min, max);
+          this.count = total;
           if (!alwaysArray && total <= 1) {
             return origMockFn(dpath);
           }
@@ -645,13 +690,27 @@ export class Mocker {
       const { optional } = this.config;
       if (optional) {
         // check if has instance config
-        const needReturn = getOptional(this.instanceOptions, [], this.config);
+        const needReturn = getOptional(
+          this.instanceOptions,
+          this.depender,
+          [],
+          this.config,
+        );
         if (needReturn) {
           return;
         }
       }
     }
-    return (this.result = this.mockFn(dpath)) as T;
+    const value = (this.result = (this.result = this.mockFn(dpath)) as T);
+    if (this.root.depender) {
+      const { count, index } = this;
+      this.root.depender.triggerDependValued(path2str(this.path), {
+        value,
+        count,
+        index,
+      });
+    }
+    return value;
   }
   /**
    *
@@ -969,7 +1028,7 @@ class DependTreeNode {
 
 type TDynamicExecuteFn = {
   checked: boolean;
-  fn: () => TInstanceDynamicConfig;
+  fn: TDynamicDependCallback;
 };
 class Depender {
   // the root nodes
@@ -1100,7 +1159,7 @@ class Depender {
     return this.dynamicExecuteFns[path]?.fn();
   }
   // trigger depend value
-  public triggerDenpendValued(path: TPath, value: TDynamicDependValue): void {
+  public triggerDependValued(path: TPath, value: TDynamicDependValue): void {
     const fns = this.dependValuedUpdateFns[path];
     if (isArray(fns)) {
       for (const fn of fns) {
@@ -1140,6 +1199,12 @@ export default class SuchMocker<T = unknown> {
   ) {
     this.instances = new PathMap(false);
     this.datas = new PathMap(true);
+    // dynamics
+    if (options?.config?.dynamics) {
+      this.depender = new Depender();
+      this.initDynamics(options.config.dynamics, this.depender);
+    }
+    // build a mocker
     this.mocker = new Mocker(
       {
         target,
@@ -1150,11 +1215,6 @@ export default class SuchMocker<T = unknown> {
     );
     // set root mocker instance
     this.instances.set([], this.mocker);
-    // dynamics
-    if (options?.config?.dynamics) {
-      this.depender = new Depender();
-      this.initDynamics(options.config.dynamics, this.depender);
-    }
   }
   /**
    * Add dynamic config or value
@@ -1170,7 +1230,13 @@ export default class SuchMocker<T = unknown> {
     // judge if has loop dependence
     Object.keys(dynamics).forEach((curPath) => {
       const [dependPaths, callback] = dynamics[curPath];
+      depender.addNode(
+        curPath,
+        isArray(dependPaths) ? dependPaths : [dependPaths],
+        callback,
+      );
     });
+    depender.check();
   }
   /**
    *

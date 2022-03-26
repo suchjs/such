@@ -6,26 +6,36 @@ import PathMap from '../src/helpers/pathmap';
   // console.log(Such.as(':dict:&<dataDir>/dict.txt'));
   // const txt = await Such.asc('mock.txt');
   // console.log(txt);
-  const instance = Such.instance({
-    "errno:{1}": [0, 1],
-    "errmsg:{1}": ["", "some message"]
-  });
-  instance.dynamic("/errmsg", "/errno", function(errno){
-    if(errno.index === 1){
-      return {
-        index: 1
-      }
-    }
-  });
-  console.log(instance.a({
-    params: {
-      '/': {
-        $length: {
-          least: 10
-        }
-      }
-    }
-  }));
+  const instance = Such.instance(
+    {
+      'errno:{1}': [0, 1],
+      'tmpl{2,3}?': ':string',
+    },
+    {
+      config: {
+        dynamics: {
+          '/tmpl': [
+            '/errno',
+            (value) => {
+              if (value.index === 1) {
+                console.log('设置动态====》');
+                return {
+                  key: {
+                    min: 3,
+                    exist: false
+                  },
+                };
+              }
+            },
+          ],
+          '/errno': ['/tmpl', () => {
+            //
+          }]
+        },
+      },
+    },
+  );
+  console.log(instance.a());
   // Such.store.clear();
   // console.log(Such.store);
   // const instance = Such.instance({
@@ -95,49 +105,49 @@ import PathMap from '../src/helpers/pathmap';
   //   const result = instance.a();
   //   console.log(result);
   // }
-  // console.log(Such.as({ 
-  //   bool: ":bool", 
-  //   int: ":int", 
-  //   percent: ":percent", 
-  //   uppercase: ":uppercase:{2,4}", 
-  //   lowercase: ":lowercase:{2,4}", 
-  //   alpha: ":alpha:{3,6}", 
-  //   alphaNumeric: ":alphaNumeric:{3,6}", 
-  //   alphaNumericDash: ":alphaNumericDash:{3,6}", 
-  //   tld: ":tld", 
-  //   domain: ":domain", 
-  //   protocol: ":protocol", 
-  //   url: ":url", 
-  //   email: ":email:#[domain='163.com']", 
-  //   ipv4: ":ipv4", 
-  //   ipv6: ":ipv6", 
-  //   color$hex: ":color$hex", 
-  //   color$rgb: ":color$rgb", 
-  //   color$rgba: ":color$rgba", 
-  //   color$hsl: ":color$hsl", 
-  //   color$hsla: ":color$hsla", 
+  // console.log(Such.as({
+  //   bool: ":bool",
+  //   int: ":int",
+  //   percent: ":percent",
+  //   uppercase: ":uppercase:{2,4}",
+  //   lowercase: ":lowercase:{2,4}",
+  //   alpha: ":alpha:{3,6}",
+  //   alphaNumeric: ":alphaNumeric:{3,6}",
+  //   alphaNumericDash: ":alphaNumericDash:{3,6}",
+  //   tld: ":tld",
+  //   domain: ":domain",
+  //   protocol: ":protocol",
+  //   url: ":url",
+  //   email: ":email:#[domain='163.com']",
+  //   ipv4: ":ipv4",
+  //   ipv6: ":ipv6",
+  //   color$hex: ":color$hex",
+  //   color$rgb: ":color$rgb",
+  //   color$rgba: ":color$rgba",
+  //   color$hsl: ":color$hsl",
+  //   color$hsla: ":color$hsla",
   // }));
-  // console.log(Such.as({ 
-  //   bool: ":bool", 
-  //   int: ":int", 
-  //   percent: ":percent", 
-  //   uppercase: ":uppercase:{2,4}", 
-  //   lowercase: ":lowercase:{2,4}", 
-  //   alpha: ":alpha:{3,6}", 
-  //   alphaNumeric: ":alphaNumeric:{3,6}", 
-  //   alphaNumericDash: ":alphaNumericDash:{3,6}", 
-  //   tld: ":tld", 
-  //   domain: ":domain", 
-  //   protocol: ":protocol", 
-  //   url: ":url", 
-  //   email: ":email:#[domain='163.com']", 
-  //   ipv4: ":ipv4", 
-  //   ipv6: ":ipv6", 
-  //   color$hex: ":color$hex", 
-  //   color$rgb: ":color$rgb", 
-  //   color$rgba: ":color$rgba", 
-  //   color$hsl: ":color$hsl", 
-  //   color$hsla: ":color$hsla", 
+  // console.log(Such.as({
+  //   bool: ":bool",
+  //   int: ":int",
+  //   percent: ":percent",
+  //   uppercase: ":uppercase:{2,4}",
+  //   lowercase: ":lowercase:{2,4}",
+  //   alpha: ":alpha:{3,6}",
+  //   alphaNumeric: ":alphaNumeric:{3,6}",
+  //   alphaNumericDash: ":alphaNumericDash:{3,6}",
+  //   tld: ":tld",
+  //   domain: ":domain",
+  //   protocol: ":protocol",
+  //   url: ":url",
+  //   email: ":email:#[domain='163.com']",
+  //   ipv4: ":ipv4",
+  //   ipv6: ":ipv6",
+  //   color$hex: ":color$hex",
+  //   color$rgb: ":color$rgb",
+  //   color$rgba: ":color$rgba",
+  //   color$hsl: ":color$hsl",
+  //   color$hsla: ":color$hsla",
   // }));
   // dict
   // const dict = Such.instance(':dict:&<dataDir>/dict.txt');
