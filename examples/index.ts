@@ -6,35 +6,41 @@ import PathMap from '../src/helpers/pathmap';
   // console.log(Such.as(':dict:&<dataDir>/dict.txt'));
   // const txt = await Such.asc('mock.txt');
   // console.log(txt);
-  const instance = Such.instance(
-    {
-      'errno:{1}': [0, 1],
-      'tmpl{2,3}?': ':string',
+  const instance = Such.instance({
+    'errno:{1}': [0, 1],
+    'errmsg?': ':string:{10,20}',
+    'data{5,10}?': {
+      'title': ':string',
+      'url': ':url'
     },
-    {
-      config: {
-        dynamics: {
-          '/tmpl': [
-            '/errno',
-            (value) => {
-              if (value.index === 1) {
-                console.log('设置动态====》');
-                return {
-                  key: {
-                    min: 3,
-                    exist: false
-                  },
-                };
-              }
-            },
-          ],
-          '/errno': ['/tmpl', () => {
-            //
-          }]
-        },
-      },
-    },
-  );
+    'other:{1}': [':string', ':number'] 
+  }, {
+    config: {
+      dynamics: {
+        '/errmsg': ['/errno', (value) => {
+          return {
+            key: {
+              exist: value.index === 1
+            }
+          };
+        }],
+        '/data': ['/errno', (value) => {
+          return {
+            key: {
+              exist: value.index === 0
+            }
+          };
+        }],
+        '/other': ['/errno', (value) => {
+          return {
+            key: {
+              index: value.index
+            }
+          };
+        }]
+      }
+    }
+  });;
   console.log(instance.a());
   // Such.store.clear();
   // console.log(Such.store);

@@ -1030,7 +1030,37 @@ type TDynamicExecuteFn = {
   checked: boolean;
   fn: TDynamicDependCallback;
 };
+
 class Depender {
+  // check if two paths have relation
+  public static validateIfRelatviePath(a: TPath, b: TPath): never | void {
+    const aLen = a.length;
+    const bLen = b.length;
+
+    if (aLen === bLen) {
+      if (a === b) {
+        throw new Error(
+          `The path of '${a}' in instance options's field 'dynamics' set a depend path of itself.`,
+        );
+      }
+    } else {
+      let long = a;
+      let short = b;
+      let relation = 'ancestor';
+      if (aLen < bLen) {
+        long = b;
+        short = a;
+        relation = 'descendant';
+      }
+      const hasRelation =
+        long.includes(short) && long.charAt(short.length) === '/';
+      if (hasRelation) {
+        throw new Error(
+          `The path of '${a}' in instance options's field 'dynamics' set a depend path of it's ${relation} '${b}' is not valid.`,
+        );
+      }
+    }
+  }
   // the root nodes
   private rootNodes: DependTreeNode[] = [];
   // all nodes
@@ -1071,9 +1101,12 @@ class Depender {
     callback: TDynamicDependCallback,
   ) {
     const parentNode = this.getNode(parentId);
+    const parentPath = parentNode.id;
     const args: Array<TDynamicDependValue> = [];
     for (const childId of childIds) {
       const childNode = this.getNode(childId);
+      // check releation
+      Depender.validateIfRelatviePath(parentPath, childNode.id);
       parentNode.addChild(childNode);
       childNode.addParent(parentNode);
       // argument

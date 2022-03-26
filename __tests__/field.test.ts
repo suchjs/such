@@ -1,7 +1,7 @@
 import Such from '../src/browser';
-import { hasOwn } from '../src/helpers/utils';
+import { hasOwn, isArray } from '../src/helpers/utils';
 
-describe('test filed', () => {
+describe('test filed config', () => {
   // optional, equal to '{0,1}'
   test('test optional', () => {
     const optional = Such.instance({
@@ -151,7 +151,7 @@ describe('test filed', () => {
         expect(flag).toBeTruthy();
       } else {
         expect(
-          typeof value.a === 'boolean' || typeof value.a === 'string'
+          typeof value.a === 'boolean' || typeof value.a === 'string',
         ).toBeTruthy();
       }
     }
@@ -580,36 +580,211 @@ describe('test filed', () => {
     expect(ruleKeys['/b/1/d'].alwaysArray).toBeTruthy();
   });
   // test inject params
-  test("test inject param", () => {
+  test('test inject param', () => {
     // string
-    const strInstance = Such.instance<string>(":string:[97,99]:{5,10}");
-    for(let i = 0; i < 100; i++){
+    const strInstance = Such.instance<string>(':string:[97,99]:{5,10}');
+    for (let i = 0; i < 100; i++) {
       const value = strInstance.a();
       expect(value.length >= 5 && value.length <= 10).toBeTruthy();
       const overrideValue = strInstance.a({
         params: {
           '/': {
             $length: {
-              least: 8
-            } 
-          }
-        }
+              least: 8,
+            },
+          },
+        },
       });
-      expect(overrideValue.length >= 8 && overrideValue.length <= 10).toBeTruthy();
+      expect(
+        overrideValue.length >= 8 && overrideValue.length <= 10,
+      ).toBeTruthy();
     }
     // increment
-    const incInstance = Such.instance<{ id: number[]}>({
-      id: ":increment:#[start=1,step=2]:{3}"
+    const incInstance = Such.instance<{ id: number[] }>({
+      id: ':increment:#[start=1,step=2]:{3}',
     });
     expect(incInstance.a().id).toEqual([1, 3, 5]);
-    expect(incInstance.a({
-      params: {
-        "/id": {
-          $config: {
-            step: 3
-          }
-        }
+    expect(
+      incInstance.a({
+        params: {
+          '/id': {
+            $config: {
+              step: 3,
+            },
+          },
+        },
+      }).id,
+    ).toEqual([8, 11, 14]);
+  });
+  // test dynamic
+  test('test dynamic config options', () => {
+    // depend relation path
+    // depend an equal path
+    expect(() => {
+      Such.instance(
+        {
+          a: {
+            b: {
+              c: ':string',
+            },
+          },
+        },
+        {
+          config: {
+            dynamics: {
+              '/a': ['/a', () => undefined],
+            },
+          },
+        },
+      );
+    }).toThrow();
+    // depend an descendant path
+    expect(() => {
+      Such.instance(
+        {
+          a: {
+            b: {
+              c: ':string',
+            },
+          },
+        },
+        {
+          config: {
+            dynamics: {
+              '/a': ['/a/b', () => undefined],
+            },
+          },
+        },
+      );
+    }).toThrow();
+    // depend an ancestor path
+    expect(() => {
+      Such.instance(
+        {
+          a: {
+            b: {
+              c: ':string',
+            },
+          },
+        },
+        {
+          config: {
+            dynamics: {
+              '/a/b': ['/a', () => undefined],
+            },
+          },
+        },
+      );
+    }).toThrow();
+    // loop dependencies
+    expect(() => {
+      Such.instance(
+        {
+          a: ':string',
+          b: ':string',
+          c: ':string',
+          d: ':string',
+        },
+        {
+          config: {
+            dynamics: {
+              // a->b->c->d->a, loop dependence
+              '/a': ['/b', () => undefined],
+              '/b': ['/c', () => undefined],
+              '/c': ['/d', () => undefined],
+              '/d': ['/a', () => undefined],
+            },
+          },
+        },
+      );
+    }).toThrow();
+    // an instance use dynamics
+    const instance = Such.instance<{
+      errno?: number;
+      errmsg?: string;
+      data?: Array<{ title: string; url: string }>;
+      more?: string | number;
+    }>(
+      {
+        'errno:{1}': [0, 1],
+        'errmsg?': ':string:{10,20}',
+        'data{5,10}?': {
+          title: ':string',
+          url: ':url',
+        },
+        'more:{1}': [':string', ':number'],
+      },
+      {
+        config: {
+          dynamics: {
+            '/errmsg': [
+              '/errno',
+              (value) => {
+                return {
+                  key: {
+                    exist: value.index === 1,
+                  },
+                };
+              },
+            ],
+            '/data': [
+              '/errno',
+              (value) => {
+                return {
+                  key: {
+                    exist: value.index === 0,
+                  },
+                };
+              },
+            ],
+            '/more': [
+              '/errno',
+              (value) => {
+                return {
+                  key: {
+                    index: value.index,
+                  },
+                };
+              },
+            ],
+          },
+        },
+      },
+    );
+    // dynamic exist
+    for (let i = 0; i < 100; i++) {
+      const value = instance.a();
+      if (value.errno === 1) {
+        expect(typeof value.errmsg === 'string').toBeTruthy();
+        expect(typeof value.data === 'undefined').toBeTruthy();
+        expect(typeof value.more === 'number').toBeTruthy();
+      } else {
+        expect(typeof value.errmsg === 'undefined').toBeTruthy();
+        expect(isArray(value.data)).toBeTruthy();
+        expect(typeof value.more === 'string').toBeTruthy();
       }
-    }).id).toEqual([8, 11, 14]);
+    }
+    // still can use a(option) to override the config
+    for (let i = 0; i < 100; i++) {
+      const value = instance.a({
+        keys: {
+          '/errmsg': {
+            exist: true,
+          },
+          '/more': {
+            index: 0,
+          },
+        },
+      });
+      if (value.errno === 1) {
+        expect(typeof value.errmsg === 'string').toBeTruthy();
+        expect(typeof value.more === 'string').toBeTruthy();
+        expect(typeof value.data === 'undefined').toBeTruthy();
+      } else {
+        expect(typeof value.errmsg === 'string').toBeTruthy();
+        expect(typeof value.more === 'string').toBeTruthy();
+        expect(isArray(value.data)).toBeTruthy();
+      }
+    }
   });
 });
