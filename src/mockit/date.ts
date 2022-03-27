@@ -9,12 +9,12 @@ import {
 } from '../helpers/utils';
 import Mockit from '../core/mockit';
 import { TSuchInject } from '../types/instance';
-const makeDate = (param: string | number): Date | never => {
+const makeDate = (param: string | number, now?: Date): Date | never => {
   let date: Date;
   if (typeof param === 'number') {
     date = new Date(param);
   } else if (strRule.test(param as string)) {
-    date = strtotime(RegExp.$2);
+    date = strtotime(RegExp.$2, now);
   } else {
     throw new Error(`invalid date:${param}`);
   }
@@ -22,8 +22,8 @@ const makeDate = (param: string | number): Date | never => {
 };
 const configOptions = {
   now: {
-    type: Date,
-    default: new Date,
+    type: [Date, String],
+    default: new Date(),
     validator(value: unknown): boolean | never {
       return value instanceof Date;
     },
@@ -54,21 +54,6 @@ export default class ToDate extends Mockit<string | Date> {
           throw new Error(
             `the time range should supply 2 arguments,but got ${range.length}`,
           );
-        } else {
-          const [start, end] = range;
-          const startDate: Date | never = makeDate(start);
-          const endDate: Date | never = makeDate(end);
-          const startTime = startDate.getTime();
-          const endTime = endDate.getTime();
-          if (endTime < startTime) {
-            throw new Error(
-              `the time range of start time ${start} is big than end time ${end}.`,
-            );
-          } else {
-            return {
-              range: [startTime, endTime],
-            };
-          }
         }
       },
       true,
@@ -98,20 +83,33 @@ export default class ToDate extends Mockit<string | Date> {
   // generate
   public generate(options: TSuchInject): Date {
     const { $size, $config = {} } = this.getCurrentParams(options);
-    const now = $config.now as Date;
-    const range = (
-      $size ?? {
-        range: [
-          strtotime('-10 years').getTime(),
-          strtotime('+10 years').getTime(),
-        ],
-      }
-    ).range as number[];
-    const time = makeRandom(range[0], range[1]);
+    const now =
+      typeof $config.now === 'string'
+        ? strtotime($config.now)
+        : ($config.now as Date);
+    const [startTime, endTime] = (
+      $size
+        ? (() => {
+            const [start, end] = $size.range;
+            const startDate: Date | never = makeDate(start, now);
+            const endDate: Date | never = makeDate(end, now);
+            const startTime = startDate.getTime();
+            const endTime = endDate.getTime();
+            if (endTime < startTime) {
+              throw new Error(
+                `the time range of start time ${start} is big than end time ${end}.`,
+              );
+            }
+            return [startTime, endTime];
+          })()
+        : [
+            strtotime('-10 years', now).getTime(),
+            strtotime('+10 years', now).getTime(),
+          ]
+    ) as number[];
+    const time = makeRandom(startTime, endTime);
     const date = new Date();
-    date.setTime(
-      time + (now instanceof Date ? now.getTime() - date.getTime() : 0),
-    );
+    date.setTime(time);
     return date;
   }
   public test(): boolean {

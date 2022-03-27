@@ -2,6 +2,14 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v3.1.0] - 2022-03-27
+
+### Added
+
+- `:date` type add config option `now` to allowed you to change the base date of the relative date.
+- Add `dynamics` config options for `such instance`, now you can change the fields's config dynamic by other depend field's value, it help you to fake the data more exactly as you want.
+- Add `AssignType` for such instance's `assign` method, so you can assign a variable with different types for different use cases.
+
 ## [v3.0.6] - 2022-03-02
 
 ### Changed
@@ -18,7 +26,7 @@ Suchjs add changelog since `v1.0.0`.
 
 - [break change] Now config not support a regexp literal `/xxx/xx`, but support expression without whitespaces `a*1+2`.
 
-- [break change] The `config` field in `options` of the generate methods's first parameter has renamed to `key` to make the meaning more clear.  
+- [break change] The `config` field in `options` of the generate methods's first parameter has renamed to `key` to make the meaning more clear.
 
 ## [v3.0.3] - 2022-02-27
 
@@ -27,12 +35,15 @@ Suchjs add changelog since `v1.0.0`.
 - Add the `clear` method for `store` object, it's necessary for reloading the such config.
 
 - Add more types for server's config. see the [`such-cli`](https://github.com/suchjs/such-cli) README.
+
 ## [v3.0.2] - 2022-02-26
 
 ### Fixed
 
 - Fix the data files such as `json` and `dict` files, use a cache missing the namespace. Now it will search the file from it's own namespace also the global namespace.
+
 ## [v3.0.1] - 2022-02-26
+
 ### Changed
 
 - [break change] in the template literal string you need use `//${0}` instead of `/${0}`, with two slashs as a path to reference the data type appeared in template.
@@ -42,6 +53,7 @@ Suchjs add changelog since `v1.0.0`.
 - Now you can reference the data type out of the template like this `/template/${0}`.
 
 - Fix the `getPathInfo` get a wrong path when the path begin with `./` in deprecated version `v3.0.0`
+
 ### Fixed
 
 - Fix the `cascader` and `dict` type in node is defined after `loadConf`, so you can't define a new type base on them, now fixed it.

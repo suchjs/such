@@ -269,18 +269,27 @@ describe('test built-in types', () => {
   // test date type
   test(':date', () => {
     // a default random date
-    const random = Such.instance(':date');
+    const random = Such.instance<Date>(':date');
     for (let i = 0; i < 100; i++) {
-      const value = random.a() as Date;
+      const value = random.a();
       expect(value instanceof Date).toBeTruthy();
     }
     // a date with range
-    const rangeDate = Such.instance(':date:["2015-01-01","2020-01-01"]');
+    const rangeDate = Such.instance<Date>(':date:["2015-01-01","2020-01-01"]');
     for (let i = 0; i < 100; i++) {
-      const value = rangeDate.a() as Date;
+      const value = rangeDate.a();
       expect(value instanceof Date).toBeTruthy();
       expect(+value).toBeGreaterThanOrEqual(+new Date('2015/01/01 00:00:00'));
       expect(+value).toBeLessThanOrEqual(+new Date('2020/01/01 00:00:00'));
+    }
+    // use a relative date with config field 'now'
+    const now = new Date();
+    Such.assign('now', now);
+    const relativeDate = Such.instance<Date>(':date:["today","today"]:#[now=now]');
+    for(let i = 0; i < 100; i++){
+      const curDate = relativeDate.a();
+      now.setDate(now.getDate() + 1); 
+      expect(relativeDate.a().getTime() - curDate.getTime()).toEqual(24 * 60 * 60 * 1000);
     }
     // a date with format
     const formatDate = Such.instance(':date:%yyyy-mm-dd HH\\:MM\\:ss');

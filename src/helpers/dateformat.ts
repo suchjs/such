@@ -31,7 +31,7 @@ const fixDate = (date?: Date | string | number): Date => {
     return new Date();
   }
   if (date instanceof Date) {
-    return date;
+    return new Date(date.getTime());
   }
   return new Date(date);
 };

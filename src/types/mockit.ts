@@ -17,7 +17,7 @@ export type TMRuleFn<T = unknown> = (cur: T) => T | void;
 export type TMParamsValidFn = (params: TMParams) => void | never;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type TMConfigFullRule<U = any, T = TConstructor<U | any>> = {
-  type: T;
+  type: T | T[];
   default?: U | (() => U);
   validator?: (value: unknown) => boolean | never;
 };
