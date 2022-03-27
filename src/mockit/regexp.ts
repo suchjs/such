@@ -3,6 +3,8 @@ import { TMatchResult, TObj } from '../types/common';
 import { IPPRegexp } from '../types/parser';
 import Mockit from '../core/mockit';
 import { TMAttrs } from '../types/mockit';
+import { isArray } from '../helpers/utils';
+import { TSuchInject } from '../types/instance';
 export default class ToRegexp extends Mockit<string> {
   // parser
   private instance: RegexpParser;
@@ -56,15 +58,27 @@ export default class ToRegexp extends Mockit<string> {
         }
       });
       return result;
-    });
+    }, true);
   }
   // generate
-  public generate(): string {
+  public generate(options: TSuchInject): string {
     let { instance } = this;
-    const { $config, $regexp } = this.params;
+    const { $config = {}, $regexp } = this.getCurrentParams(options);
     if (!instance) {
+      const groupConf = Object.keys($config).reduce(
+        (ret: TObj, key: string) => {
+          const value = $config[key];
+          if (isArray(value)) {
+            ret[key] = value;
+          } else if (typeof value === 'string') {
+            ret[key] = [value];
+          }
+          return ret;
+        },
+        {},
+      );
       instance = this.instance = new RegexpParser($regexp.rule, {
-        namedGroupConf: ($config as NamedGroupConf) || {},
+        namedGroupConf: groupConf as NamedGroupConf,
       });
     }
     return instance.build();

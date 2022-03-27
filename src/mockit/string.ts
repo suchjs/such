@@ -3,11 +3,14 @@ import { IPPSize } from '../types/parser';
 import { makeRandom } from '../helpers/utils';
 import Mockit from '../core/mockit';
 import { TMAttrs } from '../types/mockit';
+import { TSuchInject } from '../types/instance';
 const uniRule = /^\\u([0-9a-fA-F]{1,6})$/;
 const numRule = /^\d+$/;
 const hex2num = (hex: string): number => {
   return parseInt(hex, 16);
 };
+
+
 /**
  * mock a string
  * @export
@@ -38,8 +41,8 @@ export default class ToString extends Mockit<string> {
       const [first, second] = range as TStrList;
       const result: number[][] = [];
       const maxCodeNum = 0x10ffff;
-      const uniRangeRule = /^\\u([0-9a-fA-F]{1,6})\-\\u([0-9a-fA-F]{1,6})$/;
-      const numRangeRule = /^(\d+)\-(\d+)$/;
+      const uniRangeRule = /^\\u([0-9a-fA-F]{1,6})-\\u([0-9a-fA-F]{1,6})$/;
+      const numRangeRule = /^(\d+)-(\d+)$/;
       let isNormalRange = false;
       let index = 0;
       let isFirstUni = false;
@@ -140,16 +143,15 @@ export default class ToString extends Mockit<string> {
       return {
         range: result,
       };
-    });
+    }, true);
   }
   // generate
-  public generate(): string {
-    const params = this.params;
-    const { $length } = params;
-    const { least, most } = $length || { least: 1, most: 100 };
-    const { range } = ((params.$size as unknown) as IPPSize<number[]>) || {
+  public generate(options: TSuchInject): string {
+    const { $length, $size } = this.getCurrentParams(options);
+    const { least, most } = Object.assign({ least: 1, most: 100 }, $length);
+    const { range } = Object.assign({
       range: [[32, 126]],
-    };
+    }, $size);
     const index = range.length - 1;
     const total = makeRandom(Number(least), Number(most));
     let result = '';

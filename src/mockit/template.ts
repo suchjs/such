@@ -28,8 +28,7 @@ export default class ToTemplate extends Mockit<string> {
   // generate
   public generate(options: TSuchInject): string {
     const { $template } = this;
-    const params = this.params;
-    const { $length } = params;
+    const { $length } = this.getCurrentParams(options);
     const result = $template.value(options);
     if ($length) {
       const least = Number($length.least);

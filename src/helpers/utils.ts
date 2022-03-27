@@ -5,6 +5,13 @@ import { Mocker } from '../core/such';
 import { TMParams } from '../types/mockit';
 
 /**
+ * hasOwn
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const hasOwn = (obj: TObj<any>, key: string): boolean =>
+  Object.prototype.hasOwnProperty.call(obj, key);
+
+/**
  *  setPrototypeOf: https://github.com/wesleytodd/setprototypeof
  *
  */
@@ -20,7 +27,7 @@ const setPrototypeOf = (() => {
   } else {
     return (clone: TObj, proto: TObj) => {
       for (const prop in proto) {
-        if (!clone.hasOwnProperty(prop)) {
+        if (!hasOwn(clone, prop)) {
           clone[prop] = proto[prop];
         }
       }
@@ -77,12 +84,21 @@ export const isNoEmptyObject = (target: unknown): boolean => {
 };
 
 /**
- *
- * @param chars [string] regexp instance context string
- * @returns [string] escaped context string
+ * 
+ * @param obj [TObj]
  */
-export const encodeRegexpChars = (chars: string): string => {
-  return chars.replace(/([()\[{^$.*+?\/\-])/g, '\\$1');
+export const setObjectEmpty = (obj: TObj) => {
+  for(const key of Object.getOwnPropertyNames(obj)){
+    delete obj[key];
+  }
+};
+
+/**
+ * 
+ * @param arr [Array<unknown>]
+ */
+export const setArrayEmtpy = (arr: Array<unknown>) => {
+  arr.length = 0;
 };
 
 /**
@@ -219,18 +235,16 @@ function deepCopyHandle<T>(target: T, copy: T): void {
     const fromType = typeOf(from);
     const toType = typeOf(to);
     if (fromType === 'Object' || fromType === 'Array') {
-      target[key] = (toType === fromType
-        ? target[key]
-        : fromType === 'Object'
-        ? {}
-        : []) as typeof from;
+      target[key] = (
+        toType === fromType ? target[key] : fromType === 'Object' ? {} : []
+      ) as typeof from;
       deepCopy(target[key], from);
     } else {
       target[key] = from;
     }
   });
   if (tryClass) {
-    setPrototypeOf((target as unknown) as TObj, copy.constructor.prototype);
+    setPrototypeOf(target as unknown as TObj, copy.constructor.prototype);
   }
 }
 
@@ -280,8 +294,8 @@ export const shiftObj = <T = TObj>(
  */
 export const pickObj = <T = TObj>(obj: T, keys: Array<keyof T>): Partial<T> => {
   const res: Partial<T> = {};
-  keys.map((key) => {
-    if (obj.hasOwnProperty(key)) {
+  keys.map((key: keyof T) => {
+    if (hasOwn(obj, key as string)) {
       res[key] = obj[key];
     }
   });
@@ -362,23 +376,33 @@ export const getPathInfo = (
   mocker: Mocker,
 ): TFieldPath | never => {
   let lastPath: TFieldPath;
-  const { path } = mocker;
+  const { path, template } = mocker;
+  const curPath = item.path;
   if (!item.relative) {
-    lastPath = item.path;
+    lastPath = curPath;
   } else {
-    if (path.length < item.depth + 1) {
-      // the path not exists
-      throw new Error(
-        `the path of "${
-          lastPath ? '/' + lastPath.join('/') : item.fullpath
-        }" is not exists in the instances.`,
-      );
+    if (item.fix) {
+      if (!template) {
+        throw new Error(
+          `wrong path '${item.fullpath}', now only the template type support a fix path begin with '//'`,
+        );
+      }
+      lastPath = path.concat(curPath);
     } else {
-      // get the relative path
-      lastPath = path.slice(0, -(1 + item.depth)).concat(item.path);
+      if (path.length < item.depth) {
+        // the path not exists
+        throw new Error(
+          `the path of "${
+            lastPath ? '/' + lastPath.join('/') : item.fullpath
+          }" is not exists in the instances.`,
+        );
+      } else {
+        // get the relative path
+        lastPath = path.slice(0, -(1 + item.depth)).concat(curPath);
+      }
     }
   }
-  if (isRelativePath(path, lastPath)) {
+  if (!item.fix && isRelativePath(path, lastPath)) {
     // the mocker path and the reference path has relation of parent and descendants
     throw new Error(
       `the ref path of "${path.join('/')}" and "${lastPath.join(
@@ -400,8 +424,9 @@ export const getRefMocker = (
   mocker: Mocker,
 ): Mocker | never => {
   const { root } = mocker;
-  const { instances } = root;
+  const { instances, owner } = root;
   const lastPath = getPathInfo(item, mocker);
+  owner.checkIfHasPaths(path2str(lastPath));
   return instances.get(lastPath);
 };
 
@@ -485,7 +510,11 @@ export const makeCascaderData = (
   // the nested max level < 10
   let loop = 1;
   // loop to get the root mocker
-  while (!$config.root && loop++ < 10) {
+  while (loop++ < 10) {
+    // once meet the root or data
+    if ($config.root || $config.data) {
+      break;
+    }
     const refMocker = getRefMocker(lastPath, mocker);
     if (!refMocker) {
       // eslint-disable-next-line no-console

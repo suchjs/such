@@ -1,0 +1,23 @@
+{ 
+  "US": { 
+    "Alaska": [ 
+      "Los Angeles", 
+      "San Diego", 
+      "San Francisco" 
+    ] 
+  }, 
+  "UK": { 
+    "England": [ 
+      "London", 
+      "Bath", 
+      "York" 
+    ] 
+  }, 
+  "Italy": { 
+    "Lombardy": [ 
+      "Milan", 
+      "Brescia", 
+      "Monza" 
+    ] 
+  } 
+}

@@ -33,12 +33,11 @@ export default class ToIncrement extends Mockit<number | number[]> {
   }
   // generate
   public generate(options: TSuchInject): number | number[] {
-    const { $config, $length } = this.params;
-    const config = ($config || {}) as {
+    const { $config, $length } = this.getCurrentParams(options);
+    const { start, step } = ($config || {}) as {
       start?: number;
       step?: number;
     };
-    const { start, step } = config;
     const { mocker } = options;
     const key = 'increment';
     let origValue: number = mocker.store(key) as number;

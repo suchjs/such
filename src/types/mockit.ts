@@ -11,13 +11,13 @@ import {
 import Mockit from '../core/mockit';
 import { Such, Template } from '../core/such';
 import { TSuchInject } from './instance';
-import { TFieldPath } from 'src/helpers/pathmap';
+import { TFieldPath } from '../helpers/pathmap';
 export type TMModifierFn<T> = (res: T) => T | string | never;
 export type TMRuleFn<T = unknown> = (cur: T) => T | void;
 export type TMParamsValidFn = (params: TMParams) => void | never;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type TMConfigFullRule<U = any, T = TConstructor<U | any>> = {
-  type: T;
+  type: T | T[];
   default?: U | (() => U);
   validator?: (value: unknown) => boolean | never;
 };

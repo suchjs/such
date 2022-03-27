@@ -3,6 +3,7 @@ import { TMAttrs, TMModifierFn } from '../types/mockit';
 import { IPPFormat, IPPSize } from '../types/parser';
 import { isOptional } from '../helpers/utils';
 import Mockit from '../core/mockit';
+import { TSuchInject } from '../types/instance';
 
 /**
  * Inclusive
@@ -104,8 +105,8 @@ export default class ToNumber extends Mockit<number> {
    * generate a random number
    * @returns [number]
    */
-  public generate(): number {
-    const { $size, $config } = this.params;
+  public generate(options: TSuchInject): number {
+    const { $size, $config } = this.getCurrentParams(options);
     let result: number;
     if ($size) {
       const { range } = $size;

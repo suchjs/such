@@ -2,22 +2,33 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 import { IPPPathItem } from '../types/parser';
-import { typeOf } from '../helpers/utils';
-import store, { IFileCache, isFileCache } from '../data/store';
+import { hasOwn, typeOf } from '../helpers/utils';
+import globalStoreData, {
+  IFileCache,
+  isFileCache,
+  Store,
+  TFileCacheData,
+} from '../data/store';
 import { TStrList } from '../types/common';
-const { fileCache, config } = store;
+
+type PickStore<T extends keyof Store> = Pick<Store, T>;
+type FileCacheStore = PickStore<'fileCache'>; 
+type FileCacheAndConfigStore = PickStore<'fileCache'|'config'>;
 
 export const loadDict: (
   filePath: string | TStrList,
+  storeData: FileCacheStore,
   useCache?: boolean,
 ) => Promise<TStrList | TStrList[]> = function (
   filePath: string | TStrList,
+  storeData: FileCacheStore,
   useCache = true,
 ) {
+  const { fileCache } = storeData;
   if (typeOf(filePath) === 'Array') {
     const queues: Array<Promise<TStrList>> = [];
     (filePath as TStrList).map((curFile: string) => {
-      queues.push(loadDict(curFile) as Promise<TStrList>);
+      queues.push(loadDict(curFile, storeData, useCache) as Promise<TStrList>);
     });
     return Promise.all(queues);
   }
@@ -51,9 +62,9 @@ export const loadDict: (
 export const getAllFiles = (directory: string): Promise<TStrList> => {
   const walk = function (
     dir: string,
-    done: (err: unknown, results?: TStrList) => unknown,
+    done: (err: unknown, files?: TStrList) => unknown,
   ) {
-    let results: TStrList = [];
+    const files: TStrList = [];
     fs.readdir(dir, function (err, list) {
       if (err) {
         return done(err);
@@ -61,18 +72,15 @@ export const getAllFiles = (directory: string): Promise<TStrList> => {
       let i = list.length;
       (function next() {
         if (i === 0) {
-          return done(null, results);
+          return done(null, files);
         }
         const file = list[--i];
         const cur = path.join(dir, file);
         fs.stat(cur, function (_, stat) {
           if (stat && stat.isDirectory()) {
-            walk(cur, function (__, res) {
-              results = results.concat(res);
-              next();
-            });
+            walk(cur, done);
           } else {
-            results.push(cur);
+            files.push(cur);
             next();
           }
         });
@@ -80,11 +88,11 @@ export const getAllFiles = (directory: string): Promise<TStrList> => {
     });
   };
   return new Promise((resolve, reject) => {
-    walk(directory, (err, results) => {
+    walk(directory, (err, files) => {
       if (err) {
         reject(err);
       } else {
-        resolve(results);
+        resolve(files);
       }
     });
   });
@@ -92,11 +100,13 @@ export const getAllFiles = (directory: string): Promise<TStrList> => {
 // load json files
 export const loadJson = (
   filePath: string | TStrList,
+  storeData: FileCacheStore,
 ): Promise<TStrList | TStrList[]> => {
+  const { fileCache } = storeData;
   if (typeOf(filePath) === 'Array') {
     const queues: Array<Promise<TStrList>> = [];
     (filePath as TStrList).map((curFile: string) => {
-      queues.push(loadJson(curFile) as Promise<TStrList>);
+      queues.push(loadJson(curFile, storeData) as Promise<TStrList>);
     });
     return Promise.all(queues);
   }
@@ -105,7 +115,10 @@ export const loadJson = (
   return Promise.resolve(fileCache[lastPath] as TStrList);
 };
 // load all data files
-export const loadAllData = (allFiles: TStrList): Promise<unknown> => {
+export const loadAllData = (
+  allFiles: TStrList,
+  storeData: FileCacheStore,
+): Promise<unknown> => {
   const dictFiles: TStrList = [];
   const jsonFiles = allFiles.filter((file) => {
     if (path.extname(file) === '.json') {
@@ -114,10 +127,11 @@ export const loadAllData = (allFiles: TStrList): Promise<unknown> => {
       dictFiles.push(file);
     }
   });
-  return Promise.all([loadJson(jsonFiles), loadDict(dictFiles)]);
+  return Promise.all([loadJson(jsonFiles, storeData), loadDict(dictFiles, storeData)]);
 };
 // load template json
-export const loadTemplate = (file: string): Promise<string> => {
+export const loadTemplate = (file: string, storeData: FileCacheStore): Promise<string> => {
+  const { fileCache } = storeData;
   return new Promise((resolve, reject) => {
     fs.stat(file, (err, stat) => {
       if (err) {
@@ -134,7 +148,11 @@ export const loadTemplate = (file: string): Promise<string> => {
             if (e) {
               reject(e);
             } else {
-              const content = JSON.parse(data);
+              let content = data;
+              const isJson = path.extname(file) === '.json';
+              if (isJson) {
+                content = JSON.parse(data);
+              }
               fileCache[file] = {
                 content,
                 mtime: +stat.mtime,
@@ -148,16 +166,30 @@ export const loadTemplate = (file: string): Promise<string> => {
   });
 };
 // get real path
-export const getRealPath = (item: IPPPathItem): string => {
-  const { variable } = item;
-  let { fullpath } = item;
-  if (variable) {
-    fullpath = fullpath.replace(
-      `<${variable}>`,
-      config[variable as 'dataDir' | 'rootDir'],
-    );
-  } else {
-    fullpath = path.join(config.dataDir || config.rootDir, fullpath);
+export const getFileCacheData = (
+  item: IPPPathItem,
+  storeData: FileCacheAndConfigStore,
+): TFileCacheData => {
+  const getDataFromCache = (storeData: FileCacheAndConfigStore) => {
+    const { config, fileCache } = storeData;
+    const { variable } = item;
+    let { fullpath } = item;
+    if (variable) {
+      fullpath = fullpath.replace(
+        `<${variable}>`,
+        config[variable as 'dataDir' | 'rootDir'],
+      );
+    } else {
+      fullpath = path.join(config.dataDir || config.rootDir, fullpath);
+    }
+    return {
+      exist: hasOwn(fileCache, fullpath),
+      content: fileCache[fullpath],
+    };
+  };
+  const { exist, content } = getDataFromCache(storeData);
+  if (!exist && storeData !== globalStoreData) {
+    return getDataFromCache(globalStoreData).content;
   }
-  return fullpath;
+  return content;
 };

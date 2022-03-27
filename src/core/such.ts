@@ -6,19 +6,21 @@ import {
   templateSplitor,
   tmplMockitName,
   tmplNamedRule,
+  tmplRefRule,
 } from '../data/config';
 import PathMap, { TFieldPath } from '../helpers/pathmap';
 import * as utils from '../helpers/utils';
-import Mockit from './mockit';
+import Mockit, { BaseExtendMockit } from './mockit';
 import ToTemplate from '../mockit/template';
 import Dispatcher from '../data/parser';
-import globalStore, {
+import globalStoreData, {
   createNsStore,
   getNsMockit,
   getNsStore,
   Store,
+  TStoreAllowedClearFileds,
 } from '../data/store';
-import { TFunc, TObj, TStrList, ValueOf } from '../types/common';
+import { TFunc, TObj, TPath, TStrList, ValueOf } from '../types/common';
 import {
   TMClass,
   TMFactoryOptions,
@@ -36,6 +38,12 @@ import {
   IMockerPathRuleKeys,
   EnumSpecialType,
   TSuchInject,
+  AssignType,
+  TAssignedData,
+  TDynamicConfig,
+  TDynamicDependCallback,
+  TDynamicDependValue,
+  TInstanceDynamicConfig,
 } from '../types/instance';
 // import { NSuch } from '../index';
 const {
@@ -49,6 +57,7 @@ const {
   deepCopy,
   path2str,
   capitalize,
+  hasOwn,
 } = utils;
 /**
  *
@@ -58,6 +67,7 @@ const {
  */
 const getOptional = (
   instanceOptions: IAInstanceOptions,
+  depender: Depender,
   path: TFieldPath,
   config: IMockerKeyRule,
 ): boolean | never => {
@@ -65,33 +75,37 @@ const getOptional = (
   const instanceConfig = instanceOptions?.keys;
   let needReturn = false;
   let needOptional = true;
-  if (instanceConfig) {
-    const curConfig = instanceConfig[strPath];
-    if (curConfig) {
-      if (typeof curConfig.exist === 'boolean') {
-        needOptional = false;
-        // when not exist, just return
-        needReturn = !curConfig.exist;
-      } else if (!config.hasOwnProperty('min')) {
-        const hasMin = curConfig.hasOwnProperty('min');
-        const hasMax = curConfig.hasOwnProperty('max');
-        // if the field set min, it's maybe an array field
-        // don't set min or max instead of exist
-        // ignore the min and max if config has min
-        // no need check count because not hasLength
-        if (hasMin || hasMax) {
-          const min = hasMin ? curConfig.min : 0;
-          const max = hasMax ? curConfig.max : 1;
-          if (min === max) {
-            needOptional = false;
-            // not needOptional
-            if (max === 0) {
-              // must not exists
-              needReturn = true;
-            } else {
-              // must exists
-              needReturn = false;
-            }
+  let curConfig = (instanceConfig && instanceConfig[strPath]) || {};
+  if (depender) {
+    const config = depender.getDynamicConfig(strPath);
+    if (config) {
+      curConfig = Object.assign(config.key || {}, curConfig);
+    }
+  }
+  if (isNoEmptyObject(curConfig)) {
+    if (typeof curConfig.exist === 'boolean') {
+      needOptional = false;
+      // when not exist, just return
+      needReturn = !curConfig.exist;
+    } else if (!hasOwn(config, 'min')) {
+      const hasMin = hasOwn(curConfig, 'min');
+      const hasMax = hasOwn(curConfig, 'max');
+      // if the field set min, it's maybe an array field
+      // don't set min or max instead of exist
+      // ignore the min and max if config has min
+      // no need check count because not hasLength
+      if (hasMin || hasMax) {
+        const min = hasMin ? curConfig.min : 0;
+        const max = hasMax ? curConfig.max : 1;
+        if (min === max) {
+          needOptional = false;
+          // not needOptional
+          if (max === 0) {
+            // must not exists
+            needReturn = true;
+          } else {
+            // must exists
+            needReturn = false;
           }
         }
       }
@@ -112,21 +126,26 @@ const getOptional = (
  */
 const getMinAndMax = (
   instanceOptions: IAInstanceOptions,
+  depender: Depender,
   path: TFieldPath,
   config: IMockerKeyRule,
 ): Pick<IMockerKeyRule, 'min' | 'max'> | never => {
   let { min, max } = config;
   const strPath = path2str(path);
   const instanceConfig = instanceOptions?.keys;
-  if (instanceConfig) {
-    const curConfig = instanceConfig[strPath];
-    if (curConfig) {
-      if (curConfig.hasOwnProperty('min')) {
-        min = curConfig.min;
-      }
-      if (curConfig.hasOwnProperty('max')) {
-        max = curConfig.max;
-      }
+  let curConfig = (instanceConfig && instanceConfig[strPath]) || {};
+  if (depender) {
+    const config = depender.getDynamicConfig(strPath);
+    if (config) {
+      curConfig = Object.assign(config.key || {}, curConfig);
+    }
+  }
+  if (isNoEmptyObject(curConfig)) {
+    if (hasOwn(curConfig, 'min')) {
+      min = curConfig.min;
+    }
+    if (hasOwn(curConfig, 'max')) {
+      max = curConfig.max;
     }
   }
   return {
@@ -141,7 +160,7 @@ const warn = (message: string) => {
 };
 const setExportWarn = (method: string, param: string) => {
   warn(
-    `You can't call the "${method}(\"${param}\")" method for the root such instance, the root such's data is global exported by default.`,
+    `You can't call the "${method}('${param}')" method for the root such instance, the root such's data is global exported by default.`,
   );
 };
 /**
@@ -158,9 +177,7 @@ export class Mocker {
    * @returns
    * @memberof Mocker
    */
-  public static parseKey(
-    key: string,
-  ): {
+  public static parseKey(key: string): {
     key: string;
     config: IMockerKeyRule;
   } {
@@ -195,6 +212,11 @@ export class Mocker {
   protected readonly storeData: TObj = {};
   public result: unknown;
   public isEnum: boolean;
+  public next?: Mocker;
+  public template?: Template;
+  public mockit: Mockit;
+  public count = 1;
+  public index = -1;
   public readonly target: unknown;
   public readonly config: IMockerKeyRule = {};
   public readonly path: TFieldPath;
@@ -207,8 +229,8 @@ export class Mocker {
   public readonly isRoot: boolean;
   public readonly namespace: string;
   public readonly such: Such;
+  public readonly depender: Depender;
   public readonly mockFn: (dpath: TFieldPath) => unknown;
-  public readonly mockit: Mockit;
   /**
    * Creates an instance of Mocker.
    * @param {IMockerOptions} options
@@ -217,11 +239,8 @@ export class Mocker {
    * @memberof Mocker
    */
   constructor(
-    options: IMockerOptions,
-    such?: Such,
-    namespace?: string,
-    rootInstances?: PathMap<Mocker>,
-    rootDatas?: PathMap<unknown>,
+    public readonly options: IMockerOptions,
+    public readonly owner?: SuchMocker,
   ) {
     // set the mocker properties
     const { target, path, config, parent } = options;
@@ -229,11 +248,15 @@ export class Mocker {
     this.path = path;
     this.config = config || {};
     this.isRoot = path.length === 0;
-    if (this.isRoot) {
+    if (owner) {
+      const { such, namespace, instances, datas, depender } = owner;
       this.such = such;
       this.namespace = namespace;
-      this.instances = rootInstances;
-      this.datas = rootDatas;
+      this.instances = instances;
+      this.datas = datas;
+      this.depender = depender;
+    }
+    if (this.isRoot) {
       this.root = this;
       this.parent = this;
     } else {
@@ -244,7 +267,7 @@ export class Mocker {
     this.dataType = dataType;
     // check config and target
     const { oneOf, alwaysArray } = this.config;
-    const { instances, datas } = this.root;
+    const { instances, datas, depender } = this.root;
     const hasLength = !isNaN(this.config.min);
     // use oneOf key rule for the none array field
     if (oneOf && !isArray(target)) {
@@ -264,29 +287,37 @@ export class Mocker {
             : (() => {
                 let keys;
                 // if have keys and a config of current path with index
-                if ((keys = this.root.instanceOptions?.keys)) {
+                if ((keys = this.root.instanceOptions?.keys) || depender) {
                   const strPath = path2str(path);
-                  const curConfig = keys[strPath];
+                  const curConfig =
+                    keys && keys[strPath]
+                      ? keys[strPath]
+                      : (() => {
+                          const config = depender.getDynamicConfig(strPath);
+                          if (config && config.key) {
+                            return config.key;
+                          }
+                        })();
                   if (curConfig && typeof curConfig.index === 'number') {
                     if (curConfig.index > totalIndex) {
                       throw new Error(
                         `The target's field with a path '${strPath}' in instanceOptions keys set a 'index' ${curConfig.index} bigger than the max index ${totalIndex}.`,
                       );
                     }
-                    return curConfig.index;
+                    return (this.index = curConfig.index);
                   }
                 }
-                return makeRandom(0, totalIndex);
+                return (this.index = makeRandom(0, totalIndex));
               })();
-        const nowPath = path.concat(mIndex);
-        let instance = instances.get(nowPath);
+        const curPath = path.concat(mIndex);
+        let instance = instances.get(curPath);
         if (!(instance instanceof Mocker)) {
           instance = new Mocker({
             target: target[mIndex],
-            path: nowPath,
+            path: curPath,
             parent: this,
           });
-          instances.set(nowPath, instance);
+          instances.set(curPath, instance);
         }
         return instance;
       };
@@ -325,11 +356,14 @@ export class Mocker {
               : (() => {
                   const { min, max } = getMinAndMax(
                     this.root.instanceOptions,
+                    depender,
                     this.path,
                     this.config,
                   );
                   return makeRandom(min, max);
                 })();
+          // set count if has length
+          this.count = total;
           for (let i = 0; i < total; i++) {
             const cur = makeInstance(i);
             const curDpath = dpath.concat(i);
@@ -358,17 +392,20 @@ export class Mocker {
         let resultFn: (dpath: TFieldPath, instance: Mocker) => unknown;
         if (oneOf) {
           if (alwaysArray) {
-            // e.g {"a:[0,1]":[{b:1},{"c":1},{"d":1}]}
+            // e.g {"a:{+0,1}":[{b:1},{"c":1},{"d":1}]}
             resultFn = makeArrFn;
           } else {
             // e.g {"a:{0,5}":["amd","cmd","umd"]}
             resultFn = (dpath: TFieldPath, instance: Mocker) => {
               const { min, max } = getMinAndMax(
                 this.root.instanceOptions,
+                depender,
                 this.path,
                 this.config,
               );
               const total = makeRandom(min, max);
+              // set count num
+              this.count = total;
               if (total <= 1) {
                 return makeOptional(dpath, instance, total);
               }
@@ -387,11 +424,14 @@ export class Mocker {
               : (() => {
                   const { min, max } = getMinAndMax(
                     this.root.instanceOptions,
+                    depender,
                     this.path,
                     this.config,
                   );
                   return makeRandom(min, max);
                 })();
+            // set count
+            this.count = total;
             const targets = Array.from({
               length: total,
             }).map(() => {
@@ -408,6 +448,7 @@ export class Mocker {
             this.mockFn = (dpath: TFieldPath) => {
               const { min, max } = getMinAndMax(
                 this.root.instanceOptions,
+                depender,
                 this.path,
                 this.config,
               );
@@ -440,12 +481,13 @@ export class Mocker {
           keys.map((item) => {
             const { key, config, target } = item;
             const { optional } = config;
-            const nowPath = prevPath.concat(key);
-            const nowDpath = dpath.concat(key);
+            const curPath = prevPath.concat(key);
+            const curDpath = dpath.concat(key);
             if (optional) {
               const needReturn = getOptional(
                 this.root.instanceOptions,
-                nowPath,
+                depender,
+                curPath,
                 config,
               );
               // optional data
@@ -453,19 +495,19 @@ export class Mocker {
                 return;
               }
             }
-            let instance = instances.get(nowPath);
+            let instance = instances.get(curPath);
             if (!(instance instanceof Mocker)) {
               instance = new Mocker({
                 target,
                 config,
-                path: nowPath,
+                path: curPath,
                 parent: this,
               });
-              instances.set(nowPath, instance);
+              instances.set(curPath, instance);
             }
-            const value = instance.mock(nowDpath);
+            const value = instance.mock(curDpath);
             result[key] = value;
-            datas.set(nowDpath, value);
+            datas.set(curDpath, value);
           });
           return result;
         };
@@ -485,7 +527,7 @@ export class Mocker {
             // otherwise, take it as a normal string
             if (klass) {
               this.type = realType;
-              const instance = new klass(this.root.namespace, path);
+              const instance = new klass(this.root.namespace);
               const { specialType } = instance.getStaticProps();
               this.isEnum = specialType === EnumSpecialType.Enum;
               let meta = target.replace(match[0], '');
@@ -510,15 +552,34 @@ export class Mocker {
                   dpath,
                   mocker: this,
                 };
-                if (instanceOptions?.keys) {
-                  const config = instanceOptions.keys[strPath];
-                  if (config && config.hasOwnProperty('index')) {
-                    inject.config = {
-                      index: config.index,
-                    };
+                // execute depender
+                if (depender) {
+                  const config = depender.getDynamicConfig(strPath);
+                  if (config) {
+                    Object.assign(inject, config);
                   }
                 }
-                return instance.make(inject, root.such);
+                // execute options
+                if (instanceOptions) {
+                  // inject the current key config
+                  if (instanceOptions.keys) {
+                    const config = instanceOptions.keys[strPath];
+                    if (config && hasOwn(config, 'index')) {
+                      inject.key = {
+                        index: config.index,
+                      };
+                    }
+                  }
+                  // inject the current override params
+                  if (instanceOptions.params) {
+                    const param = instanceOptions.params[strPath];
+                    if (param) {
+                      inject.param = param;
+                    }
+                  }
+                }
+                const value = instance.make(inject, root.such);
+                return value;
               };
               isMockFnOk = true;
             }
@@ -544,8 +605,8 @@ export class Mocker {
                 datas,
                 dpath,
                 mocker: this,
-                template,
               });
+            this.template = template;
             isMockFnOk = true;
           } else {
             // string, but begin with translated splitor
@@ -557,27 +618,33 @@ export class Mocker {
             }
           }
         }
+        // dataType is not a mockit type
+        // just return the original value
         if (!isMockFnOk) {
           this.mockFn = (_dpath: TFieldPath) => target;
         }
       }
+      // if the key has a length
+      // generate the data for length times
       if (hasLength) {
         // if the key set the config of length
         const origMockFn = this.mockFn;
         this.mockFn = (dpath: TFieldPath) => {
           const { min, max } = getMinAndMax(
             this.root.instanceOptions,
+            depender,
             this.path,
             this.config,
           );
           const total = makeRandom(min, max);
+          this.count = total;
           if (!alwaysArray && total <= 1) {
             return origMockFn(dpath);
           }
           const result = [];
           for (let i = 0; i < total; i++) {
-            const nowDpath = dpath.concat(i);
-            result.push(origMockFn(nowDpath));
+            const curDpath = dpath.concat(i);
+            result.push(origMockFn(curDpath));
           }
           return result;
         };
@@ -613,18 +680,32 @@ export class Mocker {
    * @returns
    * @memberof Mocker
    */
-  public mock(dpath: TFieldPath): unknown {
+  public mock<T = unknown>(dpath: TFieldPath): T {
     if (this.isRoot) {
       const { optional } = this.config;
       if (optional) {
         // check if has instance config
-        const needReturn = getOptional(this.instanceOptions, [], this.config);
+        const needReturn = getOptional(
+          this.instanceOptions,
+          this.depender,
+          [],
+          this.config,
+        );
         if (needReturn) {
           return;
         }
       }
     }
-    return (this.result = this.mockFn(dpath));
+    const value = (this.result = (this.result = this.mockFn(dpath)) as T);
+    if (this.root.depender) {
+      const { count, index } = this;
+      this.root.depender.triggerDependValued(path2str(this.path), {
+        value,
+        count,
+        index,
+      });
+    }
+    return value;
   }
   /**
    *
@@ -654,7 +735,7 @@ export class Mocker {
    * @returns
    */
   public hasStore(key: string): boolean {
-    return this.storeData.hasOwnProperty(key);
+    return hasOwn(this.storeData, key);
   }
   /**
    *
@@ -675,6 +756,7 @@ interface TemplateIndexData {
 interface TemplateIndexHash {
   [index: number]: string;
 }
+
 interface TemplateNamedData {
   [index: string]: TemplateData | TemplateData[];
 }
@@ -687,16 +769,19 @@ export class Template {
   private indexHash: TemplateIndexHash = {};
   private namedData: TemplateNamedData = {};
   private index = 0;
+  private typeContexts: TemplateIndexHash = {};
   public meta = '';
   public params: TMParams = {};
   public mockit: Mockit;
+  public mocker?: Mocker;
+  public isValued = false;
   /**
    * constructor
    */
   constructor(
     public readonly context = '',
     public readonly such: Such,
-    public readonly path: TFieldPath,
+    public readonly path: TFieldPath = [],
   ) {
     // nothing to do
   }
@@ -712,8 +797,13 @@ export class Template {
    * @param instance
    * @param optional
    */
-  public addInstance(instance: Mockit, refName = ''): void {
+  public addInstance(
+    instance: Mockit,
+    typeContext: string,
+    refName = '',
+  ): void {
     this.segments.push(instance);
+    this.typeContexts[this.index] = typeContext;
     if (refName) {
       this.indexHash[this.index] = refName;
     }
@@ -724,8 +814,8 @@ export class Template {
    * @param index [number]
    * @returns the reference instance's values
    */
-  public getRefValue(index: string): TemplateData | TemplateData[] {
-    if (!isNaN((index as unknown) as number)) {
+  public getRefValue(index: string | number): TemplateData | TemplateData[] {
+    if (!isNaN(index as number)) {
       return this.indexData[Number(index)];
     }
     return this.namedData[index];
@@ -736,9 +826,9 @@ export class Template {
    */
   public end(meta = ''): void {
     meta = meta.trim();
-    const klass = (globalStore.mockits[
+    const klass = globalStoreData.mockits[
       tmplMockitName
-    ] as unknown) as typeof ToTemplate;
+    ] as unknown as typeof ToTemplate;
     const instance = new klass(this.such.namespace);
     // set the template object
     instance.setTemplate(this);
@@ -758,19 +848,19 @@ export class Template {
    *
    * @returns
    */
-  public a(
+  public a<T = string>(
     options: TSuchInject = {
       datas: null,
       dpath: [],
       mocker: null,
-      config: null,
-      template: this,
+      key: null,
+      param: null,
     },
-  ): unknown {
+  ): T {
     if (!this.mockit) {
       throw new Error(`the template's mockit object is not initialized yet!`);
     }
-    return this.mockit.make(options, this.such);
+    return this.mockit.make(options, this.such) as T;
   }
   /**
    * @return string
@@ -780,14 +870,59 @@ export class Template {
       datas: null,
       dpath: [],
       mocker: null,
-      config: null,
-      template: this,
+      key: null,
+      param: null,
     },
   ): string {
     let index = 0;
     // clear the indexData and namedData
     // so every time get the values only generated
+    const mocker =
+      options.mocker ||
+      this.mocker ||
+      (() => {
+        const { mocker } = this.such.instance(this.context);
+        mocker.template = this;
+        this.mocker = options.mocker = mocker;
+        return mocker;
+      })();
+    const { path, typeContexts } = this;
+    const { instances } = mocker.root;
     const namedData: TemplateNamedData = {};
+    const setInstanceMocker = !this.isValued
+      ? (index: number, refName: string, mockit: Mockit): Mocker => {
+          const curPath = path.concat('${' + index + '}');
+          let curMocker = instances.get(curPath);
+          if (!curMocker) {
+            // define a new mocker for the template inner types
+            curMocker = new Mocker({
+              target: typeContexts[index],
+              path: curPath,
+              parent: mocker,
+            });
+            // set the inner mocker's mockit
+            curMocker.mockit = mockit;
+            // add the inner mocker into instances
+            instances.set(curPath, curMocker);
+          }
+          if (refName) {
+            // also add a named inner mocker
+            const refPath = path.concat('${' + refName + '}');
+            const refMocker = instances.get(refPath);
+            if (!refMocker) {
+              instances.set(refPath, curMocker);
+            } else {
+              // use a linkedlist save the inner mocker
+              refMocker.next = curMocker;
+            }
+          }
+          return curMocker;
+        }
+      : (index: number, _refName: string): Mocker => {
+          // do nothing
+          const curPath = path.concat('${' + index + '}');
+          return instances.get(curPath);
+        };
     this.indexData = {};
     this.namedData = namedData;
     const result = this.segments.reduce(
@@ -802,7 +937,7 @@ export class Template {
           // check if has ref name
           const refName = this.indexHash[index];
           if (refName) {
-            if (!namedData.hasOwnProperty(refName)) {
+            if (!hasOwn(namedData, refName)) {
               namedData[refName] = instanceData;
             } else {
               // multiple same name
@@ -816,6 +951,7 @@ export class Template {
               }
             }
           }
+          const curMocker = setInstanceMocker(index, refName, item);
           index++;
           // it's a mockit instance, generate a value
           const value = item.make(options, this.such);
@@ -834,13 +970,229 @@ export class Template {
               instanceData.result = '';
             }
           }
+          // set the result of current mocker
+          curMocker.result = instanceData.result;
+          // concat the result
           result += instanceData.result;
         }
         return result;
       },
       '',
     ) as string;
+    this.isValued = true;
     return result;
+  }
+}
+
+/**
+ * Class DependTreeNode
+ */
+class DependTreeNode {
+  // child nodes
+  public childs: DependTreeNode[] = [];
+  // parent nodes
+  public parents: DependTreeNode[] = [];
+  // static method, check if equal node
+  public static isSameNode(one: DependTreeNode, another: DependTreeNode) {
+    return one.id === another.id;
+  }
+  // constructor
+  constructor(public readonly id: TPath, public readonly depender: Depender) {
+    // nothing to do
+  }
+  // check the node if not exist then add
+  private checkThenAdd(nodes: DependTreeNode[], node: DependTreeNode): boolean {
+    // check if the node is exist, if not exist then add
+    const index = nodes.findIndex((curNode) => curNode.id === node.id);
+    if (index < 0) {
+      nodes.push(node);
+      return true;
+    }
+    return false;
+  }
+  // add a child node
+  public addChild(node: DependTreeNode) {
+    this.checkThenAdd(this.childs, node);
+  }
+  // add a parent node
+  public addParent(node: DependTreeNode) {
+    this.checkThenAdd(this.parents, node);
+    this.depender.setRootNode(this, node);
+  }
+}
+
+type TDynamicExecuteFn = {
+  checked: boolean;
+  fn: TDynamicDependCallback;
+};
+
+class Depender {
+  // check if two paths have relation
+  public static validateIfRelatviePath(a: TPath, b: TPath): never | void {
+    const aLen = a.length;
+    const bLen = b.length;
+    if (aLen === bLen) {
+      if (a === b) {
+        throw new Error(
+          `The path of '${a}' in instance options's field 'dynamics' set a depend path of itself.`,
+        );
+      }
+    } else {
+      let long = a;
+      let short = b;
+      let relation = 'ancestor';
+      if (aLen < bLen) {
+        long = b;
+        short = a;
+        relation = 'descendant';
+      }
+      const hasRelation =
+        long.includes(short) && long.charAt(short.length) === '/';
+      if (hasRelation) {
+        throw new Error(
+          `The path of '${a}' in instance options's field 'dynamics' set a depend path of it's ${relation} '${b}' is not valid.`,
+        );
+      }
+    }
+  }
+  // the root nodes
+  private rootNodes: DependTreeNode[] = [];
+  // all nodes
+  private allNodes: DependTreeNode[] = [];
+  // the dependencies
+  private dependencies: DependTreeNode[][] = [];
+  // depend value update execute fns
+  private dependValuedUpdateFns: TObj<
+    Array<(value: TDynamicDependValue) => void>
+  > = {};
+  // dynamic execute fns
+  private dynamicExecuteFns: TObj<TDynamicExecuteFn> = {};
+  // add depend value update fns
+  private addDependValuedUpdateFns<
+    T extends (value: TDynamicDependValue) => void,
+  >(id: TPath, fn: T) {
+    if (isArray(this.dependValuedUpdateFns[id])) {
+      this.dependValuedUpdateFns[id].push(fn);
+    } else {
+      this.dependValuedUpdateFns[id] = [fn];
+    }
+  }
+  // get node if node exist then return
+  // otherwise add a new node and return
+  private getNode(id: TPath): DependTreeNode {
+    const { allNodes } = this;
+    let node = allNodes.find((node) => node.id === id);
+    if (!node) {
+      node = new DependTreeNode(id, this);
+      allNodes.push(node);
+    }
+    return node;
+  }
+  // add a node by id
+  public addNode(
+    currentId: TPath,
+    dependIds: TPath[],
+    callback: TDynamicDependCallback,
+  ) {
+    const parentNode = this.getNode(currentId);
+    const parentPath = parentNode.id;
+    const args: Array<TDynamicDependValue> = [];
+    for (const childId of dependIds) {
+      const childNode = this.getNode(childId);
+      // check releation
+      Depender.validateIfRelatviePath(parentPath, childNode.id);
+      parentNode.addChild(childNode);
+      childNode.addParent(parentNode);
+      // argument
+      const curArg: TDynamicDependValue = {};
+      args.push(curArg);
+      this.addDependValuedUpdateFns(childId, (value: TDynamicDependValue) => {
+        const origLoop = curArg.loop || 0;
+        utils.setObjectEmpty(curArg);
+        Object.assign(curArg, value);
+        curArg.loop = origLoop + 1;
+      });
+    }
+    const dynamic: TDynamicExecuteFn = (this.dynamicExecuteFns[currentId] = {
+      checked: false,
+      fn: () => {
+        if (!dynamic.checked) {
+          let index = 0;
+          for (const arg of args) {
+            if (!hasOwn(arg, 'value')) {
+              throw new Error(
+                `The path ${currentId} depend a path of '${dependIds[index]}' not make a value yet, make sure the depend path is appear before the current path.`,
+              );
+            }
+            index++;
+          }
+          dynamic.checked = true;
+        }
+        return callback(...args);
+      },
+    });
+  }
+  // refresh the root node
+  public setRootNode(node: DependTreeNode, parent: DependTreeNode) {
+    const index = this.rootNodes.findIndex((curNode) =>
+      DependTreeNode.isSameNode(curNode, node),
+    );
+    // if found, remove the child node and add the parent node
+    // otherwise, just push the parent node as a root node
+    if (index > -1) {
+      this.rootNodes.splice(index, 1, parent);
+    } else {
+      this.rootNodes.push(parent);
+    }
+  }
+  // check loop dependence
+  private checkLoopDependence(
+    parentNodes: DependTreeNode[],
+    curNode: DependTreeNode,
+  ) {
+    const curId = curNode.id;
+    if (parentNodes.find((node) => node.id === curId)) {
+      throw new Error(
+        `The depend path of '${parentNodes[parentNodes.length - 1].id}' and '${
+          curNode.id
+        }' cause a loop dependencies.`,
+      );
+    }
+  }
+  // loop the tree node
+  private loopTree(
+    node: DependTreeNode,
+    parentNodes: DependTreeNode[],
+    result: DependTreeNode[][],
+  ) {
+    this.checkLoopDependence(parentNodes, node);
+    const nowParentNodes = parentNodes.concat(node);
+    if (node.childs.length) {
+      for (const childNode of node.childs) {
+        this.loopTree(childNode, nowParentNodes, result);
+      }
+    } else {
+      result.push(nowParentNodes);
+    }
+  }
+  // check dependencies
+  public check(): void | never {
+    for (const rootNode of this.rootNodes) {
+      this.loopTree(rootNode, [], this.dependencies);
+    }
+  }
+  // get dynamic config
+  public getDynamicConfig(path: TPath): TInstanceDynamicConfig | void {
+    return this.dynamicExecuteFns[path]?.fn();
+  }
+  // trigger depend value
+  public triggerDependValued(path: TPath, value: TDynamicDependValue): void {
+    const fns = this.dependValuedUpdateFns[path];
+    if (isArray(fns)) {
+      for (const fn of fns) {
+        fn(value);
+      }
+    }
   }
 }
 
@@ -850,7 +1202,7 @@ export class Template {
  * @export
  * @class Such
  */
-export default class SuchMocker {
+export default class SuchMocker<T = unknown> {
   /**
    * instance properties
    */
@@ -858,8 +1210,10 @@ export default class SuchMocker {
   public readonly instances: PathMap<Mocker>;
   public readonly mockits: PathMap<TObj>;
   public readonly datas: PathMap<unknown>;
+  public readonly depender: Depender;
   private initail = false;
   private ruleKeys: IMockerPathRuleKeys;
+  private allPaths: TPath[];
   /**
    * constructor of such
    * @param target [unkown] the target need to be mocking
@@ -873,19 +1227,74 @@ export default class SuchMocker {
   ) {
     this.instances = new PathMap(false);
     this.datas = new PathMap(true);
+    // dynamics
+    if (options?.config?.dynamics) {
+      this.depender = new Depender();
+      this.initDynamics(options.config.dynamics, this.depender);
+    }
+    // build a mocker
     this.mocker = new Mocker(
       {
         target,
         path: [],
         config: options?.config,
       },
-      this.such,
-      this.namespace,
-      this.instances,
-      this.datas,
+      this,
     );
     // set root mocker instance
     this.instances.set([], this.mocker);
+  }
+  /**
+   * Add dynamic config or value
+   * @param target
+   * @param depends
+   * @param callback
+   * @returns
+   */
+  private initDynamics(
+    dynamics: TObj<TDynamicConfig>,
+    depender: Depender,
+  ): void {
+    // judge if has loop dependence
+    Object.keys(dynamics).forEach((curPath) => {
+      const [dependPath, callback] = dynamics[curPath];
+      const dependPaths = isArray(dependPath) ? dependPath : [dependPath];
+      this.checkIfHasPaths(curPath, ...dependPaths);
+      depender.addNode(curPath, dependPaths, callback);
+    });
+    depender.check();
+  }
+  /**
+   *
+   * @param args
+   */
+  public checkIfHasPaths(...args: TPath[]): never | void {
+    for (const key of args) {
+      if (!this.hasPath(key) && !tmplRefRule.test(key)) {
+        throw new Error(
+          `The path of '${key}' is not exist in the instance's paths.`,
+        );
+      }
+    }
+  }
+  /**
+   *
+   * @param path
+   * @returns
+   */
+   public paths(): TPath[] {
+    if (!this.allPaths) {
+      this.initPathsAndKeys();
+    }
+    return this.allPaths;
+  }
+  /**
+   *
+   * @param path
+   * @returns
+   */
+  public hasPath(path: TPath): boolean {
+    return this.paths().includes(path);
   }
   /**
    *
@@ -893,7 +1302,7 @@ export default class SuchMocker {
    * @returns
    * @memberof Such
    */
-  public a(instanceOptions?: IAInstanceOptions): unknown {
+  public a(instanceOptions?: IAInstanceOptions): T {
     if (!this.initail) {
       // set initial true
       this.initail = true;
@@ -909,28 +1318,26 @@ export default class SuchMocker {
     return this.mocker.mock([]);
   }
   /**
-   * get the optional or length fields's config
-   * @returns {IMockerPathRuleKeys}
-   * @memberof Such
+   * 
+   * @returns 
    */
-  public keys(): IMockerPathRuleKeys {
-    if (this.ruleKeys) {
-      return this.ruleKeys;
-    }
-    const { target, ruleKeys = {} } = this;
+  private initPathsAndKeys() {
+    const { target, ruleKeys = {}, allPaths = ['/'] } = this;
     // loop the fields
     const loop = (obj: unknown, path: TFieldPath) => {
       if (isObject(obj)) {
         for (const curKey in obj) {
-          if (obj.hasOwnProperty(curKey)) {
+          if (hasOwn(obj, curKey)) {
             const { config, key } = Mocker.parseKey(curKey);
-            const nowPath = path.concat(key);
+            const curPath = path.concat(key);
+            const strPath = path2str(curPath);
+            allPaths.push(strPath);
             // if has config
             if (isNoEmptyObject(config)) {
-              ruleKeys[path2str(nowPath)] = config;
+              ruleKeys[strPath] = config;
             }
             // recursive
-            loop(obj[curKey], nowPath);
+            loop(obj[curKey], curPath);
           }
         }
       } else if (isArray(obj)) {
@@ -943,8 +1350,22 @@ export default class SuchMocker {
     loop(target, []);
     // the root
     ruleKeys['/'] = this.options?.config;
+    // set all paths
+    this.allPaths = allPaths;
+    this.ruleKeys = ruleKeys;
     // return the rulekeys
     return ruleKeys;
+  }
+  /**
+   * get the optional or length fields's config
+   * @returns {IMockerPathRuleKeys}
+   * @memberof Such
+   */
+  public keys(): IMockerPathRuleKeys {
+    if (!this.ruleKeys) {
+      this.initPathsAndKeys();
+    }
+    return this.ruleKeys;
   }
   /**
    * check the optional or length config of the field is ok or not
@@ -959,8 +1380,8 @@ export default class SuchMocker {
     if (keys && isNoEmptyObject(keys)) {
       const fields = this.keys();
       for (const path in keys) {
-        if (keys.hasOwnProperty(path)) {
-          if (!fields.hasOwnProperty(path)) {
+        if (hasOwn(keys, path)) {
+          if (!hasOwn(fields, path)) {
             throw new Error(
               `The target's field with a path '${path}' in instanceOptions keys is not optional or having a length with min/max, but you set a config on it.`,
             );
@@ -979,8 +1400,8 @@ export default class SuchMocker {
               );
             }
             // check count
-            const hasMin = value.hasOwnProperty('min');
-            const hasMax = value.hasOwnProperty('max');
+            const hasMin = hasOwn(value, 'min');
+            const hasMax = hasOwn(value, 'max');
             if (hasMin || hasMax) {
               if (value.exist === false) {
                 // has set the exist false
@@ -991,10 +1412,10 @@ export default class SuchMocker {
               }
               let confMin: number;
               let confMax: number;
-              if (config.hasOwnProperty('min')) {
+              if (hasOwn(config, 'min')) {
                 // first use the config's min and max
                 confMin = config.min;
-                confMax = config.hasOwnProperty('max') ? config.max : confMin;
+                confMax = hasOwn(config, 'max') ? config.max : confMin;
               } else {
                 // then if is optional, set the min and max to 0 and 1
                 if (config.optional) {
@@ -1050,7 +1471,7 @@ export default class SuchMocker {
               }
             }
             // check index
-            if (value.hasOwnProperty('index')) {
+            if (hasOwn(value, 'index')) {
               if (!(config.oneOf || config.max === 1)) {
                 throw new Error(
                   `The target's field with a path '${path}' in instanceOptions keys is not a field with config 'oneOf' or 'max' equal to 1, can't set a 'index' value.`,
@@ -1065,29 +1486,14 @@ export default class SuchMocker {
 }
 
 /**
- * BaseExtendMockit
- * Just for types
- */
-class BaseExtendMockit extends Mockit {
-  init(): void {
-    // nothing to do
-  }
-  test(): boolean {
-    return false;
-  }
-  generate(): void {
-    // nothing to do
-  }
-}
-/**
  *
  * @param name [string]
  * @param defType [string]
  */
 const warnIfEverDefinedInBuiltin = (name: string, defType: string) => {
   // warn if the short alias name or data type name is defined in builtin
-  const { mockits, alias } = globalStore;
-  if (mockits.hasOwnProperty(name) || alias.hasOwnProperty(name)) {
+  const { mockits, alias } = globalStoreData;
+  if (hasOwn(mockits, name) || hasOwn(alias, name)) {
     // warn that the name in used in builtin
     // eslint-disable-next-line no-console
     console.warn(
@@ -1103,14 +1509,14 @@ const warnIfEverDefinedInBuiltin = (name: string, defType: string) => {
  */
 export class Such {
   public readonly utils = utils;
-  public readonly store: Store;
-  private readonly hasNs: boolean;
+  protected readonly storeData: Store;
+  protected readonly hasNs: boolean;
   constructor(public readonly namespace?: string) {
     this.hasNs = !!namespace;
     if (this.hasNs) {
-      this.store = createNsStore(namespace);
+      this.storeData = createNsStore(namespace);
     } else {
-      this.store = globalStore;
+      this.storeData = globalStoreData;
     }
   }
   /**
@@ -1120,8 +1526,59 @@ export class Such {
    * @param {*} value
    * @memberof Such
    */
-  public assign(name: string, value: unknown, alwaysVar = false): void {
-    this.store(name, value, alwaysVar);
+  public assign(
+    name: string,
+    value: unknown,
+    assignType: boolean | AssignType = false,
+  ): void {
+    if (typeof assignType === 'boolean') {
+      assignType = assignType ? AssignType.AlwaysVariable : AssignType.None;
+    }
+    this.storeData(name, value, assignType);
+  }
+
+  /**
+   * get the assigned value by name
+   * @param {string} name
+   */
+  public getAssigned(name: string): TAssignedData {
+    return this.storeData.get(name);
+  }
+
+  /**
+   * get store data
+   * @param name
+   */
+  public store<T extends keyof Store>(name: T): Store[T];
+  public store<T extends keyof Store>(name: Array<T>): Pick<Store, T>;
+  public store<T extends keyof Store>(name: T, ...args: T[]): Pick<Store, T>;
+  public store<T extends keyof Store>(
+    name: T | Array<T>,
+    ...args: T[]
+  ): Store[T] | Pick<Store, T> {
+    const { storeData } = this;
+    const pick = (names: T[]): Pick<Store, T> =>
+      names.reduce((ret, key: T) => {
+        ret[key] = storeData[key];
+        return ret;
+      }, {} as Pick<Store, T>);
+    if (args.length > 0) {
+      return pick(args.concat(name));
+    }
+    if (isArray(name)) {
+      return pick(name);
+    }
+    return storeData[name];
+  }
+  /**
+   * clear store data
+   * @param {Array<TStoreAllowedClearFileds> | TStoreAllowedClearFileds} options
+   */
+  public clearStore(options?: {
+    reset?: boolean;
+    exclude?: Array<TStoreAllowedClearFileds> | TStoreAllowedClearFileds;
+  }) {
+    this.storeData.clear(options);
   }
   /**
    *
@@ -1184,6 +1641,7 @@ export class Such {
       );
     }
     let config: Partial<TMFactoryOptions> = {};
+    // do with the config for different define types
     let isTemplate = false;
     let isEnum = false;
     const isExtend = !!frozen;
@@ -1240,8 +1698,8 @@ export class Such {
         this.setParams(params, true);
       }
     };
-    const { mockits, alias } = this.store;
-    if (!(mockits.hasOwnProperty(type) || alias.hasOwnProperty(type))) {
+    const { mockits, alias } = this.storeData;
+    if (!(hasOwn(mockits, type) || hasOwn(alias, type))) {
       let klass: TMClass;
       const { namespace, hasNs } = this;
       if (hasNs) {
@@ -1250,10 +1708,10 @@ export class Such {
       if (isExtend) {
         const baseType = base as string;
         const realBaseType = alias[baseType] || baseType;
-        const BaseClass = ((hasNs
+        const BaseClass = (hasNs
           ? mockits[realBaseType] ||
-            globalStore.mockits[globalStore.alias[baseType] || baseType]
-          : mockits[realBaseType]) as unknown) as typeof BaseExtendMockit;
+            globalStoreData.mockits[globalStoreData.alias[baseType] || baseType]
+          : mockits[realBaseType]) as unknown as typeof BaseExtendMockit;
         if (!BaseClass) {
           throw new Error(
             `the defined type "${type}" what based on type of "${baseType}" is not exists.`,
@@ -1273,9 +1731,9 @@ export class Such {
         }
         klass = class extends BaseClass implements Mockit {
           // set static properties
-          public static readonly chainNames = BaseClass.chainNames.concat(
-            realBaseType,
-          );
+          public static readonly chainNames =
+            BaseClass.chainNames.concat(realBaseType);
+          public static baseType = BaseClass;
           public static readonly constrName = constrName;
           public static readonly namespace = namespace;
           public static selfConfigOptions = configOptions;
@@ -1308,6 +1766,10 @@ export class Such {
             // init
             public init() {
               super.init();
+              this.initTemplate();
+            }
+            // init template
+            private initTemplate() {
               const $template = self.template(
                 base as string,
                 this.path,
@@ -1318,6 +1780,13 @@ export class Such {
                 this.setParams($template.params);
               }
               this.setTemplate($template);
+            }
+            // generate
+            public generate(options: TSuchInject): string {
+              if (!this.$template) {
+                this.initTemplate();
+              }
+              return super.generate(options);
             }
           };
         } else if (isEnum) {
@@ -1333,18 +1802,35 @@ export class Such {
             private instance: SuchMocker;
             // init
             public init() {
+              this.initInstance();
+            }
+            // init instance
+            private initInstance() {
               this.instance = self.instance(base, {
                 config: enumConfig,
               });
             }
             // generate
             public generate(options: TSuchInject): unknown {
-              if (options?.config) {
-                return this.instance.a({
-                  keys: {
-                    '/': options.config,
-                  },
-                });
+              // the init method will only call once
+              // but the generate function is cached will call by other instance
+              // so here need a judgement, fix #14
+              if (!this.instance) {
+                this.initInstance();
+              }
+              if (options) {
+                const instanceOptions: IAInstanceOptions = {};
+                if (options.key) {
+                  instanceOptions.keys = {
+                    '/': options.key,
+                  };
+                }
+                if (options.param) {
+                  instanceOptions.params = {
+                    '/': options.param,
+                  };
+                }
+                return this.instance.a(instanceOptions);
               }
               return this.instance.a();
             }
@@ -1367,7 +1853,7 @@ export class Such {
               initProcess.call(this);
             }
             // call generate
-            public generate(options: TSuchInject, such: Such) {
+            public generate(options: TSuchInject, such: Such): unknown {
               return generate.call(this, options, such);
             }
             // test
@@ -1400,7 +1886,7 @@ export class Such {
       throw new Error(`wrong alias params:'${short}' short for '${long}'`);
     }
     // alias can only set for your own defined types
-    const { aliasTypes, alias, mockits } = this.store;
+    const { aliasTypes, alias, mockits } = this.storeData;
     if (aliasTypes.includes(long)) {
       throw new Error(
         `The data type of "${long}" has an alias yet, can't use "${short}" for an alias name.`,
@@ -1412,7 +1898,7 @@ export class Such {
           `Use a wrong alias short name '${short}', the name should match the regexp '${dtNameRule.toString()}'`,
         );
       }
-      if (!mockits.hasOwnProperty(long)) {
+      if (!hasOwn(mockits, long)) {
         throw new Error(
           `You can't set an alias "${short}" for the data type of "${long}" which is not defined${
             this.hasNs
@@ -1441,17 +1927,11 @@ export class Such {
       globals: 'assign',
     };
     const lastConf: TSuchSettings = {};
-    const curSuch = (this as unknown) as {
-      loadExtend: (files: TStrList) => TSuchSettings[];
+    const curSuch = this as unknown as ThisType<Such> & {
+      loadExtend: (files: TStrList | string) => TSuchSettings[];
     };
     if (config.extends && typeof curSuch.loadExtend === 'function') {
-      const confFiles =
-        typeof config.extends === 'string' ? [config.extends] : config.extends;
-      const confs = curSuch.loadExtend(confFiles);
-      confs.map((conf: TSuchSettings) => {
-        delete conf.extends;
-        deepCopy(lastConf, conf);
-      });
+      curSuch.loadExtend(config.extends);
     }
     deepCopy(lastConf, {
       parsers: parsers || {},
@@ -1461,14 +1941,13 @@ export class Such {
     });
     Object.keys(lastConf).map((key: keyof TSuchSettings) => {
       const conf = lastConf[key];
-      const fnName = (fnHashs.hasOwnProperty(key)
-        ? fnHashs[key]
-        : key) as keyof Such;
+      const fnName = (hasOwn(fnHashs, key) ? fnHashs[key] : key) as keyof Such;
+      const fn = this[fnName] as TFunc;
       Object.keys(conf).map((name: keyof typeof conf) => {
-        const fn = this[fnName] as TFunc;
-        const args = utils.isArray(conf[name])
-          ? conf[name]
-          : ([conf[name]] as Parameters<typeof fn>);
+        const value = conf[name];
+        const args = utils.isArray(value)
+          ? value
+          : ([value] as Parameters<typeof fn>);
         fn.apply(this, [name, ...args]);
       });
     });
@@ -1503,15 +1982,17 @@ export class Such {
         // store the index for error index
         const storeIndex = curIndex;
         const params = {};
+        const type = '';
         let mockit: Mockit;
         let meta = '';
-        const type = '';
         let refName = '';
+        let typeContext = '';
         // parse mockit until end
         while (curIndex++ < total) {
           const curCh = code.charAt(curIndex);
           if (curCh === symbol) {
             hasEndSymbol = true;
+            typeContext = meta;
             if (mockit) {
               // if the mockit has initial
               // need parse again
@@ -1566,10 +2047,10 @@ export class Such {
               mockit,
               greedy: true,
             });
-            if (curParams.hasOwnProperty('errorIndex')) {
+            if (hasOwn(curParams, 'errorIndex')) {
               // parse error, return a wrapper data with 'errorIndex'
               // need parse to next symbol
-              const errorIndex = (curParams.errorIndex as unknown) as number;
+              const errorIndex = curParams.errorIndex as unknown as number;
               // remove the parsed string and add the symbol back
               if (errorIndex > 0) {
                 meta = meta.slice(errorIndex) + symbol;
@@ -1616,7 +2097,7 @@ export class Such {
           mockit.setParams(params);
         }
         // add the mockit to segments
-        template.addInstance(mockit, refName);
+        template.addInstance(mockit, typeContext, refName);
       } else if (ch === '\\') {
         curIndex++;
         if (curIndex < total) {
@@ -1679,8 +2160,8 @@ export class Such {
    * @param {*} target
    * @memberof Such
    */
-  public as(target: unknown, options?: IAsOptions): unknown {
-    return this.instance(target, options).a();
+  public as<T = unknown>(target: unknown, options?: IAsOptions): T {
+    return this.instance<T>(target, options).a();
   }
   /**
    *
@@ -1691,9 +2172,13 @@ export class Such {
    * @returns {Such}
    * @memberof Such
    */
-  public instance(target: unknown, options?: IAsOptions): SuchMocker {
-    return new SuchMocker(target, this, this.namespace, options);
+  public instance<T = unknown>(
+    target: unknown,
+    options?: IAsOptions,
+  ): SuchMocker<T> {
+    return new SuchMocker<T>(target, this, this.namespace, options);
   }
+
   /**
    *
    *
@@ -1702,15 +2187,15 @@ export class Such {
   public setExportType(type: string): void | never {
     if (this.namespace) {
       const { namespace } = this;
-      const store = getNsStore(namespace);
-      const { types } = store.exports;
+      const storeData = getNsStore(namespace);
+      const { types } = storeData.exports;
       if (types.includes(type)) {
         warn(
           `The export type "${type}" has ever exported, you don't need export it again.`,
         );
       } else {
-        const { alias, mockits } = store;
-        if (!(mockits.hasOwnProperty(type) || alias.hasOwnProperty(type))) {
+        const { alias, mockits } = storeData;
+        if (!(hasOwn(mockits, type) || hasOwn(alias, type))) {
           throw new Error(
             `The export type "${type}" is not exist when you call the "setExportType", make sure you have defined the type.`,
           );
@@ -1727,14 +2212,14 @@ export class Such {
    */
   public setExportVar(name: string): void {
     if (this.namespace) {
-      const store = getNsStore(this.namespace);
-      const { vars } = store;
-      if (!vars.hasOwnProperty(name)) {
+      const storeData = getNsStore(this.namespace);
+      const { vars } = storeData;
+      if (!hasOwn(vars, name)) {
         throw new Error(
           `The export variable "${name}" is not exist when you call the "setExportVar", make sure you have assigned the variable.`,
         );
       }
-      store.exports.vars[name] = vars[name];
+      storeData.exports.vars[name] = vars[name];
     } else {
       setExportWarn('setExportVar', name);
     }
@@ -1745,14 +2230,14 @@ export class Such {
    */
   public setExportFn(name: string): void {
     if (this.namespace) {
-      const store = getNsStore(this.namespace);
-      const { fns } = store;
-      if (!fns.hasOwnProperty(name)) {
+      const storeData = getNsStore(this.namespace);
+      const { fns } = storeData;
+      if (!hasOwn(fns, name)) {
         throw new Error(
           `The export function "${name}" is not exist when you call the "setExportFn", make sure you have assigned the function.`,
         );
       }
-      store.exports.fns[name] = fns[name];
+      storeData.exports.fns[name] = fns[name];
     } else {
       setExportWarn('setExportVar', name);
     }

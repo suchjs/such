@@ -2,7 +2,6 @@ import { TStrList, TFunc, TObj } from './common';
 
 /**
  * IParserConfig
- * 解析器配置
  * @export
  * @interface IParserConfig
  */
@@ -16,7 +15,6 @@ export interface IParserConfig {
 
 /**
  * IParserFactory
- * 属性解析器实例
  * @export
  * @interface IParserFactory
  */
@@ -28,7 +26,6 @@ export interface IParserFactory {
 
 /**
  * IPP is short for 'Interface Parser Property'
- * 解析属性用到的类型
  */
 export interface IPPWrapper {
   prefix: string;
@@ -37,7 +34,6 @@ export interface IPPWrapper {
 
 /**
  * property: length
- * 长度属性
  * @export
  * @interface IPPLength
  */
@@ -47,7 +43,6 @@ export interface IPPLength {
 }
 /**
  * property: size
- * 大小属性
  * @export
  * @interface IPPSize
  */
@@ -56,7 +51,6 @@ export interface IPPSize<T = number | string> {
 }
 /**
  * property: format
- * 格式化
  * @export
  * @interface IPPFormat
  */
@@ -74,7 +68,6 @@ export interface IPPFuncOptions {
 }
 /**
  * property: func
- * 方法函数
  * @export
  * @interface IPPFunc
  */
@@ -90,7 +83,6 @@ export interface IPPFunc {
 }
 /**
  * property: regexp
- * 正则表达式
  * @export
  * @interface IPPRegexp
  */
@@ -99,7 +91,6 @@ export interface IPPRegexp {
 }
 /**
  * property: path
- * 路径
  * @export
  * @interface IPPPathItem
  */
@@ -109,11 +100,11 @@ export interface IPPPathItem {
   path: Array<string | number>;
   fullpath: string;
   variable: string;
+  fix: boolean;
 }
 export type IPPPath = IPPPathItem[];
 /**
  * property: config
- * 配置项解析
  * @export
  * @interface IPPConfig
  */

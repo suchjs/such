@@ -1,15 +1,21 @@
-import { TResult, TStrList, TObj, TConstructor } from '../types/common';
+import {
+  TResult,
+  TStrList,
+  TObj,
+  TConstructor,
+} from '../types/common';
 import { IPPConfig, IPPFunc, IPPFuncOptions } from '../types/parser';
 import {
   deepCopy,
   getExpValue,
+  hasOwn,
   isArray,
   isFn,
   isNoEmptyObject,
   isObject,
   typeOf,
 } from '../helpers/utils';
-import globalStore, { getNsStore } from '../data/store';
+import globalStoreData, { getNsStore } from '../data/store';
 import {
   TMConfig,
   TMModifierFn,
@@ -20,12 +26,16 @@ import {
   TMFactoryOptions,
   TMConfigRule,
 } from '../types/mockit';
-import { EnumSpecialType, TSuchInject } from '../types/instance';
+import {
+  EnumSpecialType,
+  TOverrideParams,
+  TSuchInject,
+} from '../types/instance';
 import type { Such } from './such';
-import { Variable } from '../data/config';
+import { allowdOverrideParams, VariableExpression } from '../data/config';
 import { TFieldPath } from '../helpers/pathmap';
 
-const { fns: globalFns, vars: globalVars } = globalStore;
+const { fns: globalFns, vars: globalVars } = globalStoreData;
 // get namespace assigned values
 const getNsValues = (
   callerNs: string,
@@ -58,8 +68,8 @@ const getNsValues = (
     };
   }
   // now call the none root
-  const store = getNsStore(ownerNs);
-  const { fns, vars } = store.exports;
+  const storeData = getNsStore(ownerNs);
+  const { fns, vars } = storeData.exports;
   if (isCallerRoot) {
     return {
       nsFns: {
@@ -90,21 +100,21 @@ const getNsValues = (
 // get namespace mockits cache
 const getNsMockitsCache = (
   namespace?: string,
-): typeof globalStore.mockitsCache => {
+): typeof globalStoreData.mockitsCache => {
   if (!namespace) {
-    return globalStore.mockitsCache;
+    return globalStoreData.mockitsCache;
   }
-  const store = getNsStore(namespace);
-  return store && store.mockitsCache;
+  const storeData = getNsStore(namespace);
+  return storeData && storeData.mockitsCache;
 };
 // pre process data and methods
 const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
   const PRE_PROCESS_STAND = '__pre_process_fn__';
   const isPreProcessFn = (fn: (...args: unknown[]) => unknown): boolean => {
-    return ((fn as unknown) as TObj).hasOwnProperty(PRE_PROCESS_STAND);
+    return hasOwn(fn as unknown as TObj, PRE_PROCESS_STAND);
   };
   const setPreProcessFn = <T = (...args: unknown[]) => unknown>(fn: T): T => {
-    ((fn as unknown) as TObj)[PRE_PROCESS_STAND] = true;
+    (fn as unknown as TObj)[PRE_PROCESS_STAND] = true;
     return fn;
   };
   // mockit preprocessing
@@ -129,7 +139,7 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
                     '__CONFIG__',
                     'return __CONFIG__.' + param.value,
                   )(nsVars);
-                } else if (!nsVars.hasOwnProperty(param.value)) {
+                } else if (!hasOwn(nsVars, param.value)) {
                   throw new Error(`"${param.value} is not assigned."`);
                 }
               }
@@ -144,18 +154,20 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
     },
     $config: function (this: Mockit, $config: IPPConfig = {}): IPPConfig {
       const last: IPPConfig = {};
-      const { nsVars } = getNsValues(...this.getCurrentNs());
+      const { nsVars, nsFns } = getNsValues(...this.getCurrentNs());
       for (const key in $config) {
-        if ($config.hasOwnProperty(key)) {
+        if (hasOwn($config, key)) {
           const value = $config[key];
-          if (value instanceof Variable) {
-            const { name } = value;
-            if (!nsVars.hasOwnProperty(name)) {
-              throw new Error(
-                `The configuration of key "${key}" use a variable name "${name}" is not found in the assigned values, you need assign it first.`,
-              );
-            }
-            last[key] = nsVars[name];
+          if (value instanceof VariableExpression) {
+            const { expression } = value;
+            const func = new Function(
+              '__CONTEXT__',
+              'with(__CONTEXT__){ return ' + expression + '}',
+            );
+            last[key] = func({
+              ...nsFns,
+              ...nsVars,
+            });
           } else {
             last[key] = value;
           }
@@ -180,7 +192,7 @@ const { PRE_PROCESS, isPreProcessFn, setPreProcessFn } = (function () {
           });
           return flag;
         };
-        const hasKey = last.hasOwnProperty(key);
+        const hasKey = hasOwn(last, key);
         if (isObject(cur)) {
           def = isFn(cur.default) ? cur.default() : cur.default;
           type = cur.type;
@@ -224,6 +236,8 @@ type TPartStaticMockit = Partial<TStaticMockit>;
 export default abstract class Mockit<T = unknown> {
   // chain names
   public static chainNames: string[] = [];
+  // inherit base mockit type
+  public static baseType: typeof BaseExtendMockit;
   // constructor name, for cache
   public static readonly constrName: string;
   // namespace
@@ -264,7 +278,7 @@ export default abstract class Mockit<T = unknown> {
         Object.keys(define).map((key: keyof TMFactoryOptions) => {
           const value = define[key];
           // force to add defines
-          const self = (this as unknown) as TObj;
+          const self = this as unknown as TObj;
           if (typeOf(value) === 'Object') {
             self[key] = deepCopy({}, value);
           } else {
@@ -278,6 +292,7 @@ export default abstract class Mockit<T = unknown> {
         ruleFns: {},
         modifiers: [],
         modifierFns: {},
+        mutates: [],
       };
       // intialize
       this.init();
@@ -288,7 +303,7 @@ export default abstract class Mockit<T = unknown> {
       if (isNoEmptyObject(configOptions)) {
         this.addRule(
           '$config',
-          setPreProcessFn(PRE_PROCESS.$config.bind(this)),
+          setPreProcessFn(PRE_PROCESS.$config.bind(this))
         );
       }
       // cached the mockit, frozen all data
@@ -307,28 +322,22 @@ export default abstract class Mockit<T = unknown> {
    *
    * @param {string} name
    * @param {TMModifierFn<T>} fn
-   * @param {string} [pos]
    * @returns
    * @memberof Mockit
    */
-  public addModifier(
-    name: string,
-    fn: TMModifierFn<T>,
-    pos?: string,
-  ): void | never {
-    return this.add('modifier', name, fn, pos);
+  public addModifier(name: string, fn: TMModifierFn<T>): void | never {
+    return this.add('modifier', name, fn);
   }
   /**
    *
    *
    * @param {string} name
    * @param {TMRuleFn} fn
-   * @param {string} [pos]
    * @returns
    * @memberof Mockit
    */
-  public addRule(name: string, fn: TMRuleFn, pos?: string): void | never {
-    return this.add('rule', name, fn, pos);
+  public addRule(name: string, fn: TMRuleFn, mutate?: boolean): void | never {
+    return this.add('rule', name, fn, mutate);
   }
   /**
    *
@@ -366,6 +375,40 @@ export default abstract class Mockit<T = unknown> {
     // must after copy,otherwise will override modified values
     this.validate();
     return this.initParams;
+  }
+  /**
+   * Merge params and override params
+   * @param {TSuchInject} options
+   * @returns {TMParams}
+   *
+   */
+  public getCurrentParams(options: TSuchInject): TMParams {
+    if (options.param) {
+      const { namespace, constrName } = this.getStaticProps();
+      const mockitsCache = getNsMockitsCache(namespace);
+      const { ruleFns, mutates } = mockitsCache[constrName];
+      const params = {
+        ...this.params,
+      };
+      Object.keys(options.param).map((key) => {
+        if (hasOwn(this.params, key) && allowdOverrideParams.includes(key)) {
+          const curParam = options.param[key as keyof TOverrideParams];
+          const origParam = this.params[key];
+          params[key] = Object.assign(
+            {},
+            origParam,
+            (mutates.includes(key)
+              ? ruleFns[key](curParam)
+              : curParam)
+          );
+        } else {
+          // eslint-disable-next-line no-console
+          console.warn(`You set a '${key}' param in instanceOptions's params not allowed.`);
+        }
+      });
+      return params;
+    }
+    return this.params;
   }
   /**
    * setAllowAttrs
@@ -449,7 +492,7 @@ export default abstract class Mockit<T = unknown> {
    * @param {("rule"|"modifier")} type
    * @param {string} name
    * @param {(TMRuleFn|TMModifierFn<T>)} fn
-   * @param {string} [pos]
+   * @param {boolean} [mutate]
    * @returns {(never|void)}
    * @memberof Mockit
    */
@@ -457,12 +500,13 @@ export default abstract class Mockit<T = unknown> {
     type: 'rule' | 'modifier',
     name: string,
     fn: TMRuleFn | TMModifierFn<T>,
-    pos?: string,
+    mutate?: boolean,
   ): never | void {
     const { namespace, constrName } = this.getStaticProps();
     const curName = constrName;
     const mockitsCache = getNsMockitsCache(namespace);
-    const { rules, ruleFns, modifiers, modifierFns } = mockitsCache[curName];
+    const { rules, ruleFns, modifiers, modifierFns, mutates } =
+      mockitsCache[curName];
     const isRuleType = type === 'rule';
     let target;
     let fns;
@@ -476,7 +520,7 @@ export default abstract class Mockit<T = unknown> {
     if (target.includes(name)) {
       // if has ever added a handle that not PRE_PROCESS handle, ignore the PRE_PROCESS handle
       // otherwise, override the handle
-      if (PRE_PROCESS.hasOwnProperty(name)) {
+      if (hasOwn(PRE_PROCESS, name)) {
         if (isPreProcessFn(fn)) {
           return;
         }
@@ -487,27 +531,12 @@ export default abstract class Mockit<T = unknown> {
     // when add a rule, auto add the rule name to allowAttrs
     if (isRuleType) {
       this.setAllowAttrs(name);
-    }
-    // add by position
-    if (pos === undefined || pos.trim() === '') {
-      target.push(name);
-    } else {
-      let prepend = false;
-      if (pos.charAt(0) === '^') {
-        prepend = true;
-        pos = pos.slice(1);
-      }
-      if (pos === '') {
-        target.unshift(name);
-      } else {
-        const findIndex = target.indexOf(pos);
-        if (findIndex < 0) {
-          throw new Error(`no exists ${type} name of ${pos}`);
-        } else {
-          target.splice(findIndex + (prepend ? 0 : 1), 0, name);
-        }
+      // mutate function
+      if (mutate) {
+        mutates.push(name);
       }
     }
+    target.push(name);
     fns[name] = fn;
   }
   /**
@@ -524,6 +553,7 @@ export default abstract class Mockit<T = unknown> {
       configOptions,
       selfConfigOptions,
       specialType,
+      baseType,
     } = staticMockit;
     return {
       constrName,
@@ -533,6 +563,7 @@ export default abstract class Mockit<T = unknown> {
       configOptions,
       selfConfigOptions,
       specialType,
+      baseType,
     };
   }
   /**
@@ -561,10 +592,7 @@ export default abstract class Mockit<T = unknown> {
     ) {
       const transformedKey = cacheName || '__TRANSFORMED__';
       // if the rule name has ever validated, ignore this rule
-      if (
-        isObject(params[name]) &&
-        params[name].hasOwnProperty(transformedKey)
-      ) {
+      if (isObject(params[name]) && hasOwn(params[name], transformedKey)) {
         return;
       }
       // validate the rule
@@ -579,7 +607,7 @@ export default abstract class Mockit<T = unknown> {
     rules.map((name: string) => {
       try {
         // if a preprocess rule, execute it first
-        if (PRE_PROCESS.hasOwnProperty(name)) {
+        if (hasOwn(PRE_PROCESS, name)) {
           execute(
             name,
             PRE_PROCESS[name as keyof typeof PRE_PROCESS].bind(this),
@@ -645,7 +673,7 @@ export default abstract class Mockit<T = unknown> {
     const { modifiers, modifierFns } = mockitsCache[constrName];
     for (let i = 0, j = modifiers.length; i < j; i++) {
       const name = modifiers[i];
-      if (params.hasOwnProperty(name)) {
+      if (hasOwn(params, name)) {
         const fn = modifierFns[name];
         const args = [result, params[name], options];
         result = fn.apply(this, args);
@@ -670,14 +698,14 @@ export default abstract class Mockit<T = unknown> {
       for (let i = 0, j = queue.length; i < j; i++) {
         const name = queue[i];
         const fn = fns[i];
-        const isUserDefined = nsFns.hasOwnProperty(name);
-        const args: unknown[] = ((isUserDefined
-          ? [nsFns[name]]
-          : []) as unknown[]).concat([
+        const isUserDefined = hasOwn(nsFns, name);
+        const args: unknown[] = (
+          (isUserDefined ? [nsFns[name]] : []) as unknown[]
+        ).concat([
           fnsParams[i],
           nsVars,
           result,
-          ($config as IPPConfig) || {},
+          Object.assign({}, nsVars, nsFns, ($config as IPPConfig) || {}),
           getExpValue,
         ]);
         result = fn(isUserDefined).apply(options, args);
@@ -697,5 +725,21 @@ export default abstract class Mockit<T = unknown> {
   private runAll(result: unknown, options: TSuchInject): unknown {
     result = this.runModifiers(result, options);
     return this.runFuncs(result, options);
+  }
+}
+
+/**
+ * BaseExtendMockit
+ * Just for types
+ */
+export class BaseExtendMockit extends Mockit {
+  init(): void {
+    // nothing to do
+  }
+  test(): boolean {
+    return false;
+  }
+  generate(): void {
+    // nothing to do
   }
 }

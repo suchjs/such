@@ -1,3 +1,4 @@
+import { VariableExpression } from '../src/data/config';
 import Parser from '../src/data/parser';
 import { IPPFunc } from '../src/types/parser';
 const getFunc = (context: string): IPPFunc => {
@@ -37,9 +38,12 @@ describe('validate parser and dispatch', () => {
     expect(() => Parser.parse('{1,}')).toThrow();
     expect(() => Parser.parse('{,1}')).toThrow();
     expect(() => Parser.parse('{\\,,1}')).toThrow();
+    expect(() => Parser.parse('{1,2,3}')).toThrow();
+    expect(() => Parser.parse('{2,1}')).toThrow();
   });
   test('config parser', () => {
-    expect(Parser.parse('#[a=true,b="333",c=1e10,d,f=false,g="\\""]')).toEqual({
+    // kinds of config
+    expect(Parser.parse('#[a=true,b="333",c=1e10,d,f=false,g="\\"",h=a*3+4]')).toEqual({
       $config: {
         a: true,
         b: '333',
@@ -47,8 +51,15 @@ describe('validate parser and dispatch', () => {
         d: true,
         f: false,
         g: '"',
+        h: new VariableExpression('a*3+4')
       },
     });
+    // wrong exp
+    expect(() => Parser.parse('#[a= b + 1]')).toThrow();
+    // repeated config
+    expect(() => Parser.parse('#[a=1,a=2]')).toThrow();
+    // wrong config
+    expect(() => Parser.parse('#[a=b c]')).toThrow();
   });
   test('regexp parser', () => {
     expect(Parser.parse('/aa(bb)/i')).toEqual({
@@ -75,6 +86,7 @@ describe('validate parser and dispatch', () => {
     });
   });
   test('function parser', () => {
+    // fn1
     const fn1 = getFunc('@fn');
     expect(fn1.params[0]).toEqual([]);
     expect(fn1.options[0]).toEqual({
@@ -82,6 +94,7 @@ describe('validate parser and dispatch', () => {
       params: [],
     });
     expect(fn1.queue).toEqual(['fn']);
+    // fn2
     const fn2 = getFunc(
       '@fn(true,obj.name,333)|fn2(333)|fn("haha",\'heihei\')',
     );

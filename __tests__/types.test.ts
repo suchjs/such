@@ -1,4 +1,76 @@
-import Such from '../src/browser';
+import Such, { createNsSuch } from '../src/browser';
+
+describe('test normal data', () => {
+  test('array data type', () => {
+    const arr = Such.instance<[string, number]>([':string', ':number']);
+    for (let i = 0; i < 100; i++) {
+      const value = arr.a();
+      expect(value.length).toEqual(2);
+      const [first, second] = value;
+      expect(typeof first === 'string').toBeTruthy();
+      expect(typeof second === 'number').toBeTruthy();
+    }
+  });
+});
+
+describe('test apis', () => {
+  /**
+   * test alias api
+   */
+  test('alias', () => {
+    // wrong alias
+    expect(() => {
+      // alias short is empty
+      Such.alias('', 'number');
+    }).toThrow();
+    expect(() => {
+      // alias long is empty
+      Such.alias('num', '');
+    }).toThrow();
+    expect(() => {
+      // alias equal name
+      Such.alias('number', 'number');
+    }).toThrow();
+    expect(() => {
+      // alias short long than alias for
+      Such.alias('numberData', 'number');
+    }).toThrow();
+    expect(() => {
+      // wrong short alias name
+      Such.alias('*number', 'number');
+    }).toThrow();
+    // repeat alias
+    expect(() => {
+      // wrong short alias name
+      Such.alias('num', 'number');
+      Such.alias('num', 'number');
+    }).toThrow();
+    // wrong alias for
+    expect(() => {
+      Such.alias('sometype', 'unexist');
+    }).toThrow();
+    // namespace such alias
+    expect(() => {
+      const mySuch = createNsSuch('alias');
+      mySuch.define('abc', ['a', 'b', 'c']);
+      mySuch.alias('number', 'abc');
+    }).toThrow();
+  });
+  /**
+   * test define
+   */
+  // define a template
+  Such.define('sayHello', "'`:number:%d`'\\``:string`");
+  Array.from({
+    length: 100,
+  }).forEach(() => {
+    expect(/^'-?\d+?'/.test(Such.as(':sayHello:{1,3}'))).toBeTruthy();
+  });
+  expect(() => {
+    // redefined
+    Such.define('sayHello', [1, 2, 3]);
+  }).toThrow();
+});
 
 describe('test built-in types', () => {
   const DICTS = ['a', 'b', 'c'];
@@ -6,8 +78,15 @@ describe('test built-in types', () => {
     China: ['BeiJing', 'ShangHai', 'WuHan'],
     America: ['Washington', 'New York', 'Los Angeles'],
   };
+  const globalConfig = {
+    suffix: 'ok',
+  };
   Such.assign('dict', DICTS);
   Such.assign('countries', COUNTRIES);
+  Such.assign('globalConfig', globalConfig);
+  Such.assign('addSuffix', function (value: string, suffix: string) {
+    return value + '_' + suffix;
+  });
   // test string
   test(':string', () => {
     // string with length 3
@@ -90,6 +169,15 @@ describe('test built-in types', () => {
       if (typeof value === 'string') {
         expect(/^\w{3,5}$/.test(value)).toBeTruthy();
       }
+    }
+    // use a function
+    const suffixString = Such.instance<string>(
+      ':string:{3}:@addSuffix(globalConfig.suffix)',
+    );
+    for (let i = 0; i < 100; i++) {
+      const value = suffixString.a();
+      expect(typeof value === 'string').toBeTruthy();
+      expect(value.endsWith('_' + globalConfig.suffix)).toBeTruthy();
     }
   });
   // test number
@@ -181,18 +269,27 @@ describe('test built-in types', () => {
   // test date type
   test(':date', () => {
     // a default random date
-    const random = Such.instance(':date');
+    const random = Such.instance<Date>(':date');
     for (let i = 0; i < 100; i++) {
-      const value = random.a() as Date;
+      const value = random.a();
       expect(value instanceof Date).toBeTruthy();
     }
     // a date with range
-    const rangeDate = Such.instance(':date:["2015-01-01","2020-01-01"]');
+    const rangeDate = Such.instance<Date>(':date:["2015-01-01","2020-01-01"]');
     for (let i = 0; i < 100; i++) {
-      const value = rangeDate.a() as Date;
+      const value = rangeDate.a();
       expect(value instanceof Date).toBeTruthy();
       expect(+value).toBeGreaterThanOrEqual(+new Date('2015/01/01 00:00:00'));
       expect(+value).toBeLessThanOrEqual(+new Date('2020/01/01 00:00:00'));
+    }
+    // use a relative date with config field 'now'
+    const now = new Date();
+    Such.assign('now', now);
+    const relativeDate = Such.instance<Date>(':date:["today","today"]:#[now=now]');
+    for(let i = 0; i < 100; i++){
+      const curDate = relativeDate.a();
+      now.setDate(now.getDate() + 1); 
+      expect(relativeDate.a().getTime() - curDate.getTime()).toEqual(24 * 60 * 60 * 1000);
     }
     // a date with format
     const formatDate = Such.instance(':date:%yyyy-mm-dd HH\\:MM\\:ss');
@@ -200,7 +297,7 @@ describe('test built-in types', () => {
       const value = formatDate.a() as string;
       expect(typeof value === 'string').toBeTruthy();
       expect(
-        /^\d{4}\-\d{2}\-\d{2} [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$/.test(value),
+        /^\d{4}-\d{2}-\d{2} [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$/.test(value),
       ).toBeTruthy();
     }
     // wrong date
@@ -273,14 +370,14 @@ describe('test built-in types', () => {
       // in a template
       return Such.as({
         a: 1,
-        b: ':::`:string``:ref:&/${2}`',
+        b: ':::`:string``:ref:&//${2}`',
       });
     }).toThrow();
     expect(() => {
       // in a template
       const instance = Such.instance({
         a: 1,
-        b: ':::`:string``:ref:&/${2}``:number`',
+        b: ':::`:string``:ref:&//${2}``:number`',
       });
       for (let i = 0; i < 10; i++) {
         instance.a();
@@ -290,7 +387,7 @@ describe('test built-in types', () => {
       // in a template with named
       const instance = Such.instance({
         a: 1,
-        b: ':::`:string``:ref:&/${mystr}``:number`',
+        b: ':::`:string``:ref:&//${mystr}``:number`',
       });
       for (let i = 0; i < 10; i++) {
         instance.a();
@@ -326,7 +423,7 @@ describe('test built-in types', () => {
     const tmplRef = {
       a: 'hello',
       b: 'world',
-      c: ':::`:ref:&./a`:`:regexp:/abc/`;`:ref:&./b`:`:ref:&/${1}`;',
+      c: ':::`:ref:&./a`:`:regexp:/abc/`;`:ref:&./b`:`:ref:&//${1}`;',
     };
     const tmplRefData = Such.as(tmplRef) as typeof tmplRef;
     expect(tmplRefData.c === `${tmplRef.a}:abc;${tmplRef.b}:abc;`).toBeTruthy();
@@ -334,7 +431,7 @@ describe('test built-in types', () => {
     const namedTmplRef = {
       a: 'hello',
       b: 'world',
-      c: ':::`<say>:ref:&./a`,`<say>:ref:&./b`!`<helloworld>:ref:&/${say}:@join(",")`!`:ref:&/${helloworld}`!',
+      c: ':::`<say>:ref:&./a`,`<say>:ref:&./b`!`<helloworld>:ref:&//${say}:@join(",")`!`:ref:&//${helloworld}`!',
     };
     const namedTmplRefData = Such.as(namedTmplRef) as typeof namedTmplRef;
     expect(
@@ -349,6 +446,9 @@ describe('test built-in types', () => {
     }).toThrow();
     expect(() => {
       return Such.as(':regexp://');
+    }).toThrow();
+    expect(() => {
+      return Such.as(':regexp:/a/it');
     }).toThrow();
     expect(() => {
       return Such.as(':regexp:/(/');
@@ -388,21 +488,18 @@ describe('test built-in types', () => {
       return Such.as(':cascader');
     }).toThrow();
     expect(() => {
-      return Such.as(':cascader:#[data=countries]');
-    }).toThrow();
-    expect(() => {
       return Such.as(':cascader:#[root=true]');
     }).toThrow();
     // a cascader
     const cascader = {
-      country: ':cascader:#[root=true,data=countries]',
+      country: ':cascader:#[data=countries]',
       city: ':cascader:&./country',
     };
     const cascaderData = Such.instance(cascader);
     for (let i = 0; i < 100; i++) {
       const value = cascaderData.a() as typeof cascader;
       const country = value.country as keyof typeof COUNTRIES;
-      expect(COUNTRIES.hasOwnProperty(country)).toBeTruthy();
+      expect(Object.hasOwnProperty.call(COUNTRIES, country)).toBeTruthy();
       expect(COUNTRIES[country].includes(value.city)).toBeTruthy();
     }
   });
@@ -526,6 +623,28 @@ describe('test built-in types', () => {
     const [num, str] = numAndStrSegs;
     expect(!isNaN(num as unknown as number)).toBeTruthy();
     expect(str.length).toEqual(5);
+    // with reference
+    const refTmpl = {
+      a: 'hello',
+      b: 'world',
+      tmpl: ':::`<helloworld>:ref:&./a,./b:@join(" ")`',
+      refTmplIndex: ":ref:&./tmpl/${0}",
+      refTmplName: ":ref:&./tmpl/${helloworld}"
+    };
+    const refTmplData = Such.as<typeof refTmpl>(refTmpl);
+    expect(refTmplData.tmpl === [refTmpl.a, refTmpl.b].join(' ')).toBeTruthy();
+    expect(refTmplData.tmpl === refTmplData.refTmplIndex).toBeTruthy();
+    expect(refTmplData.tmpl === refTmplData.refTmplName).toBeTruthy();
+    // reference
+    expect(
+      ['truetrue', 'falsefalse'].includes(
+        Such.template('`:bool``:ref:&//${0}`').a(),
+      ),
+    ).toBeTruthy();
+    // wrong reference
+    expect(() => {
+      Such.as(':::`:ref:&./a,&./b`');
+    }).toThrow();
   });
 });
 
@@ -546,10 +665,104 @@ describe('test built-in recommend types', () => {
   });
   // boolean
   test(':boolean', () => {
-    const integer = Such.instance(':boolean');
+    const boolean = Such.instance(':boolean');
     for (let i = 0; i < 100; i++) {
-      const value = integer.a() as boolean;
+      const value = boolean.a() as boolean;
       expect(typeof value === 'boolean').toBeTruthy();
+    }
+  });
+  // protocol
+  test(':protocol', () => {
+    const protocol = Such.instance(':protocol');
+    const ps = ['http', 'https', 'ftp'];
+    let finded = false;
+    for (let i = 0; i < 100; i++) {
+      const value = protocol.a() as string;
+      if (ps.includes(value)) {
+        finded = true;
+        break;
+      }
+    }
+    expect(finded).toBeTruthy();
+  });
+  // tld
+  test(':tld', () => {
+    const tld = Such.instance(':tld');
+    const ps = ['com', 'net', 'org'];
+    let finded = false;
+    for (let i = 0; i < 100; i++) {
+      const value = tld.a() as string;
+      if (ps.includes(value)) {
+        finded = true;
+        break;
+      }
+    }
+    expect(finded).toBeTruthy();
+  });
+  // domain
+  test(':domain', () => {
+    const label = 'example';
+    const domain = Such.instance(`:domain#[domainLabel="${label}"]`);
+    const ps = ['com', 'net', 'org'];
+    let finded = false;
+    for (let i = 0; i < 100; i++) {
+      const value = domain.a() as string;
+      const suffix = value.slice(label.length);
+      expect(value.startsWith(label)).toBeTruthy();
+      expect(suffix.charAt(0) === '.').toBeTruthy();
+      if (ps.includes(suffix.slice(1))) {
+        finded = true;
+        break;
+      }
+    }
+    expect(finded).toBeTruthy();
+  });
+  // ip
+  test(':ip', () => {
+    const ipv4 = Such.instance(`:ip#[min="1.1.1.1",max="1.1.1.5"]`);
+    const maybeIps = ['1.1.1.1', '1.1.1.2', '1.1.1.3', '1.1.1.4', '1.1.1.5'];
+    const ipv6 = Such.instance(`:ip#[v6]`);
+    for (let i = 0; i < 100; i++) {
+      const ip4 = ipv4.a() as string;
+      expect(maybeIps.includes(ip4)).toBeTruthy();
+      const ip6 = ipv6.a() as string;
+      const segs = ip6.split(':');
+      segs.map((seg) => {
+        expect(/^[0-9a-f]{0,4}$/.test(seg)).toBeTruthy();
+      });
+    }
+    // test ip config options
+    expect(() => {
+      Such.as(':ipv4:#[type="F"]');
+    }).toThrow();
+    // IP FIRST
+    const ip4first = (ip: string): number => Number(ip.split('.')[0]);
+    // A
+    const aIpFirst = ip4first(Such.as(':ipv4:#[type="A"]'));
+    expect(aIpFirst >= 0 && aIpFirst <= 127).toBeTruthy();
+    // B
+    const bIpFirst = ip4first(Such.as(':ipv4:#[type="B"]'));
+    expect(bIpFirst >= 128 && bIpFirst <= 191).toBeTruthy();
+    // C
+    const cIpFirst = ip4first(Such.as(':ipv4:#[type="C"]'));
+    expect(cIpFirst >= 192 && cIpFirst <= 223).toBeTruthy();
+    // D
+    const dIpFirst = ip4first(Such.as(':ipv4:#[type="D"]'));
+    expect(dIpFirst >= 224 && dIpFirst <= 239).toBeTruthy();
+    // E
+    const eIpFirst = ip4first(Such.as(':ipv4:#[type="E"]'));
+    expect(eIpFirst >= 240 && eIpFirst <= 247).toBeTruthy();
+    // IPV6 with compress
+    const ipv6compress = Such.instance<string>(':ipv6:#[compress=0.5]');
+    for (let i = 0; i < 100; i++) {
+      expect(
+        ipv6compress
+          .a()
+          .split(':')
+          .every((seg: string) => {
+            return seg === '' || seg === '0' || /^[0-9a-f]{1,4}$/.test(seg);
+          }),
+      ).toBeTruthy();
     }
   });
   // uppsercase
@@ -572,6 +785,36 @@ describe('test built-in recommend types', () => {
       ).toBeTruthy();
     }
   });
+  // alpha
+  test(':alpha', () => {
+    const alpha = Such.instance(':alpha:{3}');
+    for (let i = 0; i < 100; i++) {
+      const value = alpha.a() as string;
+      expect(
+        typeof value === 'string' && /^[a-zA-Z]{3}$/.test(value),
+      ).toBeTruthy();
+    }
+  });
+  // numeric
+  test(':numeric', () => {
+    const numeric = Such.instance(':numeric:{3}');
+    for (let i = 0; i < 100; i++) {
+      const value = numeric.a() as string;
+      expect(
+        typeof value === 'string' && /^[0-9]{3}$/.test(value),
+      ).toBeTruthy();
+    }
+  });
+  // alphaNumeric
+  test(':alphaNumeric', () => {
+    const alphaNumeric = Such.instance(':alphaNumeric:{3}');
+    for (let i = 0; i < 100; i++) {
+      const value = alphaNumeric.a() as string;
+      expect(
+        typeof value === 'string' && /^[a-zA-Z0-9]{3}$/.test(value),
+      ).toBeTruthy();
+    }
+  });
   // alphaNumericDash
   test(':alphaNumericDash', () => {
     const alphaNumericDash = Such.instance(':alphaNumericDash:{3}');
@@ -587,6 +830,24 @@ describe('test built-in recommend types', () => {
       const value = color$hex.a() as string;
       expect(
         typeof value === 'string' && /^#[0-9A-F]{6}$/.test(value),
+      ).toBeTruthy();
+    }
+    // lowercase
+    const lowerColor$hex = Such.instance(':color$hex:#[lowercase=true]');
+    for (let i = 0; i < 100; i++) {
+      const value = lowerColor$hex.a() as string;
+      expect(
+        typeof value === 'string' && /^#[0-9a-f]{6}$/.test(value),
+      ).toBeTruthy();
+    }
+    // argb
+    const argbColor$hex = Such.instance(
+      ':color$hex:#[argb=true,lowercase=true]',
+    );
+    for (let i = 0; i < 100; i++) {
+      const value = argbColor$hex.a() as string;
+      expect(
+        typeof value === 'string' && /^#[0-9a-f]{8}$/.test(value),
       ).toBeTruthy();
     }
   });
@@ -642,6 +903,39 @@ describe('test built-in recommend types', () => {
         }
       });
       expect(flag).toBeTruthy();
+    }
+  });
+  // test hsla
+  test(':color$hsla', () => {
+    const color$hsla = Such.instance(':color$hsla');
+    for (let i = 0; i < 100; i++) {
+      const value = color$hsla.a() as string;
+      expect(/^hsla\((.*)?\)$/.test(value)).toBeTruthy();
+      const segs = RegExp.$1.split(',');
+      expect(segs.length).toEqual(4);
+      const flag = segs.every((num: string, index: number) => {
+        const actualNum = Number(num);
+        if (index === 0) {
+          return !isNaN(actualNum) && actualNum >= 0 && actualNum <= 360;
+        } else if (index === segs.length - 1) {
+          return !isNaN(actualNum) && actualNum >= 0 && actualNum <= 1;
+        } else {
+          return /^([1-9][0-9]|[0-9]|100)%$/.test(num);
+        }
+      });
+      expect(flag).toBeTruthy();
+    }
+  });
+  // test multiple called
+  test('multiple called', () => {
+    for (let i = 0; i < 5; i++) {
+      expect(
+        Object.keys(
+          Such.as<{ ip: string }>({
+            ip: ':ip',
+          }),
+        ).includes('ip'),
+      ).toBeTruthy();
     }
   });
 });

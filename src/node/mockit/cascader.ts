@@ -1,9 +1,10 @@
 import { IPPPath } from '../../types/parser';
 import { makeCascaderData } from '../../helpers/utils';
-import store from '../../data/store';
-import { getRealPath } from '../utils';
+import { getFileCacheData } from '../utils';
 import { TSuchInject } from '../../types/instance';
 import { TStrList } from '../../types/common';
+import Mockit from '../../core/mockit';
+import { Such } from '../../core/such';
 
 export default {
   // config options
@@ -34,12 +35,10 @@ export default {
    * @param options [TSuchReject]
    * @returns [unkown]
    */
-  generate(options: TSuchInject): unknown | never {
-    const { fileCache } = store;
+  generate(this: Mockit<unknown>, options: TSuchInject, such: Such): unknown | never {
     const { mocker } = options;
     const { handle, values, lastPath } = makeCascaderData(this.params, mocker);
-    const realPath = getRealPath(lastPath);
-    const data = fileCache[realPath];
+    const data = getFileCacheData(lastPath, such.store('config', 'fileCache'));
     return handle(data, values as TStrList);
   },
 };

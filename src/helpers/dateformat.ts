@@ -14,7 +14,8 @@ interface IDateHashInterface<T> {
 }
 type TDateHashInfo = IDateHashInterface<string[]>;
 type TDateHashInfoKey = keyof TDateHashInfo;
-type TDateMethods = PrototypeMethodNames<Date>;
+type TDateGetMethods = PrototypeMethodNames<Date, () => void>;
+type TDateSetMethods = PrototypeMethodNames<Date, (n: number) => number>;
 interface DateHashResult extends IDateHashInterface<number> {
   date: number;
   fullYear: number;
@@ -30,7 +31,7 @@ const fixDate = (date?: Date | string | number): Date => {
     return new Date();
   }
   if (date instanceof Date) {
-    return date;
+    return new Date(date.getTime());
   }
   return new Date(date);
 };
@@ -109,7 +110,7 @@ const strToDate = (
   6. r6&r6e|format: +1 day,-1 week,1 week ago
   */
   // match the r1 format
-  const r1 = /^(\d{4})([-\/.])(\d{1,2})\2(\d{1,2})$/;
+  const r1 = /^(\d{4})([-/.])(\d{1,2})\2(\d{1,2})$/;
   dateStr = dateStr.toLowerCase();
   let matchs;
   if ((matchs = dateStr.match(r1))) {
@@ -157,17 +158,17 @@ const strToDate = (
   const r5 = new RegExp(
     '^(' +
       mS.concat(mL).join('|') +
-      ')(?:\\s+|\\.)(?:(([13]?1)(?:st)?|([12]?2)(?:nd)?|([12]?3)(?:rd)?|([12]0|[12]?[4-9])(?:th)?|(30)th))(?:\\s*,\\s*(\\d{2}|\\d{4}))?$',
+      ')(?:\\s+|\\.)(?:((?:[4-9]|1[0-9]|2[04-9]|30)(?:th)?|[23]?1(?:st)?|[23]?2(?:nd)?|[23]?3(?:rd)?))(?:\\s*,\\s*(\\d{2}|\\d{4}))?$',
   );
   if ((matchs = dateStr.match(r5))) {
     let month = matchs[1];
-    const day = matchs[3];
-    const year = matchs[8];
+    const day = parseInt(matchs[2], 10).toString();
+    const year = matchs[3];
     const atMS = mS.indexOf(month);
-    const atML = mL.indexOf(month);
     if (atMS > -1) {
       month = (atMS + 1).toString();
     } else {
+      const atML = mL.indexOf(month);
       month = (atML + 1).toString();
     }
     return makeDate(year, month, day);
@@ -221,14 +222,8 @@ const strToDate = (
       const num = result[key];
       const method = capitalize(key);
       if (num) {
-        const orig = lastDate[`get${method}` as TDateMethods]() as number;
-        try {
-          (lastDate[`set${method}` as TDateMethods] as (num: number) => number)(
-            orig + num,
-          );
-        } catch (e) {
-          throw e;
-        }
+        const orig = lastDate[`get${method}` as TDateGetMethods]() as number;
+        lastDate[`set${method}` as TDateSetMethods](orig + num);
       }
     }
     return lastDate;
@@ -243,22 +238,22 @@ const strToDate = (
  * @param date [unkown]
  * @returns [Date|never] return a Date object from the date
  */
-export const strtotime = (date: unknown): Date | never => {
+export const strtotime = (date: unknown, now?: Date): Date | never => {
   if (typeof date === 'number') {
     return new Date(date);
   } else if (typeof date === 'string') {
     let result: Date;
     try {
-      result = strToDate(date);
+      result = strToDate(date, now);
     } catch (e) {
       result = new Date(date);
       if (isNaN(+result)) {
-        throw new Error('invalid date');
+        throw new Error('Invalid date');
       }
     }
     return result;
   } else {
-    throw new Error(`invalid date:${date}`);
+    throw new Error(`Invalid date:${date}`);
   }
 };
 
@@ -298,7 +293,7 @@ const formatter: TFormatter & ThisType<Date> = {
     return dayNames[this.getDay()];
   },
   ddd(): string {
-    return formatter.dddd().slice(0, 3);
+    return formatter.dddd.call(this).slice(0, 3);
   },
   m(): string {
     return this.getMonth() + 1;
@@ -310,7 +305,7 @@ const formatter: TFormatter & ThisType<Date> = {
     return monthNames[this.getMonth()];
   },
   mmm(): string {
-    return formatter.mmmm().slice(0, 3);
+    return formatter.mmmm.call(this).slice(0, 3);
   },
   yyyy(): string {
     return this.getFullYear().toString().padStart(4, '0');
@@ -366,7 +361,7 @@ const formatter: TFormatter & ThisType<Date> = {
     return ['st', 'nd', 'rd'][(this.getDate() % 10) - 1] || 'th';
   },
   N(): string {
-    return this.getDay().toString() || '7';
+    return (this.getDay() || 7).toString();
   },
 };
 type TFormatter = {

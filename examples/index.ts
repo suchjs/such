@@ -1,7 +1,69 @@
 /* eslint-disable no-console */
 import Such, { createNsSuch } from '../src/index';
-
+import PathMap from '../src/helpers/pathmap';
 (async () => {
+  await Such.loadData();
+  // const instance = Such.instance({
+  //   'data{3,4}': {
+  //     subname: ':string',
+  //     fullname: ':ref:&./subname',
+  //   },
+  // });
+  // console.log(instance.a());
+  // console.log(Such.as(':dict:&<dataDir>/dict.txt'));
+  // const txt = await Such.asc('mock.txt');
+  // console.log(txt);
+  const date = new Date();
+
+  Such.assign('now', date);
+  const instance = Such.instance(
+    {
+      'errno:{1}': [0, 1],
+      date: ':date:["tomorrow","tomorrow"]:#[now=now]',
+    },
+    {
+      config: {},
+    },
+  );
+  for (const _ of Array.from({ length: 5 }, () => undefined)) {
+    console.log(instance.a());
+    date.setDate(date.getDate() + 1);
+  }
+
+  // Such.store.clear();
+  // console.log(Such.store);
+  // const instance = Such.instance({
+  //   "errno:{1}": [0, 1],
+  //   "errmsg": ":string:{10,30}",
+  //   "data?": {
+  //     "list{3,10}": {
+  //       "province": ":province",
+  //       "city": ":cascader:&./province",
+  //       "area": ":cascader:&./city"
+  //     }
+  //   }
+  // });
+  // // console.log(Such.template('`:province`,`:cascader:&/${0}`,`<number>:number`,`:ref:&//${number}`').a());
+  // for(let i = 0; i < 10; i++){
+  //   console.log(instance.a({
+  //     keys: {}
+  //   }));
+  // }
+  // console.log(Such.template('`:bool``:ref:&//${0}`').a());
+  // const tmplRef = {
+  //   a: 'hello',
+  //   b: 'world',
+  //   c: ':::`:ref:&./a`:`:regexp:/abc/`;`:ref:&./b`:`:ref:&//${1}`;',
+  // };
+  // const tmplRefData = Such.as(tmplRef);
+  // console.log(tmplRefData);
+  // const globalConfig = {
+  //   suffix: 'ok'
+  // };
+  // Such.define('myTmpl', "'`:number:%d`'`:string`");
+  // for(let i = 0; i < 2; i++){
+  //   console.log(Such.as(':myTmpl:{3}'));
+  // }
   // const namedTmplRef = {
   //   a: 'hello',
   //   b: 'world',
@@ -32,11 +94,55 @@ import Such, { createNsSuch } from '../src/index';
   //   });
   //   console.log(value);
   // }
-  // const instance = Such.instance(':increment{3}');
+  // const instance = Such.instance<number>(':increment{3}');
   // for (let i = 0; i < 5; i++) {
   //   const result = instance.a();
   //   console.log(result);
   // }
+  // console.log(Such.as({
+  //   bool: ":bool",
+  //   int: ":int",
+  //   percent: ":percent",
+  //   uppercase: ":uppercase:{2,4}",
+  //   lowercase: ":lowercase:{2,4}",
+  //   alpha: ":alpha:{3,6}",
+  //   alphaNumeric: ":alphaNumeric:{3,6}",
+  //   alphaNumericDash: ":alphaNumericDash:{3,6}",
+  //   tld: ":tld",
+  //   domain: ":domain",
+  //   protocol: ":protocol",
+  //   url: ":url",
+  //   email: ":email:#[domain='163.com']",
+  //   ipv4: ":ipv4",
+  //   ipv6: ":ipv6",
+  //   color$hex: ":color$hex",
+  //   color$rgb: ":color$rgb",
+  //   color$rgba: ":color$rgba",
+  //   color$hsl: ":color$hsl",
+  //   color$hsla: ":color$hsla",
+  // }));
+  // console.log(Such.as({
+  //   bool: ":bool",
+  //   int: ":int",
+  //   percent: ":percent",
+  //   uppercase: ":uppercase:{2,4}",
+  //   lowercase: ":lowercase:{2,4}",
+  //   alpha: ":alpha:{3,6}",
+  //   alphaNumeric: ":alphaNumeric:{3,6}",
+  //   alphaNumericDash: ":alphaNumericDash:{3,6}",
+  //   tld: ":tld",
+  //   domain: ":domain",
+  //   protocol: ":protocol",
+  //   url: ":url",
+  //   email: ":email:#[domain='163.com']",
+  //   ipv4: ":ipv4",
+  //   ipv6: ":ipv6",
+  //   color$hex: ":color$hex",
+  //   color$rgb: ":color$rgb",
+  //   color$rgba: ":color$rgba",
+  //   color$hsl: ":color$hsl",
+  //   color$hsla: ":color$hsla",
+  // }));
   // dict
   // const dict = Such.instance(':dict:&<dataDir>/dict.txt');
   // console.log(dict.a());
@@ -134,8 +240,10 @@ import Such, { createNsSuch } from '../src/index';
   // console.log(mySuch.as(':string:{3}'));
   // console.log(mySuch.as(':@his/hisNumber'));
   // console.log(Such.as(':@his/hisString'));
-  Such.define('tmpl1', '<`:string{5}`hahah>:::{2,4}');
-  console.log(Such.as(':tmpl1:{5}'));
+  // Such.define('tmpl1', '<`:string{5}`hahah>:::{2,4}');
+  // console.log(Such.as(':tmpl1:{5}'));
+  // console.log(Such.as(':url'));
+  // console.log(Such.as({ 'a{1,5}': ["a", "b", ":string"]}));
   // Such.define('letter', ['a', 'b', 'c']);
   // const instance = Such.instance(':letter');
   // console.log(

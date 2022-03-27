@@ -18,4 +18,5 @@ module.exports = {
     '^@/(.*)': '<rootDir>/src/$1',
   },
   rootDir: '.',
+  setupFiles: ['<rootDir>/.jest.env.js']
 };

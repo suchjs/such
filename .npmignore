@@ -5,6 +5,7 @@
 /dist/
 /coverage
 /examples
+/source
 
 # npm
 node_modules/
@@ -27,5 +28,7 @@ package-lock.json
 # config files
 webpack.config.js
 jest.config.js
+such.config.js
+.jest.env.js
 .prettierrc.js
 .eslintrc.js

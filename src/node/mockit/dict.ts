@@ -1,8 +1,10 @@
 import { TMultiStr, TStrList } from '../../types/common';
 import { IPPPath, IPPPathItem } from '../../types/parser';
-import store from '../../data/store';
-import { getRealPath } from '../utils';
+import { getFileCacheData } from '../utils';
 import { makeDictData } from '../../helpers/utils';
+import Mockit from '../../core/mockit';
+import { Such } from '../../core/such';
+import { TSuchInject } from '../../types/instance';
 
 export default {
   /**
@@ -29,22 +31,17 @@ export default {
    *
    * @returns [TMultiStr] return items of the dict
    */
-  generate(): TMultiStr {
+  generate(this: Mockit<TMultiStr>, _options: TSuchInject, such: Such): TMultiStr {
     const { $path } = this.params;
-    const lastPaths = $path.map((item: IPPPathItem) => {
-      return getRealPath(item);
+    const queues = $path.map((item: IPPPathItem) => {
+      const content = getFileCacheData(item, such.store('config', 'fileCache'));
+      if(content === undefined){
+        throw new Error(`the dict of '${item.fullpath}' is not loaded or not found`);
+      }
+      return content as TStrList;
     });
-    const queues: TStrList[] = [];
-    const { fileCache } = store;
     // all the dict files must preload before generate
     // check if every path is in preload
-    for (const filePath of lastPaths) {
-      if (!fileCache.hasOwnProperty(filePath)) {
-        throw new Error(`the dict of '${filePath}' is not loaded or not found`);
-      } else {
-        queues.push(fileCache[filePath] as TStrList);
-      }
-    }
     const makeAll = makeDictData(this.params);
     return makeAll(queues);
   },

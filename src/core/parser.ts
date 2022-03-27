@@ -1,6 +1,6 @@
 import { IParserConfig } from '../types/parser';
-import { encodeSplitor, splitor as confSplitor } from '../data/config';
-import { encodeRegexpChars, isArray } from '../helpers/utils';
+import { encodeSplitor, encodeRegexpChars, splitor as confSplitor } from '../data/config';
+import { hasOwn, isArray } from '../helpers/utils';
 import { TMatchResult, TObj, TStrList } from '../types/common';
 import Mockit from './mockit';
 export interface Tags {
@@ -186,7 +186,7 @@ export class Dispatcher {
       );
     }
     // the parser'name is repeated
-    if (this.parsers.hasOwnProperty(name)) {
+    if (hasOwn(this.parsers, name)) {
       return this.halt(`the parser of "${name}" has existed.`);
     }
     // no start tag,can't go on the parsing.
@@ -288,7 +288,7 @@ export class Dispatcher {
       constructor(public readonly errorIndex: number) {}
     }
     Object.assign(Wrapper.prototype, result);
-    return (new Wrapper(errorIndex) as unknown) as TObj<TObj>;
+    return new Wrapper(errorIndex) as unknown as TObj<TObj>;
   }
   /**
    * dispatcher parse all the code
@@ -341,8 +341,9 @@ export class Dispatcher {
         );
       } else {
         if (mockit) {
-          const { constrName, allowAttrs } = mockit.getStaticProps();
-          if (!allowAttrs.includes(type)) {
+          const { constrName, allowAttrs, baseType } = mockit.getStaticProps();
+          // when no base type, check the allow attrs
+          if (!baseType && !allowAttrs.includes(type)) {
             switch (type) {
               case '$config':
                 throw new Error(

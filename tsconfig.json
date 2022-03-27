@@ -24,6 +24,6 @@
     "node_modules",
     "lib/*",
     "**/*.spec.ts",
-    "src/local"
+    "src/exports/index.ts"
   ]
 }
