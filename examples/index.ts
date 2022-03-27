@@ -3,43 +3,50 @@ import Such, { createNsSuch } from '../src/index';
 import PathMap from '../src/helpers/pathmap';
 (async () => {
   await Such.loadData();
+  const instance = Such.instance({
+    'data{3,4}': {
+      subname: ':string',
+      fullname: ':ref:&./subname',
+    },
+  });
+  console.log(instance.a());
   // console.log(Such.as(':dict:&<dataDir>/dict.txt'));
   // const txt = await Such.asc('mock.txt');
   // console.log(txt);
-  const date = new Date;
-  date.setDate(date.getDate() + 5);
-  Such.assign('now', date);
-  const instance = Such.instance({
-    'errno:{1}': [0, 1],
-    'date': ':date:["today","tomorrow"]:#[now=now]'
-  }, {
-    config: {
-      dynamics: {
-        '/errmsg': ['/errno', (value) => {
-          return {
-            key: {
-              exist: value.index === 1
-            }
-          };
-        }],
-        '/data': ['/errno', (value) => {
-          return {
-            key: {
-              exist: value.index === 0
-            }
-          };
-        }],
-        '/other': ['/errno', (value) => {
-          return {
-            key: {
-              index: value.index
-            }
-          };
-        }]
-      }
-    }
-  });;
-  console.log(instance.a());
+  // const date = new Date;
+  // date.setDate(date.getDate() + 5);
+  // Such.assign('now', date);
+  // const instance = Such.instance({
+  //   'errno:{1}': [0, 1],
+  //   'date': ':date:["today","tomorrow"]:#[now=now]'
+  // }, {
+  //   config: {
+  //     dynamics: {
+  //       '/errmsg': ['/errno', (value) => {
+  //         return {
+  //           key: {
+  //             exist: value.index === 1
+  //           }
+  //         };
+  //       }],
+  //       '/data': ['/errno', (value) => {
+  //         return {
+  //           key: {
+  //             exist: value.index === 0
+  //           }
+  //         };
+  //       }],
+  //       '/other': ['/errno', (value) => {
+  //         return {
+  //           key: {
+  //             index: value.index
+  //           }
+  //         };
+  //       }]
+  //     }
+  //   }
+  // });
+  // console.log(instance.a());
   // Such.store.clear();
   // console.log(Such.store);
   // const instance = Such.instance({

@@ -424,8 +424,9 @@ export const getRefMocker = (
   mocker: Mocker,
 ): Mocker | never => {
   const { root } = mocker;
-  const { instances } = root;
+  const { instances, owner } = root;
   const lastPath = getPathInfo(item, mocker);
+  owner.checkIfHasPaths(path2str(lastPath));
   return instances.get(lastPath);
 };
 

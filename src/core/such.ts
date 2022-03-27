@@ -6,6 +6,7 @@ import {
   templateSplitor,
   tmplMockitName,
   tmplNamedRule,
+  tmplRefRule,
 } from '../data/config';
 import PathMap, { TFieldPath } from '../helpers/pathmap';
 import * as utils from '../helpers/utils';
@@ -238,14 +239,8 @@ export class Mocker {
    * @memberof Mocker
    */
   constructor(
-    options: IMockerOptions,
-    owner?: {
-      such?: Such;
-      namespace?: string;
-      instances?: PathMap<Mocker>;
-      datas?: PathMap<unknown>;
-      depender?: Depender;
-    },
+    public readonly options: IMockerOptions,
+    public readonly owner?: SuchMocker,
   ) {
     // set the mocker properties
     const { target, path, config, parent } = options;
@@ -1095,14 +1090,14 @@ class Depender {
   }
   // add a node by id
   public addNode(
-    parentId: TPath,
-    childIds: TPath[],
+    currentId: TPath,
+    dependIds: TPath[],
     callback: TDynamicDependCallback,
   ) {
-    const parentNode = this.getNode(parentId);
+    const parentNode = this.getNode(currentId);
     const parentPath = parentNode.id;
     const args: Array<TDynamicDependValue> = [];
-    for (const childId of childIds) {
+    for (const childId of dependIds) {
       const childNode = this.getNode(childId);
       // check releation
       Depender.validateIfRelatviePath(parentPath, childNode.id);
@@ -1118,7 +1113,7 @@ class Depender {
         curArg.loop = origLoop + 1;
       });
     }
-    const dynamic: TDynamicExecuteFn = (this.dynamicExecuteFns[parentId] = {
+    const dynamic: TDynamicExecuteFn = (this.dynamicExecuteFns[currentId] = {
       checked: false,
       fn: () => {
         if (!dynamic.checked) {
@@ -1126,7 +1121,7 @@ class Depender {
           for (const arg of args) {
             if (!hasOwn(arg, 'value')) {
               throw new Error(
-                `The path ${parentId} depend a path of '${childIds[index]}' not make a value yet, make sure the depend path is appear before the current path.`,
+                `The path ${currentId} depend a path of '${dependIds[index]}' not make a value yet, make sure the depend path is appear before the current path.`,
               );
             }
             index++;
@@ -1218,6 +1213,7 @@ export default class SuchMocker<T = unknown> {
   public readonly depender: Depender;
   private initail = false;
   private ruleKeys: IMockerPathRuleKeys;
+  private allPaths: TPath[];
   /**
    * constructor of such
    * @param target [unkown] the target need to be mocking
@@ -1261,14 +1257,44 @@ export default class SuchMocker<T = unknown> {
   ): void {
     // judge if has loop dependence
     Object.keys(dynamics).forEach((curPath) => {
-      const [dependPaths, callback] = dynamics[curPath];
-      depender.addNode(
-        curPath,
-        isArray(dependPaths) ? dependPaths : [dependPaths],
-        callback,
-      );
+      const [dependPath, callback] = dynamics[curPath];
+      const dependPaths = isArray(dependPath) ? dependPath : [dependPath];
+      this.checkIfHasPaths(curPath, ...dependPaths);
+      depender.addNode(curPath, dependPaths, callback);
     });
     depender.check();
+  }
+  /**
+   *
+   * @param args
+   */
+  public checkIfHasPaths(...args: TPath[]): never | void {
+    for (const key of args) {
+      if (!this.hasPath(key) && !tmplRefRule.test(key)) {
+        throw new Error(
+          `The path of '${key}' is not exist in the instance's paths.`,
+        );
+      }
+    }
+  }
+  /**
+   *
+   * @param path
+   * @returns
+   */
+   public paths(): TPath[] {
+    if (!this.allPaths) {
+      this.initPathsAndKeys();
+    }
+    return this.allPaths;
+  }
+  /**
+   *
+   * @param path
+   * @returns
+   */
+  public hasPath(path: TPath): boolean {
+    return this.paths().includes(path);
   }
   /**
    *
@@ -1292,15 +1318,11 @@ export default class SuchMocker<T = unknown> {
     return this.mocker.mock([]);
   }
   /**
-   * get the optional or length fields's config
-   * @returns {IMockerPathRuleKeys}
-   * @memberof Such
+   * 
+   * @returns 
    */
-  public keys(): IMockerPathRuleKeys {
-    if (this.ruleKeys) {
-      return this.ruleKeys;
-    }
-    const { target, ruleKeys = {} } = this;
+  private initPathsAndKeys() {
+    const { target, ruleKeys = {}, allPaths = ['/'] } = this;
     // loop the fields
     const loop = (obj: unknown, path: TFieldPath) => {
       if (isObject(obj)) {
@@ -1308,9 +1330,11 @@ export default class SuchMocker<T = unknown> {
           if (hasOwn(obj, curKey)) {
             const { config, key } = Mocker.parseKey(curKey);
             const curPath = path.concat(key);
+            const strPath = path2str(curPath);
+            allPaths.push(strPath);
             // if has config
             if (isNoEmptyObject(config)) {
-              ruleKeys[path2str(curPath)] = config;
+              ruleKeys[strPath] = config;
             }
             // recursive
             loop(obj[curKey], curPath);
@@ -1326,8 +1350,22 @@ export default class SuchMocker<T = unknown> {
     loop(target, []);
     // the root
     ruleKeys['/'] = this.options?.config;
+    // set all paths
+    this.allPaths = allPaths;
+    this.ruleKeys = ruleKeys;
     // return the rulekeys
     return ruleKeys;
+  }
+  /**
+   * get the optional or length fields's config
+   * @returns {IMockerPathRuleKeys}
+   * @memberof Such
+   */
+  public keys(): IMockerPathRuleKeys {
+    if (!this.ruleKeys) {
+      this.initPathsAndKeys();
+    }
+    return this.ruleKeys;
   }
   /**
    * check the optional or length config of the field is ok or not

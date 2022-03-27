@@ -619,6 +619,25 @@ describe('test filed config', () => {
   // test dynamic
   test('test dynamic config options', () => {
     // depend relation path
+    // depend a not exist path
+    expect(() => {
+      Such.instance(
+        {
+          a: {
+            b: {
+              c: ':string',
+            },
+          },
+        },
+        {
+          config: {
+            dynamics: {
+              '/a': ['/notexist', () => undefined],
+            },
+          },
+        },
+      );
+    }).toThrow();
     // depend an equal path
     expect(() => {
       Such.instance(
