@@ -46,6 +46,7 @@ export interface TSSConfig {
         ];
     directory?: string;
     watch?: boolean;
+    cors?: boolean | string;
     timeout?: [number, number] | number;
     extContentTypes?: TObj<string | string[]>;
     pathSegSplit?: string;

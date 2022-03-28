@@ -4,7 +4,7 @@ import { deepCopy, hasOwn, isArray } from './helpers/utils';
 import { getAllFiles, loadAllData, loadTemplate } from './node/utils';
 import { Such } from './core/such';
 import { TSuchSettings } from './types/node';
-import { IAsOptions } from './types/instance';
+import { AssignType, SpecialType, IAsOptions } from './types/instance';
 import { TPath } from './types/common';
 // dict & cascader types for nodejs
 import ToCascader from './node/mockit/cascader';
@@ -195,4 +195,6 @@ export default {
   createNsSuch: function (namespace: string): NSuch {
     return new NSuch(namespace);
   },
+  AssignType,
+  SpecialType
 };

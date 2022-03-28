@@ -106,7 +106,7 @@ export interface IMockerOptions {
   config?: IMockerKeyRule;
 }
 
-export enum EnumSpecialType {
+export enum SpecialType {
   Enum = 1,
   Template = 2,
 }

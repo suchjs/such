@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import Such, { createNsSuch } from '../src/index';
+import Such, { createNsSuch, AssignType } from '../src/index';
 import PathMap from '../src/helpers/pathmap';
 (async () => {
   await Such.loadData();
@@ -10,39 +10,53 @@ import PathMap from '../src/helpers/pathmap';
   //   },
   // });
   // console.log(instance.a());
-  // console.log(Such.as(':dict:&<dataDir>/dict.txt'));
+  Such.assign('dict', ['addd', 'beee', 'cfff']);
+  console.log(Such.as(':dict:#[data=dict]'));
   // const txt = await Such.asc('mock.txt');
   // console.log(txt);
   const date = new Date();
 
-  Such.assign('now', date);
-  const instance = Such.instance(
-    {
-      'errno:{1}': [0, 1],
-      date: ':date:["tomorrow","tomorrow"]:#[now=now]',
-    },
-    {
-      config: {},
-    },
-  );
-  for (const _ of Array.from({ length: 5 }, () => undefined)) {
-    console.log(instance.a());
-    date.setDate(date.getDate() + 1);
-  }
+  Such.assign('now', date, AssignType.Override);
+  // const instance = Such.instance(
+  //   {
+  //     'errno:{1}': [0, 1],
+  //     date: ':date:["tomorrow","tomorrow"]:#[now=now]',
+  //   },
+  //   {
+  //     config: {},
+  //   },
+  // );
+  // for (const _ of Array.from({ length: 5 }, () => undefined)) {
+  //   console.log(instance.a());
+  //   date.setDate(date.getDate() + 1);
+  // }
 
   // Such.store.clear();
   // console.log(Such.store);
-  // const instance = Such.instance({
-  //   "errno:{1}": [0, 1],
-  //   "errmsg": ":string:{10,30}",
-  //   "data?": {
-  //     "list{3,10}": {
-  //       "province": ":province",
-  //       "city": ":cascader:&./province",
-  //       "area": ":cascader:&./city"
-  //     }
-  //   }
-  // });
+  Such.assign('city', {
+    北京市: {
+      北京市: ['朝阳区', '东城区', '西城区'],
+    },
+    湖北省: {
+      武汉市: ['洪湖区', '东西湖区', '黄陂区'],
+    },
+    山东省: {
+      青岛市: ['市北区', '四方区', '黄岛区'],
+    },
+    上海市: {
+      上海市: ['闵行区', '普陀区', '静安区'],
+    },
+  });
+  const instance = Such.instance({
+    'errno:{1}': [0, 1],
+    errmsg: ':string:{10,30}',
+    'data{3,10}': {
+      province: ':cascader:#[data=city]',
+      city: ':cascader:&./province',
+      area: ':cascader:&./city',
+    },
+  });
+  console.log(instance.a());
   // // console.log(Such.template('`:province`,`:cascader:&/${0}`,`<number>:number`,`:ref:&//${number}`').a());
   // for(let i = 0; i < 10; i++){
   //   console.log(instance.a({
@@ -155,20 +169,7 @@ import PathMap from '../src/helpers/pathmap';
   //   'a{3}': [':boolean', ':string'],
   // });
   // console.log(list.a());
-  // Such.assign('city', {
-  //   北京市: {
-  //     北京市: ['朝阳区', '东城区', '西城区'],
-  //   },
-  //   湖北省: {
-  //     武汉市: ['洪湖区', '东西湖区', '黄陂区'],
-  //   },
-  //   山东省: {
-  //     青岛市: ['市北区', '四方区', '黄岛区'],
-  //   },
-  //   上海市: {
-  //     上海市: ['闵行区', '普陀区', '静安区'],
-  //   },
-  // });
+
   // Such.define('mobile', 'regexp', '/(\\+86\\-)?(?<service>1[3-8][0-9])\\d{8}/');
   // // 创建模拟实例
   // const instance = Such.instance({
