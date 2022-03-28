@@ -1,5 +1,6 @@
 import * as path from 'path';
 import Such from '../src/index';
+import { AssignType } from '../src/types/instance';
 
 describe('validate built-in types in nodejs', () => {
   // test a dict value
@@ -8,15 +9,30 @@ describe('validate built-in types in nodejs', () => {
     expect(() => {
       return Such.as(':dict');
     }).toThrow();
-    // wrong dict without config
+    // dict is not loaded
     expect(() => {
       return Such.as(':dict:&<dataDir>/dict.txt');
     }).toThrow();
+    // assign a dict data
+    const dict = ['aaa', 'bbb', 'ccc'];
+    Such.assign('mydict', dict, AssignType.Override);
+    // dict both with config data and dict file
+    expect(() => {
+      return Such.as(':dict:&<dataDir>/dict.txt:#[data=mydict]');
+    }).toThrow();
+    // dict
+    const instance = Such.instance<string>(':dict:#[data=mydict]');
+    for (let i = 0; i < 100; i++) {
+      expect(dict.includes(instance.a())).toBeTruthy();
+    }
   });
   // test a dict
   test(':dict after loadData', async () => {
     await Such.loadData();
-    expect(typeof Such.as(':dict:&<dataDir>/dict.txt') === 'string').toBeTruthy();
+    expect(
+      typeof Such.as(':dict:&<dataDir>/dict.txt') === 'string',
+    ).toBeTruthy();
+    
   });
   // cascader
   test(':cascader', () => {
@@ -33,13 +49,13 @@ describe('validate built-in types in nodejs', () => {
   test(':cascader after loadData', async () => {
     await Such.clearCache();
     const data = Such.as<{
-      country: string
-      state: string,
-      city: string
+      country: string;
+      state: string;
+      city: string;
     }>({
-      country: ":cascader:&<dataDir>/city.json:#[root=true]", 
-      state: ":cascader:&./country", 
-      city:":cascader:&./state" 
+      country: ':cascader:&<dataDir>/city.json:#[root=true]',
+      state: ':cascader:&./country',
+      city: ':cascader:&./state',
     });
     expect(typeof data.country === 'string').toBeTruthy();
     expect(typeof data.state === 'string').toBeTruthy();
@@ -70,56 +86,75 @@ describe('validate built-in types in nodejs', () => {
         expect(value.data.area.length > 0).toBeTruthy();
       }
     }
+    // cascader with data config
+    const mycascader = {
+      a: ['aa'],
+      b: ['bb'],
+      c: ['cc']
+    };
+    Such.assign('mycascader', mycascader, AssignType.Override);
+    expect(()=>{
+      Such.as(':cascader:&<dataDir>/city.json:#[root=true,data=mycascader]');
+    }).toThrow();
+    expect(Object.keys(mycascader).includes(Such.as(':cascader:#[data=mycascader]'))).toBeTruthy();
   });
   // test async
-  test('asc method', async ()=> {
+  test('asc method', async () => {
     await Such.clearCache();
-    for(const _i of Array.from({
-      length: 100
-    })){
+    for (const _i of Array.from({
+      length: 100,
+    })) {
       const data = await Such.asc<{
         errno: number;
         errmsg: string;
         data?: {
           province: string;
-        }
+        };
       }>('mock.json');
       expect([0, 1].includes(data.errno)).toBeTruthy();
       expect(typeof data.errmsg === 'string').toBeTruthy();
-      expect(typeof data.data === undefined || typeof data.data.province === 'string').toBeTruthy();
+      expect(
+        typeof data.data === undefined ||
+          typeof data.data.province === 'string',
+      ).toBeTruthy();
     }
   });
   // test clear store
-  test("clear store", () => {
-    const { config, mockits, vars, fns } = Such.store('config', 'mockits', 'vars', 'fns');
+  test('clear store', () => {
+    const { config, mockits, vars, fns } = Such.store(
+      'config',
+      'mockits',
+      'vars',
+      'fns',
+    );
     const { rootDir } = config;
     const storeVarKey = '__store__';
     const storeFnKey = '__store_fn__';
     // assign a new variable
     Such.assign(storeVarKey, true);
-    Such.assign(storeFnKey, function(){
+    Such.assign(storeFnKey, function () {
       // a function
     });
     expect(vars[storeVarKey]).toBe(true);
-    // boolean is an extended type 
-    expect("boolean" in mockits).toBeTruthy();
+    // boolean is an extended type
+    expect('boolean' in mockits).toBeTruthy();
     // clear the store
     Such.clearStore({
-      exclude: ['vars', 'fns']
+      exclude: ['vars', 'fns'],
     });
     // now the extended types has been cleared
-    expect("boolean" in mockits).toBeFalsy();
+    expect('boolean' in mockits).toBeFalsy();
     // the vars and fns is exclude
     expect(vars[storeVarKey]).toBe(true);
     expect(typeof fns[storeFnKey] === 'function').toBeTruthy();
     // reload the config
     Such.loadConf(path.join(rootDir, 'such.config.js'));
     // now the config has been reload
-    expect("boolean" in mockits).toBeTruthy();
+    expect('boolean' in mockits).toBeTruthy();
     // now clear with a reset
     Such.clearStore({
       reset: true,
-      exclude: 'vars'
+      exclude: 'vars',
     });
     // the origin mockits keep the value
     expect(vars[storeVarKey]).toBe(true);
@@ -127,7 +162,7 @@ describe('validate built-in types in nodejs', () => {
     expect(Such.store('vars') === vars).toBeTruthy();
     expect(Such.store('fns') === fns).toBeFalsy();
     const newMockits = Such.store('mockits');
-    expect("boolean" in mockits).toBeTruthy();
-    expect("boolean" in newMockits).toBeFalsy();
+    expect('boolean' in mockits).toBeTruthy();
+    expect('boolean' in newMockits).toBeFalsy();
   });
 });
