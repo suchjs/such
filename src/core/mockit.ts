@@ -27,7 +27,7 @@ import {
   TMConfigRule,
 } from '../types/mockit';
 import {
-  EnumSpecialType,
+  SpecialType,
   TOverrideParams,
   TSuchInject,
 } from '../types/instance';
@@ -245,7 +245,7 @@ export default abstract class Mockit<T = unknown> {
   // allowed data attribute
   public static readonly allowAttrs: TMAttrs = [];
   // special type
-  public static readonly specialType: EnumSpecialType;
+  public static readonly specialType: SpecialType;
   // if config options is set, will allow configuration `data attribute`
   public static configOptions: TMConfig = {};
   // self config options

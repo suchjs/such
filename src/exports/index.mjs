@@ -1,4 +1,4 @@
 import mod from '../node.js';
-const { root, createNsSuch } = mod.default;
+const { root, createNsSuch, AssignType, SpecialType } = mod.default;
 export default root;
-export  { createNsSuch };
+export  { createNsSuch, AssignType, SpecialType };

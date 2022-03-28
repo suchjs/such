@@ -2,6 +2,16 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v3.1.1] - 2022-03-28
+
+### Fixed
+
+- Add the export of TS enum variables `AssignType` for esmodule, for the `assign` method's parameter added in version `3.1.0`.
+
+### Changed
+
+- Now `:dict` and `:cascader` type in nodejs environment also support the `data` config to set a data like it in browser, now you can use oneof the file data path or the 'data' config as a data entry.
+
 ## [v3.1.0] - 2022-03-27
 
 ### Added

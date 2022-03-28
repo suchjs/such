@@ -16,16 +16,17 @@ export default {
     handle: {
       type: Function,
     },
+    data: {
+      type: Object,
+    },
   },
   // init method
   init(): void {
     // cascader value need '$path' data attribute
-    // for root node, the $path pointed to the data file
+    // for root node, the $path pointed to the data file or set a config of 'data'
     // for child node, the $path reference to the parent node
     this.addRule('$path', ($path: IPPPath) => {
-      if (!$path) {
-        throw new Error('the cascader type must have a path or ref.');
-      } else if ($path.length !== 1) {
+      if ($path && $path.length !== 1) {
         throw new Error('the cascader type must have an only path or ref.');
       }
     });
@@ -35,10 +36,29 @@ export default {
    * @param options [TSuchReject]
    * @returns [unkown]
    */
-  generate(this: Mockit<unknown>, options: TSuchInject, such: Such): unknown | never {
+  generate(
+    this: Mockit<unknown>,
+    options: TSuchInject,
+    such: Such,
+  ): unknown | never {
     const { mocker } = options;
-    const { handle, values, lastPath } = makeCascaderData(this.params, mocker);
-    const data = getFileCacheData(lastPath, such.store('config', 'fileCache'));
+    const { handle, values, lastPath, $config } = makeCascaderData(
+      this.params,
+      mocker,
+    );
+    let data: unknown;
+    if ($config?.data) {
+      // you can't set both the config data and a file path
+      if (lastPath) {
+        throw new Error(
+          `[${mocker.path.join('/')}]You can't set a cascader type both with a config 'data' and a reference file path:"${lastPath.fullpath}".`,
+        );
+      }
+      // use the config data as the cascader data
+      data = $config.data;
+    } else {
+      data = getFileCacheData(lastPath, such.store('config', 'fileCache'));
+    }
     return handle(data, values as TStrList);
   },
 };

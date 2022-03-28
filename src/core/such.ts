@@ -36,7 +36,7 @@ import {
   IMockerKeyRule,
   IMockerOptions,
   IMockerPathRuleKeys,
-  EnumSpecialType,
+  SpecialType,
   TSuchInject,
   AssignType,
   TAssignedData,
@@ -529,7 +529,7 @@ export class Mocker {
               this.type = realType;
               const instance = new klass(this.root.namespace);
               const { specialType } = instance.getStaticProps();
-              this.isEnum = specialType === EnumSpecialType.Enum;
+              this.isEnum = specialType === SpecialType.Enum;
               let meta = target.replace(match[0], '');
               if (meta !== '') {
                 // remote the prefix splitor
@@ -1759,7 +1759,7 @@ export class Such {
             public static readonly constrName = constrName;
             public static readonly namespace = namespace;
             public static readonly allowAttrs = allowAttrs;
-            public static readonly specialType = EnumSpecialType.Template;
+            public static readonly specialType = SpecialType.Template;
             public static selfConfigOptions = configOptions;
             public static configOptions = configOptions;
             public static validator = validator;
@@ -1795,7 +1795,7 @@ export class Such {
             public static readonly constrName = constrName;
             public static readonly namespace = namespace;
             public static readonly allowAttrs = allowAttrs;
-            public static readonly specialType = EnumSpecialType.Enum;
+            public static readonly specialType = SpecialType.Enum;
             public static selfConfigOptions = configOptions;
             public static configOptions = configOptions;
             public static validator = validator;
