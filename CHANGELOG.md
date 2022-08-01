@@ -2,6 +2,12 @@
 
 Suchjs add changelog since `v1.0.0`.
 
+## [v3.1.2] - 2022-08-01
+
+### Added
+
+- Support export in `vite`.
+
 ## [v3.1.1] - 2022-03-28
 
 ### Fixed

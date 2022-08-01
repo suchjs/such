@@ -1,6 +1,6 @@
 {
   "name": "suchjs",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "description": "A powerful fake data library, configurable and customizable, generate data more accurate.",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
@@ -8,6 +8,10 @@
     ".": {
       "require": "./lib/index.js",
       "import": "./lib/exports/index.mjs"
+    },
+    "./lib/browser": {
+      "require": "./lib/browser.js",
+      "import": "./lib/exports/browser.mjs"
     }
   },
   "author": "jxz_211@163.com",
@@ -54,7 +58,7 @@
     "lint": "eslint 'src/**/*.{ts,js}'",
     "check": "madge --warning --circular --extensions ts ./src/",
     "clear": "rm -rf ./lib/*",
-    "build": "npm run clear && npm run lint && tsc && mkdir -p ./lib/exports && cp ./src/exports/index.mjs ./lib/exports/index.mjs",
+    "build": "npm run clear && npm run lint && tsc && mkdir -p ./lib/exports && cp ./src/exports/index.mjs ./lib/exports/index.mjs && cp ./src/exports/browser.mjs ./lib/exports/browser.mjs",
     "build:web": "BROWSER=true webpack --progress --mode=\"production\"",
     "coverage": "jest --coverage && coveralls < coverage/lcov.info",
     "prepublish": "npm run build",
