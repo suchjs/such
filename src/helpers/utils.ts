@@ -470,7 +470,7 @@ export const validator = {
  * @param values
  * @returns
  */
-export const getCascaderValue = (data: unknown, values: TStrList):
+export const getCascaderValue = <T = string>(data: unknown, values: T[]):
 	| unknown
 	| never => {
 	const len = values.length;
@@ -478,7 +478,7 @@ export const getCascaderValue = (data: unknown, values: TStrList):
 	while (i < len) {
 		const cur = values[i++];
 		if (isObject(data)) {
-			data = data[cur];
+			data = data[cur as unknown as (keyof typeof data)];
 		} else {
 			throw new Error(`${values.slice(0, i).join(".")}字段路径没有找到`);
 		}

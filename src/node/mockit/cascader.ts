@@ -2,7 +2,6 @@ import { IPPPath } from "../../types/parser";
 import { makeCascaderData } from "../../helpers/utils";
 import { getFileCacheData } from "../utils";
 import { TSuchInject } from "../../types/instance";
-import { TStrList } from "../../types/common";
 import Mockit from "../../core/mockit";
 import { Such } from "../../core/such";
 
@@ -57,6 +56,6 @@ export default {
 		} else {
 			data = getFileCacheData(lastPath, such.store("config", "fileCache"));
 		}
-		return handle(data, values as TStrList);
+		return handle(data, values as unknown[]);
 	},
 };
